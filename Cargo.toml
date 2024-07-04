@@ -3,5 +3,17 @@ name = "Connie"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
+[workspace]
+resolver = "1"
+members = [
+  "protocol/rtmp",
+  "protocol/rtsp",
+  "library/bytesio",
+  "library/container/flv",
+  "library/container/mpegts",
+  "library/codec/h264",
+  "library/logger",
+  "library/streamhub",
+  "library/common",
+]
 
