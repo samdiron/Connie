@@ -15,5 +15,6 @@ members = [
   "library/logger",
   "library/streamhub",
   "library/common",
+  "library/ffmpeg"
 ]
 
