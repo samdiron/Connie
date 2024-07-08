@@ -7,7 +7,6 @@ edition = "2021"
 resolver = "1"
 members = [
   "protocol/rtmp",
-  "protocol/rtsp",
   "library/bytesio",
   "library/container/flv",
   "library/container/mpegts",
