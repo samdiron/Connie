@@ -15,7 +15,7 @@ members = [
   "library/streamhub",
   "library/common",
   "library/ffmpeg",
-  "protocol/tcp",
+  "protocol/tcp", "tcp_test",
   
 ]
 
