@@ -12,7 +12,7 @@ fn handle_connection(mut stream: TcpStream) -> io::Result<()> {
     //let state: u8 = 0;
     //let buff = 1;
 
-    stream.write(&STATE);
+    stream.write(&STATE.to_be_bytes());
     let _ = stream.flush();
     println!("passed to handle_connection");
     Ok(())
