@@ -14,6 +14,8 @@ fn handle_connection(mut stream: TcpStream) -> io::Result<()> {
 
     stream.write(&STATE.to_be_bytes());
     let _ = stream.flush();
+    //let msg = stream.read(&mut [0; 3])?;
+    //println!("client: {}", &msg);
     println!("passed to handle_connection");
     Ok(())
 }
