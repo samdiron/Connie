@@ -1,0 +1,10 @@
+[package]
+name = "protocol"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bcrypt = "0.15.1"
+serde_json = "1.0.120"
+surrealdb = "1.5.4"
+tokio = "1.38.1"
