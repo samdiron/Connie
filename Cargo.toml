@@ -16,6 +16,9 @@ members = [
   "library/common",
   "library/ffmpeg",
   "protocol/tcp",
-  "tcp_test/server", "tcp_test/client",
-  #  "tcp_test/client",
+  "tcp_test/server",
+  "tcp_test/client",
+  "tcp_test/protocol",
+  "tcp_test/client",
+
 ]
