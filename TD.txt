@@ -1,3 +1,6 @@
 library/codec will be deleated and replaced with ffmpeg/codec 
 also stream hub will not have any reason to be so will be deleted too 
 init the server client/socket 
+
+
+today will create the data base for auth cuz i want a custom auth and keys 
