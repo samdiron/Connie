@@ -20,9 +20,6 @@ members = [
   "tcp_test/client",
   "tcp_test/protocol",
   "tcp_test/client",
+  "surreal",
 
 ]
-
-[dependencies]
-serde = { version = "1.0.204", features = ["derive"] }
-tokio = { version = "1.39.0", features = ["macros", "rt-multi-thread"] }
