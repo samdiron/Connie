@@ -1,51 +1,35 @@
-use serde::{Deserialize, Serialize};
-use std::env;
-use surrealdb::engine::remote::ws::{Client, Ws};
-use surrealdb::opt::auth::Root;
-use surrealdb::Surreal;
-use tokio;
+#![warn(unused_imports)]
+use std::io::Read;
+use std::net::{Shutdown, TcpListener, TcpStream};
+use std::{io, prelude::*};
 
-#[derive(Debug, Serialize)]
-struct Name<'a> {
-    first: &'a str,
-    last: &'a str,
-}
+//use tokio::net::{TcpListener, TcpStream};
+//use tokio;
 
-#[derive(Debug, Serialize)]
-struct Person<'a> {
-    title: &'a str,
-    name: Name<'a>,
-}
-
-#[tokio::main]
-async fn main() -> surrealdb::Result<()> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 4 {
-        println!("not all args");
+fn handle_conn(mut stream: TcpStream) -> io::Result<()> {
+    let mut buff = [0; 80];
+    let stream_bytes = stream.read(&mut buff)?;
+    let msg = String::from_utf8_lossy(&buff[..stream_bytes]);
+    if msg.len() > 80 {
+        let _ = stream.shutdown(Shutdown::Both);
+    } else {
+        println!("stream: {}", msg);
     }
-    let fname: &String = &args[1];
-    let lname: &String = &args[2];
-    let user_s: &String = &args[3];
-
-    let db: Surreal<Client> = Surreal::new::<Ws>("0.0.0.0:8000").await?;
-    db.signin(Root {
-        username: "root",
-        password: "root",
-    })
-    .await?;
-    db.use_ns("test").use_db("test2").await?;
-    db.set(
-        "name",
-        Name {
-            first: fname,
-            last: lname,
-        },
-    )
-    .await?;
-
-    db.set("job", user_s.to_string()).await?;
-    db.query("CREAT person SET name=$name , hashed=crypt::sha256($job")
-        .await?;
-    println!("done");
     Ok(())
+}
+
+fn main() {
+    let socket: TcpListener = TcpListener::bind("0.0.0.0:9000").expect("fail to bing");
+    println!("binded");
+    for stream in socket.incoming() {
+        match stream {
+            Ok(stream) => {
+                let _ = handle_conn(stream);
+                println!("stream passed to handle");
+            }
+            Err(e) => {
+                eprint!("{}", e);
+            }
+        }
+    }
 }
