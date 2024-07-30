@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-surrealdb = "1.5.4"
+#surrealdb = "1.5.4"
 tokio = "1.38.1"
+#surreal = { path = "../../surreal/" }

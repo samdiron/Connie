@@ -1,9 +1,9 @@
 [package]
-name = "surreal"
+name = "surreal_db"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 serde = "1.0.204"
 surrealdb = "1.5.4"
-tokio = "1.39.1"
+tokio = "1.39.2"
