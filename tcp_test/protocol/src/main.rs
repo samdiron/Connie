@@ -14,7 +14,7 @@ async fn handle_conn(mut stream: TcpStream) -> io::Result<()> {
         addr: Option::from(String::from("0.0.0.0:8000")),
         name_sp: None,
         database: None,
-        isremote: Option::from(false) ,
+        remote: false ,
     };
     db.connect().await.expect("db could not connect");
 
@@ -36,7 +36,7 @@ async fn handle_conn(mut stream: TcpStream) -> io::Result<()> {
                 cpid: "dindinlk.1",
                 pass: "dindinlk.1",
             };
-            let _ = user.login_in(mut db);
+            let _ = user.login_in(&db);
         } else {
             println!("not a user: {}", msg_data);
         }
