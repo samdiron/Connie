@@ -7,3 +7,4 @@ edition = "2021"
 #surrealdb = "1.5.4"
 tokio = "1.38.1"
 surreal_db = { path = "../../surreal_db" }
+once_cell = "1.19.0"

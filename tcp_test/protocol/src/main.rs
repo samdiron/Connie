@@ -3,17 +3,18 @@ use std::io;
 use std::io::Read;
 use std::net::{Shutdown, TcpListener, TcpStream};
 
-use tokio;
 
+use tokio;
+use once_cell::sync::Lazy;
 use surreal_db::user::sgin_in;
 use surreal_db::db::DB;
 
 #[tokio::main]
 async fn handle_conn(mut stream: TcpStream) -> io::Result<()> {
     let mut db = DB {
-        addr: Option::from(String::from("0.0.0.0:8000")),
-        name_sp: None,
-        database: None,
+        addr: ("0.0.0.0:8000"),
+        name_sp: &None,
+        database: &None,
         remote: false ,
     };
     db.connect().await.expect("db could not connect");
@@ -36,7 +37,7 @@ async fn handle_conn(mut stream: TcpStream) -> io::Result<()> {
                 cpid: "dindinlk.1",
                 pass: "dindinlk.1",
             };
-            let _ = user.login_in(&db);
+            let _ = user.login_in();
         } else {
             println!("not a user: {}", msg_data);
         }
