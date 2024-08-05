@@ -6,4 +6,5 @@ edition = "2021"
 [dependencies]
 #surrealdb = "1.5.4"
 tokio = "1.38.1"
-#surreal = { path = "../../surreal/" }
+surreal_db = { path = "../../surreal_db" }
+once_cell = "1.19.0"
