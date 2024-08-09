@@ -4,3 +4,6 @@ init the server client/socket
 
 
 today will create the data base for auth cuz i want a custom auth and keys 
+
+so to make things cleaner 
+i will make a crate to add alot of things to it like tls and other server protocols and inferstcuture for the hub 
