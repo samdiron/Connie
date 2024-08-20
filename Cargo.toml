@@ -6,20 +6,12 @@ edition = "2021"
 [workspace]
 resolver = "1"
 members = [
-  # "protocol/rtmp",
-  # "library/bytesio",
-  # "library/container/flv",
-  # "library/container/mpegts",
-  # "library/codec/h264",
-  # "library/logger",
-  # "library/streamhub",
-  # "library/common",
-  # "library/ffmpeg",
-  # "protocol/tcp",
-  #"tcp_test/server",
-  #"tcp_test/client",
+
   "tcp_test/protocol",
   "tcp_test/client",
-  "surreal_db", "ctls",
+  "tcp_test/server",
+  "surreal_db",
+  "ctls",
 
 ]
+#i know it's just for a commit not cuz i wanted it
