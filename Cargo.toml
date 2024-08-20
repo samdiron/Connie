@@ -9,6 +9,7 @@ members = [
 
   "tcp_test/protocol",
   "tcp_test/client",
+  "tcp_test/server",
   "surreal_db",
   "ctls",
 
