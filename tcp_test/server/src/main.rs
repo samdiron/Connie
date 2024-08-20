@@ -11,7 +11,8 @@ fn main() {
         let pki = TestPki::new();
         let server_config = pki.server_config();
 
-        let listener = std::net::TcpListener::bind(format!("{}:{}",0.0.0.0, 4443)).unwrap();
+        let listener = std::net::TcpListener::bind(format!("{}:{}",0.0.0.0, 4443))
+            .unwrap();
         for stream in listener.incoming() {
                 let mut stream = stream.unwrap();
                 let mut acceptor = Acceptor::default();
@@ -56,7 +57,8 @@ impl TestPki {
     fn mew() -> Self {
         let alg = &rcgen::PKCS_ECDSA_P256_SHA256;
         let mut ca_params = rcgen::CertificateParams::new(Vec::new()).unwrap();
-
+        ca_params.distinguished_name.push(rcgen::DnType::OrganizationalUnitName,"Connie");
+        ca_params.distinguished_name.push(rcgen::DnType::CommonName, "connieserver");
     }
 }
 
