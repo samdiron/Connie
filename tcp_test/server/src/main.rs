@@ -55,15 +55,15 @@ struct TestPki {
     server_key_der: PrivateKeyDer<'static>,
 }
 
-impl TestPki {
-    fn mew() -> Self {
-        let alg = &rcgen::PKCS_ECDSA_P256_SHA256;
-        let mut ca_params = rcgen::CertificateParams::new(Vec::new()).unwrap();
-        //ca_params.subject_alt_names.push(rcgen::)
-        ca_params.distinguished_name.push(rcgen::DnType::OrganizationalUnitName,"Connie");
-        ca_params.distinguished_name.push(rcgen::DnType::CommonName, "connieserver");
-    }
-}
+//impl TestPki {
+//     fn mew() -> Self {
+//         let alg = &rcgen::PKCS_ECDSA_P256_SHA256;
+//         let mut ca_params = rcgen::CertificateParams::new(Vec::new()).unwrap();
+//         ca_params.subject_alt_names.push(rcgen::)
+//         ca_params.distinguished_name.push(rcgen::DnType::OrganizationalUnitName,"Connie");
+//         ca_params.distinguished_name.push(rcgen::DnType::CommonName, "connieserver");
+//     }
+// }
 
 fn load_cert(path: &str) -> io::Result<Vec<CertificateDer>> {
     let cert_file = File::open(path);
