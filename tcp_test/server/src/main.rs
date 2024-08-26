@@ -1,9 +1,12 @@
-use std::io::Write;
+use std::io::{ErrorKind, Write};
 use std::sync::Arc;
-use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
+use rustls::pki_types::{CertificateDer, PrivateKeyDer };
 use rustls::server::Acceptor;
-use rustls::ServerConfig;
-
+use rustls::{internal, ServerConfig};
+use std::io::{self, BufReader};
+use std::fs::File;
+use rcgen::Certificate;
+use tokio::time::interval;
 
 //noinspection ALL
 fn main() {
@@ -57,12 +60,27 @@ impl TestPki {
     fn mew() -> Self {
         let alg = &rcgen::PKCS_ECDSA_P256_SHA256;
         let mut ca_params = rcgen::CertificateParams::new(Vec::new()).unwrap();
+        ca_params.subject_alt_names.push(rcgen::)
         ca_params.distinguished_name.push(rcgen::DnType::OrganizationalUnitName,"Connie");
         ca_params.distinguished_name.push(rcgen::DnType::CommonName, "connieserver");
     }
 }
 
+fn load_cert(path: &str) -> io::Result<Vec<CertificateDer>> {
+    let cert_file = File::open(path);
+    let mut reader = BufReader::new(cert_file);
+    let certs =  internal::pemfile::certs(&mut reader).map_err(|_| io::Error::new(ErrorKind::InvalidData, "Invalid Certificates"))?;
+    Ok(certs)
+}
 
+fn load_private_certificate_key(path: &str) -> io::Result<PrivateKeyDer> {
+    let private_key_file = File::open(path);
+    let mut reader = BufReader::new(private_key_file);
+    let keys = internal::pemfile::pkcs8_private_keys(&mut reader)
+        .or_else(|_| internal::pemfile::rsa_private_keys(&mut reader))
+        .map_err(|_| io::Error::new(ErrorKind::InvalidData, "Invalid Private Keys"))?;
+    Ok(keys[0].clone())
+}
 
 
 
