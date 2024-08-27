@@ -1,19 +1,26 @@
 use std::io::{ErrorKind, Write};
 use std::sync::Arc;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer };
-use rustls::server::Acceptor;
+use rustls::server::{Acceptor, NoClientAuth};
 use rustls::{ServerConfig};
 use std::io::{self, BufReader};
 use std::fs::File;
+use rcgen::Certificate;
 use rustls_pemfile;
 
-//noinspection ALL
+const CERT : io::Result<Vec<CertificateDer>> = load_cert("~/.config/connie/certificates/cert.pem");
+const PRIVATE_KEY : io::Result<PrivateKeyDer> = load_private_certificate_key("~/.config/connie/keys/key.pem");
+
+
 fn main() {
         env_logger::init();
-        let pki = TestPki::new();
-        let server_config = pki.server_config();
+        //let pki = TestPki::new();
+        //let server_config = pki.server_config();
+        let mut server_config = ServerConfig::new(NoClientAuth::new());
+        server_config.set_single_cert(CERT, PRIVATE_KEY);
 
-        let listener = std::net::TcpListener::bind(format!("{}:{}",0.0.0.0, 4443))
+
+        let listener = std::net::TcpListener::bind(format!(":{}", 4443))
             .unwrap();
         for stream in listener.incoming() {
                 let mut stream = stream.unwrap();
@@ -55,15 +62,15 @@ struct TestPki {
     server_key_der: PrivateKeyDer<'static>,
 }
 
-//impl TestPki {
-//     fn mew() -> Self {
-//         let alg = &rcgen::PKCS_ECDSA_P256_SHA256;
-//         let mut ca_params = rcgen::CertificateParams::new(Vec::new()).unwrap();
-//         ca_params.subject_alt_names.push(rcgen::)
-//         ca_params.distinguished_name.push(rcgen::DnType::OrganizationalUnitName,"Connie");
-//         ca_params.distinguished_name.push(rcgen::DnType::CommonName, "connieserver");
-//     }
-// }
+// impl TestPki {
+//      fn mew() -> Self {
+//          let alg = &rcgen::PKCS_ECDSA_P256_SHA256;
+//          let mut ca_params = rcgen::CertificateParams::new(Vec::new()).unwrap();
+//          ca_params.subject_alt_names.push(rcgen::SanType::);
+// //         ca_params.distinguished_name.push(rcgen::DnType::OrganizationalUnitName,"Connie");
+// //         ca_params.distinguished_name.push(rcgen::DnType::CommonName, "connieserver");
+//      }
+//  }
 
 fn load_cert(path: &str) -> io::Result<Vec<CertificateDer>> {
     let cert_file = File::open(path);
