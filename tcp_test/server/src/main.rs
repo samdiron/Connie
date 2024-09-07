@@ -3,12 +3,13 @@ use std::sync::Arc;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer };
 use rustls::server::{Acceptor, NoClientAuth};
 use rustls::{ConfigBuilder, ServerConfig};
-use std::io::{self, BufReader};
+//use std::io::{self, BufReader};
 use std::fs::File;
+use std::net::IpAddr;
 use rustls::crypto::CryptoProvider;
-//use rcgen::Certificate;
-use rustls_pemfile;
-
+use rcgen::{Certificate, CertificateParams, PKCS_ECDSA_P256_SHA256, SanType};
+use local_ip_address::local_ip;
+pub static LIP: IpAddr = local_ip().unwrap();
 //static CERT : Vec<CertificateDer> = load_cert("~/.config/connie/certificates/cert.pem");
 //static PRIVATE_KEY : Vec<PrivateKeyDer> = load_private_certificate_key("~/.config/connie/keys/key.pem");
 // const CERT : io::Result<Vec<CertificateDer>> = load_cert("~/.config/connie/certificates/cert.pem");
@@ -67,25 +68,25 @@ fn main() {
         }
 }
 
-// struct TestPki {
-//     server_cert_der: CertificateDer<'static>,
-//     server_key_der: PrivateKeyDer<'static>,
-// }
+struct TestPki {
+     server_cert_der: CertificateDer<'static>,
+     server_key_der: PrivateKeyDer<'static>,
+}
 
 impl TestPki {
           fn mew() -> Self {
               let alg = &rcgen::PKCS_ECDSA_P256_SHA256;
               let mut ca_params = rcgen::CertificateParams::new(Vec::new()).unwrap();
-              ca_params.subject_alt_names.push(rcgen::SanType::);
-             ca_params.distinguished_name.push(rcgen::DnType::OrganizationalUnitName,"Connie");
-             ca_params.distinguished_name.push(rcgen::DnType::CommonName, "connieserver");
+              ca_params.subject_alt_names.push(rcgen::SanType::IpAddress(LIP.clone()));
+              //ca_params.distinguished_name.push(rcgen::DnType::OrganizationalUnitName,"Connie");
+              //ca_params.distinguished_name.push(rcgen::DnType::CommonName, "connieserver");
           }
 }
 
     fn load_cert(path: &str) -> Result<Vec<CertificateDer>, io::Error>  {//io::Result<Vec<CertificateDer>> {
         let cert_file = File::open(path).unwrap();
         let mut reader = BufReader::new(cert_file);
-        let certs : Vec<CertificateDer> = rustls_pemfile::certs(&mut reader);
+        let certs : Vec<CertificateDer> = rustls:::certs(&mut reader);
 
         Err(Error::new(ErrorKind::InvalidData, "Invalid Certificate")).expect("TODO: panic message");
         Ok(certs)
