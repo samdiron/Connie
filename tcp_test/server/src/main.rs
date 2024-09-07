@@ -19,9 +19,9 @@ fn main() {
         let pki = TestPki::new();
         let server_config = pki.server_config();
 
-
-        let listener = std::net::TcpListener::bind(format!("{}:{}", local_ip().unwrap(), 443))
-            .unwrap();
+        let ip = local_ip().unwrap();
+        let listener = std::net::TcpListener::bind(format!("{}:{}", ip, 4443)).unwrap();
+        println!("on ({}:{})",ip , 4443);
         for stream in listener.incoming() {
                 let mut stream = stream.unwrap();
                 let mut acceptor = Acceptor::default();
