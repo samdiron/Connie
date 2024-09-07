@@ -1,3 +1,4 @@
+use std::fmt::format;
 use std::io::Write;
 use std::sync::Arc;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
@@ -5,8 +6,8 @@ use rustls::server::Acceptor;
 use rustls::ServerConfig;
 use local_ip_address::local_ip;
 use rustls::crypto::aws_lc_rs::default_provider;
-use rcgen;
-use env_logger;
+use rcgen::{BasicConstraints, CertificateParams, DnType, ExtendedKeyUsagePurpose, IsCa, KeyPair, KeyUsagePurpose, PKCS_ECDSA_P256_SHA256, SanType};
+//use env_logger;
 
 
 // a Private ip to use in the program you can , TODO put this in a common module
@@ -14,7 +15,7 @@ use env_logger;
 
 
 fn main() {
-        env_logger::init();
+        // env_logger::init();
         let pki = TestPki::new();
         let server_config = pki.server_config();
 
@@ -64,30 +65,32 @@ struct TestPki {
 
 impl TestPki {
     fn new() -> Self {
-        let alg = &rcgen::PKCS_ECDSA_P256_SHA256;
-        let mut ca_params = rcgen::CertificateParams::new(Vec::new()).unwrap();
-        ca_params.subject_alt_names.push(rcgen::SanType::IpAddress(local_ip().unwrap()));
+        let alg = &PKCS_ECDSA_P256_SHA256;
+        let mut ca_params = CertificateParams::new(Vec::new()).unwrap();
+        ca_params.subject_alt_names.push(SanType::IpAddress(local_ip().unwrap()));
         //TODO buy a DOMAIN in the feature
         // ca_params
         //     .distinguished_name
         //     .push(rcgen::DnType::OrganizationName, "Connie.org");
         ca_params
             .distinguished_name
-            .push(rcgen::DnType::CommonName, "Connie-PrivateServer");
-        ca_params.is_ca = rcgen::IsCa::Ca(rcgen::BasicConstraints::Unconstrained);
+            .push(DnType::CommonName, "Connie-PrivateServer");
+        ca_params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
         ca_params.key_usages = vec![
-            rcgen::KeyUsagePurpose::KeyCertSign,
-            rcgen::KeyUsagePurpose::DigitalSignature,
+            KeyUsagePurpose::KeyCertSign,
+            KeyUsagePurpose::DigitalSignature,
         ];
-        let ca_key = rcgen::KeyPair::generate_for(alg).unwrap();
+        let ca_key = KeyPair::generate_for(alg).unwrap();
         let ca_cert = ca_params.self_signed(&ca_key).unwrap();
-
+        let mut local_ip = local_ip().unwrap();
+        let ip = format!("{}",local_ip);
+        //let ip = String::from(("{}",local_ip));
         // Create a server end entity cert issued by the CA.
         let mut server_ee_params =
-            rcgen::CertificateParams::new(vec!["localhost".to_string()]).unwrap();
-        server_ee_params.is_ca = rcgen::IsCa::NoCa;
-        server_ee_params.extended_key_usages = vec![rcgen::ExtendedKeyUsagePurpose::ServerAuth];
-        let server_key = rcgen::KeyPair::generate_for(alg).unwrap();
+            CertificateParams::new(vec![(ip).to_string()]).unwrap();
+        server_ee_params.is_ca = IsCa::NoCa;
+        server_ee_params.extended_key_usages = vec![ExtendedKeyUsagePurpose::ServerAuth];
+        let server_key = KeyPair::generate_for(alg).unwrap();
         let server_cert = server_ee_params
             .signed_by(&server_key, &ca_cert, &ca_key)
             .unwrap();
