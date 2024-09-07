@@ -1,6 +1,6 @@
 use std::io::{Error, ErrorKind, Write};
 use std::sync::Arc;
-use rustls::pki_types::{CertificateDer, PrivateKeyDer };
+use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use rustls::server::{Acceptor, NoClientAuth};
 use rustls::{ConfigBuilder, ServerConfig};
 //use std::io::{self, BufReader};
@@ -73,36 +73,70 @@ struct TestPki {
      server_key_der: PrivateKeyDer<'static>,
 }
 
+
 impl TestPki {
-          fn mew() -> Self {
-              let alg = &rcgen::PKCS_ECDSA_P256_SHA256;
-              let mut ca_params = rcgen::CertificateParams::new(Vec::new()).unwrap();
-              ca_params.subject_alt_names.push(rcgen::SanType::IpAddress(LIP.clone()));
-              //ca_params.distinguished_name.push(rcgen::DnType::OrganizationalUnitName,"Connie");
-              //ca_params.distinguished_name.push(rcgen::DnType::CommonName, "connieserver");
-          }
+    fn new() -> Self {
+        let alg = &rcgen::PKCS_ECDSA_P256_SHA256;
+        let mut ca_params = rcgen::CertificateParams::new(Vec::new()).unwrap();
+        ca_params.subject_alt_names.push(rcgen::SanType::IpAddress(LIP));
+        ca_params
+            .distinguished_name
+            .push(rcgen::DnType::OrganizationName, "Provider Server Example");
+        ca_params
+            .distinguished_name
+            .push(rcgen::DnType::CommonName, "Example CA");
+        ca_params.is_ca = rcgen::IsCa::Ca(rcgen::BasicConstraints::Unconstrained);
+        ca_params.key_usages = vec![
+            rcgen::KeyUsagePurpose::KeyCertSign,
+            rcgen::KeyUsagePurpose::DigitalSignature,
+        ];
+        let ca_key = rcgen::KeyPair::generate_for(alg).unwrap();
+        let ca_cert = ca_params.self_signed(&ca_key).unwrap();
+
+        // Create a server end entity cert issued by the CA.
+        let mut server_ee_params =
+            rcgen::CertificateParams::new(vec!["localhost".to_string()]).unwrap();
+        server_ee_params.is_ca = rcgen::IsCa::NoCa;
+        server_ee_params.extended_key_usages = vec![rcgen::ExtendedKeyUsagePurpose::ServerAuth];
+        let server_key = rcgen::KeyPair::generate_for(alg).unwrap();
+        let server_cert = server_ee_params
+            .signed_by(&server_key, &ca_cert, &ca_key)
+            .unwrap();
+        Self {
+            server_cert_der: server_cert.into(),
+            // TODO(XXX): update below once https://github.com/rustls/rcgen/issues/260 is resolved.
+            server_key_der: PrivatePkcs8KeyDer::from(server_key.serialize_der()).into(),
+        }
+    }
+
+    fn server_config(self) -> Arc<ServerConfig> {
+        let mut server_config =
+            ServerConfig::builder_with_details()
+                .with_safe_default_protocol_versions()
+                .unwrap()
+                .with_no_client_auth()
+                .with_single_cert(vec![self.server_cert_der], self.server_key_der)
+                .unwrap();
+
+        server_config.key_log = Arc::new(rustls::KeyLogFile::new());
+
+        Arc::new(server_config)
+    }
 }
 
-    fn load_cert(path: &str) -> Result<Vec<CertificateDer>, io::Error>  {//io::Result<Vec<CertificateDer>> {
-        let cert_file = File::open(path).unwrap();
-        let mut reader = BufReader::new(cert_file);
-        let certs : Vec<CertificateDer> = rustls:::certs(&mut reader);
-
-        Err(Error::new(ErrorKind::InvalidData, "Invalid Certificate")).expect("TODO: panic message");
-        Ok(certs)
-    }
-
-    fn load_private_certificate_key(path: &str) -> io::Result<Vec<PrivateKeyDer>> {
-        let private_key_file = File::open(path)?;
-        let mut reader = BufReader::new(private_key_file);
-
-        let keys : Vec<PrivateKeyDer> = rustls_pemfile::pkcs8_private_keys(&mut reader);
-
-        Ok(keys)
-
-    }
 
 
+// impl TestPki {
+//           fn mew() -> Self {
+//               let alg = &rcgen::PKCS_ECDSA_P256_SHA256;
+//               let mut ca_params = rcgen::CertificateParams::new(Vec::new()).unwrap();
+//               ca_params.subject_alt_names.push(rcgen::SanType::IpAddress(LIP.clone()));
+//               //ca_params.distinguished_name.push(rcgen::DnType::OrganizationalUnitName,"Connie");
+//               //ca_params.distinguished_name.push(rcgen::DnType::CommonName, "connieserver");
+//           }
+// }
+//
+//
 
 
 // #![warn(unused_variables)]
