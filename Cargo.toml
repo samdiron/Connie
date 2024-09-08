@@ -14,4 +14,9 @@ members = [
   "ctls",
 
 ]
+
+[dependencies]
+local-ip-address = "0.6.2"
+rcgen = "0.13.1"
+sysinfo = "0.31.4"
 #i know it's just for a commit not cuz i wanted it
