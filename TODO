@@ -1,2 +1,80 @@
-not to use copilot at all 
-start workin 
+make a uuid and store it in config/connie/conf.uuid; 
+make a check for the private ip addr;
+
+start module {
+
+  make a function to see if it's first time starting{
+      check db 
+      check logs
+      check config files 
+      check handshack file 
+      server name 
+      check if server ban 
+    };
+
+  make function to check hardware {
+      cpu module 
+      cpu cores / threads 
+      gpu module /vram,
+      ram,
+      storage ,
+      
+    }
+
+  make a function to make first time start {
+      display user agrement and code of conduct
+      display actions happening in first time start 
+      ask admin name 
+      ask admin password
+      ask numbers of client allowed at a time
+      ask do you want to continue and display the storage that will be used and -
+      what checks will happen now 
+      check os 
+      create uuid 
+      server name /client name 
+      check dependency
+      check connie version 
+      make a handshack file {
+          uuid 
+          server name 
+          connie version 
+        }
+
+    };
+};
+
+
+db module {
+    user functions {
+        signin,
+        signup{
+            client uuid 
+            password hash^2
+            cred {
+                handshack file 
+              }
+            is admin
+        upload{
+            user private dir 
+            user used amount of files 
+            user shared keys
+
+          }
+        download {
+            user dir contents 
+            pub files contents 
+            tracking
+          }
+          }
+
+      }
+      //feuture 
+      server connect functions {
+          log,
+          connect,
+          stc
+        }
+      server backup logs{}
+      untited db connection mod {}
+  }
+
