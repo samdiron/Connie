@@ -23,7 +23,8 @@ start module {
 
   make a function to make first time start {
       display user agrement and code of conduct
-      display actions happening in first time start 
+      display actions happening in first time start
+      ask if main server (a server that wont have the client backend to use less storage )//note: you can't use it as a client you can always install client side run ("cli command:want")
       ask admin name 
       ask admin password
       ask numbers of client allowed at a time
