@@ -3,7 +3,8 @@ use sysinfo::{
     Components,
     Cpu,
     Networks,
-    DiskUsage
+    DiskUsage,
+
 };
 fn main() {
     println!("Hello, world!");
