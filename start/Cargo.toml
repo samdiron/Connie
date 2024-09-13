@@ -1,8 +1,9 @@
 [package]
-name = "startchecks"
+name = "start"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 sysinfo = "0.31.4"
-
+surreal_db = {path= "../surreal_db"}
+serde_yaml = "0.9.34"
