@@ -2,9 +2,10 @@ use sysinfo::Cpu;
 use sysinfo::System;
 use surreal_db::db::DBASE;
 use std::fs::File;
-use std::io::stdin;
 use std::process::exit;
 use std::process;
+use std::io::{Error, ErrorKind, stdout, stdin, Write};
+
 
 fn main() {
     let os = System::name();
@@ -18,37 +19,69 @@ fn main() {
         let firsttime = false;
     }
     else {
-        firstTime();
-    }
+        firstTime()
+    };
 
 }
 
 
 fn firstTime() {
-    let mut s = String::new();
-    println!("thanks for chosing connie : she needs consent to make a few actions press (yes/no): ");
-    let not_rape = stdin().read_line(&mut s);
-    let binding = not_rape.unwrap().to_string().to_lowercase();
-    let consent = binding.as_str();
-    if  consent == "yes" {
-        println!("setting up now :)");
-    }if  consent== "y" {
+    print!("thanks for chosing connie she needs consent to make a few actions (yes/no): ");
+    stdout().flush().unwrap();
+    let mut consent = String::new();
+    stdin().read_line(&mut consent);
+    //let binding = not_rape.unwrap().to_string().to_lowercase();
+    let consent = consent.as_str();
+    if  consent.trim_ascii_end().to_lowercase() == "yes" {
+        println!("setting up nowdev :)");
+    }
+    if  consent.trim_ascii_end().to_lowercase() == "y" {
         println!("setting up now :)");
     }
+    if consent.trim_ascii_end() == "dev" {
+            println!("okay")
+    }
     else {
-        println!("okay will abort");
-        process::abort();
+        exit(1);
     }
     let config_make = process::Command::new("sh")
         .arg("touch")
-        .arg("/.config/")
-        .arg("connie/")
-        .arg("connie_config.yaml")
+        .arg("~/.config/connie/connie_config.yaml")
+        //.arg("connie/")
+        //.arg("connie_config.yaml")
         .output()
         .expect("colud not preform a shell command");
-    let config = config_make.stdout;
-    println!("process: creating a /.config/connie/connie_config.yaml");
+    let config = config_make;
+    println!("process: creating file /.config/connie/connie_config.yaml");
+    println!("//NOTE cant be more than 17 char or less than 3 it cant contain spaces");
+    print!("name: ");
+    stdout().flush().unwrap();
+    let mut server_name_string : String = String::new();
+    stdin().read_line(&mut server_name_string);
 
-    println!("")
+    let server_name = server_name_string.trim_ascii_end();
+    if server_name.len() >= 16 {
+        loop {
+            stdin().read_line(&mut server_name_string);
+            if server_name_string.trim_ascii_end().len() <= 16 {
+                break
+            }
+            if server_name_string.trim_ascii_end().len() <= 2 {
+                    println!("too short");
+            }
+            if server_name_string.trim_ascii_end().contains(" ") {
+                    print!("can't have spaces");
+            }
+            else {
+                println!("you are a dumb fuck; 16 or less");
+                print!("server name: ");stdout().flush().unwrap();
+                stdin().read_line(&mut server_name_string);
+            }
+            println!("how hard is it to enter a name that's more than 3 char less than 17;");
+
+        }
+    }
+
+
 
 }
