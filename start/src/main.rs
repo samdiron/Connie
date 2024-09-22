@@ -29,15 +29,15 @@ fn firstTime() {
     let mut consent = String::new();
     stdin().read_line(&mut consent);
     //let binding = not_rape.unwrap().to_string().to_lowercase();
-    let consent = consent.as_str();
-    if consent.trim_ascii_end().to_lowercase() == "yes" {
-        println!("setting up nowdev :)");
-    }
-    if consent.trim_ascii_end().to_lowercase() == "y" {
+    let consent = consent.as_str().trim_ascii_end();
+    if consent.to_lowercase() == "yes" {
         println!("setting up now :)");
     }
-    if consent.trim_ascii_end() == "dev" {
-        println!("okay")
+    else if consent.trim_ascii_end() == "y" {
+        println!("setting up now :)");
+    }
+    else if consent.trim_ascii_end() == "dev" {
+        println!("okay");
     } else {
         exit(1);
     }
@@ -56,7 +56,7 @@ fn firstTime() {
             if server_name_string.trim_ascii_end().len() <= 16 {
                 break;
             }
-            if server_name_string.trim_ascii_end().contains(" ") {
+            else if server_name_string.trim_ascii_end().contains(" ") {
                 print!("can't have spaces");
             } else {
                 println!("you are a dumb fuck; 16 or less");
@@ -75,23 +75,24 @@ fn firstTime() {
         }
     };
     let mut max_client_string : String = String::new();
-    print!("maximum clients connecting to the server at the same time;");
+    print!("maximum clients connecting to the server at the same time: ");
     stdout().flush().unwrap();
     stdin().read_line(&mut max_client_string);
     //
     let max_client = max_client_string.trim_ascii_end();
     //the value enterd in config.yaml ^
-    let is_max_client_number = max_client_string.chars().all(char::is_numeric);
+    let is_max_client_number = max_client.chars().all(char::is_numeric);
     if is_max_client_number == false {
         println!("enter only numbers larger that 0");
-        loop{
+        loop {
+            print!("enter a number: ");
+            stdout().flush().unwrap();
             stdin().read_line(&mut server_name_string);
-        }
-        if is_max_client_number {
-            break;
-        }
-        else {
-            println!("are we really doing this ");
+            if is_max_client_number {
+                break;
+            } else {
+                println!("are we really doing this ");
+            }
         }
     };
     println!(
@@ -104,29 +105,16 @@ fn firstTime() {
     let mut status_string : String = String::new();
     // stdin().read_line(&mut status_string);
     // let status = status_string.trim_ascii_end();
-    let status_u8: u8  = loop {
+    let mut status_u8: u8 = 0;
+    loop {
         stdin().read_line(&mut status_string);
         let status = status_string.trim_ascii_end();
-        if status.chars().count() == 1 {
-            break
-        }
-        else {
-            println!("enter 1 number");
-        };
-        if  status.chars().all(char::is_numeric) == true {
-            break
-        }
-        else {
-            println!("enter number");
-        };
         if status == "0" {
-            let status: u8 = 0;
-            return status;
+            *&mut status_u8 = 0;
             break
         }
-        if status == "1" {
-            let status: u8 = 1;
-            return status;
+        else if status == "1" {
+           *&mut status_u8 = 1;
             break
         }
         else { println!("enter a valid number"); };
@@ -137,7 +125,7 @@ fn firstTime() {
 
     println!("finshed getting server's identity");
     println!("now getting the user's identity if you choose server status = 0 this will be the admin user");
-    // input  = {password , name , username} data = {input, isadmin, id, uuid, + registration server uuid  }
+    //TODO input  = {password , name , username} data = {input, isadmin, id, uuid, + registration server uuid  }
 
 
 
