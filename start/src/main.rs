@@ -97,15 +97,14 @@ fn firstTime() {
     println!(
         "\
         server: 0 \
-        client: 1 \
-        client & server: 2
+        client & server: 1
     ");
     print!("choose a server status(0/1/2): ");
     stdout().flush().unwrap();
     let mut status_string : String = String::new();
     // stdin().read_line(&mut status_string);
     // let status = status_string.trim_ascii_end();
-    loop {
+    let status_u8: u8  = loop {
         stdin().read_line(&mut status_string);
         let status = status_string.trim_ascii_end();
         if status.chars().count() == 1 {
@@ -121,16 +120,27 @@ fn firstTime() {
             println!("enter number");
         };
         if status == "0" {
+            let status: u8 = 0;
+            return status;
             break
         }
         if status == "1" {
-            break
-        }
-        if status == "2" {
+            let status: u8 = 1;
+            return status;
             break
         }
         else { println!("enter a valid number"); };
-    }
+    };
+    let server_status = status_u8;
+    //TODO yaml value ^
+
+
+    println!("finshed getting server's identity");
+    println!("now getting the user's identity if you choose server status = 0 this will be the admin user");
+    // input  = {password , name , username} data = {input, isadmin, id, uuid, + registration server uuid  }
+
+
+
     // if status.chars().count() > 1 {
     //     loop {
     //        stdin().read_line(&mut status_string);
@@ -167,9 +177,6 @@ fn firstTime() {
         .output()
         .expect("could not preform a shell command");
     let config = config_make;
-
-
-
 
 
 }
