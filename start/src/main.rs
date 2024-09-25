@@ -4,10 +4,10 @@ use std::io::{stdin, stdout, Error, ErrorKind, Write};
 use std::mem::take;
 use std::process;
 use std::process::exit;
-//use serde_yaml::Value::String;
 use surreal_db::db::DBASE;
 use sysinfo::Cpu;
 use sysinfo::System;
+use uuid::Uuid;
 
 fn main() {
     let os = System::name();
@@ -29,7 +29,6 @@ fn firstTime() {
     stdout().flush().unwrap();
     let mut consent = String::new();
     stdin().read_line(&mut consent);
-    //let binding = not_rape.unwrap().to_string().to_lowercase();
     let consent = consent.as_str().trim_ascii_end();
     if consent.to_lowercase() == "yes" {
         println!("setting up now :)");
@@ -62,7 +61,6 @@ fn firstTime() {
             } else {
                 println!("invalied");
             }
-            //println!("how hard is it to enter a name that's more than 3 char less than 17;");
         }
     }
     if server_name_string.trim_ascii_end().chars().count() <= 3 {
@@ -81,7 +79,7 @@ fn firstTime() {
     stdin().read_line(&mut max_client_string);
     //
     let max_client = max_client_string.trim_ascii_end();
-    //the value enterd in config.yaml ^
+    //TODO the value enterd in config.yaml ^
     let is_max_client_number = max_client.chars().all(char::is_numeric);
     if is_max_client_number == false {
         println!("enter only numbers larger that 0");
@@ -102,8 +100,6 @@ fn firstTime() {
     print!("choose a server status(0/1): ");
     stdout().flush().unwrap();
     let mut status_string : String = String::new();
-    // stdin().read_line(&mut status_string);
-    // let status = status_string.trim_ascii_end();
     let mut status_u8: u8 = 0;
     loop {
         stdin().read_line(&mut status_string);
@@ -184,37 +180,6 @@ fn firstTime() {
         };
     };
 
-
-    // if status.chars().count() > 1 {
-    //     loop {
-    //        stdin().read_line(&mut status_string);
-    //         if status_string.trim_ascii_end().chars().count() == 1 {
-    //             break
-    //         }
-    //         else {
-    //             println!("enter 1 number");
-    //         }
-    //     }
-    // }
-    // if status.chars().all(char::is_numeric) == false {
-    //    loop {
-    //        stdin().read_line(&mut status_string);
-    //         if  status_string.trim_ascii_end().chars().all(char::is_numeric) {
-    //             break
-    //         }
-    //         else {
-    //             println!("enter a number");
-    //         }
-    //     }
-    // }
-
-
-
-    // let max_client_char_is_num = max_client_string.chars()
-    //     .map(|c|c.is_digit())
-    //     .collect();
-    // let is_maxclient_num = !max_client_char_is_num.contains(&false);
-    //
     let config_make = process::Command::new("sh")
         .arg("touch")
         .arg("~/.config/connie/connie_config.yaml")
@@ -235,11 +200,4 @@ fn is_valied_str(s : &String) -> bool {
     }
     else {return false};
 }
-// fn main() {
-//     let mut value = "asdfg";
-//
-//     let boolean = is_valied_str(value) ;
-//     if boolean == true {
-//         println!("yas");
-//     }else { println!("nah") }
-// }
+
