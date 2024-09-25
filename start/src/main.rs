@@ -1,7 +1,6 @@
 use std::string::String;
 use std::fs::File;
 use std::io::{stdin, stdout, Error, ErrorKind, Write};
-use std::mem::take;
 use std::process;
 use std::process::exit;
 use surreal_db::db::DBASE;
