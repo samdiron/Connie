@@ -1,12 +1,13 @@
 use std::string::String;
 use std::fs::File;
-use std::io::{stdin, stdout, Error, ErrorKind, Write};
+use std::io::{stdin,Result, stdout, Error, ErrorKind, Write};
 use std::process;
-use std::process::exit;
+use std::process::{Command, exit};
 use surreal_db::db::DBASE;
 use sysinfo::Cpu;
 use sysinfo::System;
 use uuid::Uuid;
+use log::error;
 
 fn main() {
     let os = System::name();
@@ -18,16 +19,20 @@ fn main() {
     let mut connie_config = File::open("/.config/connie/connie_config.yaml");
     if connie_config.is_ok() {
         let firsttime = false;
+        // let dependency_check = check_dependencies().is_ok();
+        // if dependency_check == false {
+        //     exit(2) //unmet dependency
+        // }
     } else {
         firstTime()
     };
 }
 
 fn firstTime() {
-    print!("thanks for choosing connie she needs consent to make a few actions (yes/no): ");
+    print!("do you want to setup Connie (yes/no): ");
     stdout().flush().unwrap();
     let mut consent = String::new();
-    stdin().read_line(&mut consent);
+    let _ = stdin().read_line(&mut consent);
     let consent = consent.as_str().trim_ascii_end();
     if consent.to_lowercase() == "yes" {
         println!("setting up now :)");
@@ -46,16 +51,16 @@ fn firstTime() {
     print!("server name: ");
     stdout().flush().unwrap();
     let mut server_name_string: String = String::new();
-    stdin().read_line(&mut server_name_string);
+    let _ = stdin().read_line(&mut server_name_string);
 
     let server_name = server_name_string.trim_ascii_end();
     if server_name.chars().count() >= 17 {
         loop {
-           stdin().read_line(&mut server_name_string);
+           let _ = stdin().read_line(&mut server_name_string);
             if server_name_string.trim_ascii_end().chars().count() <= 17 {
                 break;
             }
-            else if server_name_string.trim_ascii_end().chars().all(char::is_whitespace) {
+            else if server_name_string.trim_ascii_end().chars().all(|c| c.is_whitespace()) {
                 print!("can't have spaces");
             } else {
                 println!("invalied");
@@ -63,7 +68,7 @@ fn firstTime() {
         }
     }
     if server_name_string.trim_ascii_end().chars().count() <= 3 {
-        stdin().read_line(&mut server_name_string);
+        let _ = stdin().read_line(&mut server_name_string);
         loop {
             if server_name_string.trim_ascii_end().chars().count() >= 3 {
                 break
@@ -75,18 +80,18 @@ fn firstTime() {
     let mut max_client_string : String = String::new();
     print!("maximum clients connecting to the server at the same time: ");
     stdout().flush().unwrap();
-    stdin().read_line(&mut max_client_string);
+    let _ = stdin().read_line(&mut max_client_string);
     //
     let max_client = max_client_string.trim_ascii_end();
     //TODO the value enterd in config.yaml ^
-    let is_max_client_number = max_client.chars().all(char::is_numeric);
+    let is_max_client_number = max_client.chars().all(|c| c.is_ascii_digit());
     if is_max_client_number == false {
         println!("enter only numbers larger that 0");
         loop {
             print!("enter a number: ");
             stdout().flush().unwrap();
-            stdin().read_line(&mut server_name_string);
-            let is_max_client_number = max_client.chars().all(char::is_numeric);
+            let _ = stdin().read_line(&mut server_name_string);
+            let is_max_client_number = max_client.chars().all(|c| c.is_ascii_digit());
             if is_max_client_number {
                 break;
             } else {
@@ -119,7 +124,7 @@ fn firstTime() {
 
     println!("finshed getting server's identity");
     println!("now getting the user's identity this will be the admin user for the server and a user to connect to other servers");
-    //TODO input  = {password , name , username} data = {input, isadmin, id, uuid, + registration server uuid  }
+    //TODO input  = {password , name , username} data = {input, id, uuid, + registration server uuid  }
 
     let mut name = String::new();
     let _ = loop {
@@ -148,7 +153,7 @@ fn firstTime() {
         print!("username: ");
         stdout().flush().unwrap();
         let mut user_name_string: String = String::new();
-        stdin().read_line(&mut user_name_string).unwrap();
+        let _ = stdin().read_line(&mut user_name_string).unwrap();
 
         let user_name_str = user_name_string.trim_ascii_end().to_owned();
         let is_valied = is_valied_str(&user_name_str);
@@ -178,13 +183,16 @@ fn firstTime() {
             println!("enter a valid name ");
         };
     };
+    let server_uuid = Uuid::new_v4();
+    let admin_uuid = Uuid::new_v4();
+
 
     let config_make = process::Command::new("sh")
         .arg("touch")
         .arg("~/.config/connie/connie_config.yaml")
         .output()
         .expect("could not preform a shell command");
-    let config = config_make;
+    //let config = config_make;
 
 
 }
@@ -192,11 +200,34 @@ fn is_valied_str(s : &String) -> bool {
     let numerics = s.chars().filter(|c| c.is_numeric()).count();
     let letters = s.chars().filter(|c| c.is_alphabetic()).count();
     let punc = s.chars().filter(|c| c.is_ascii_punctuation()).count();
+    //let num = s.chars().all(|c| c.is_ascii_digit()).count();
     let length = s.chars().count();
-    let total = numerics + letters + punc;
+    let total = numerics + letters + punc ;
     if total == length {
         return true
     }
     else {return false};
 }
 
+// fn check_dependencies() -> Result<(),Box<dyn Error>>  {
+//     let surreal_db_check = Command::new("surreal")
+//         .arg("--version").output();
+//     match surreal_db_check {
+//         Ok(_) => {println!("surrealDB is okay")}
+//         Err(_) => {
+//             println!("ERROR: surreal db not found");
+//             //eprintln!("{}",);
+//             Error::new(ErrorKind::NotFound ,"SurrealDB not found");
+//             //eprintln!("{}",error)
+//         }
+//     }
+//     let ffmpeg_check = Command::new("ffmpeg").output();
+//     match ffmpeg_check {
+//         Ok(_) => {println!("ffmpeg is already installed")},
+//         Err(e) => {
+//             println!("ERROR: ffmpeg not found");
+//             return  Error::new(ErrorKind::NotFound, "Ffmpeg not found");
+//         }
+//
+//     }
+// }
