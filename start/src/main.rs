@@ -4,10 +4,13 @@ use std::io::{stdin,Result, stdout, Error, ErrorKind, Write};
 use std::process;
 use std::process::{Command, exit};
 use surreal_db::db::DBASE;
-use sysinfo::Cpu;
-use sysinfo::System;
+//use num_cpus;
+use sysinfo::{
+    Disks, System,
+};
 use uuid::Uuid;
-use log::error;
+//use log::error;
+use rpassword::read_password;
 
 fn main() {
     let os = System::name();
@@ -170,14 +173,19 @@ fn firstTime() {
         println!("password can be 3~20 charcters and numbers punctuation ");
         print!("password: ");
         stdout().flush().unwrap();
-        let mut password_string: String = String::new();
-        stdin().read_line(&mut password_string);
-
+        let mut password_string = read_password().unwrap() ;//String::new();
         let password_str = password_string.trim_ascii_end().to_owned();
         let is_valied = is_valied_str(&password_str);
         if (password_str.chars().count() <= 20) && (password_str.chars().count() >= 3) && (is_valied==true) {
-                *&mut user_name = password_str;
+            //
+            print!("Confirm password: ");
+            stdout().flush().unwrap();
+            let paswd_confirm = read_password().unwrap();
+            if paswd_confirm == password_str {
+                *&mut password = password_str;
                 break
+
+            } else { println!("password do not match"); };
         }
         else {
             println!("enter a valid name ");
@@ -185,15 +193,36 @@ fn firstTime() {
     };
     let server_uuid = Uuid::new_v4();
     let admin_uuid = Uuid::new_v4();
+    let mut sys = System::new_all();
+    sys.refresh_all();
+    let host_name = System::host_name();
+    let memory = sys.total_memory();
+    let swap = sys.total_swap();
+    let disks = Disks::new_with_refreshed_list();
+    let mut available_storage : u64 = 1;
+    for disk in &disks {
+        let ds = disk.available_space();
+        let dps = ds + &available_storage;
+        *&mut available_storage = dps;
+    };
+    let core_count =  sys.physical_core_count().unwrap();
+    let yaml_config = (
+        "
+        machine:
+          - Host_name: {host_name}
+          - Meomory: {memory}
+          - Swap: {swap}
+          - Storage: {available_storage}
+          - Cores: {core_count}
+        ");
+    println!("{}",yaml_config);
 
-
-    let config_make = process::Command::new("sh")
-        .arg("touch")
-        .arg("~/.config/connie/connie_config.yaml")
-        .output()
-        .expect("could not preform a shell command");
+    //let config_make = process::Command::new("sh")
+    //    .arg("touch")
+    //     .arg("~/.config/connie/connie_config.yaml")
+    //     .output()
+    //     .expect("could not preform a shell command");
     //let config = config_make;
-
 
 }
 fn is_valied_str(s : &String) -> bool {
