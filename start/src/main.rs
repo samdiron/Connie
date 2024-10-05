@@ -3,12 +3,13 @@ use std::io::{stdin, stdout, Error, ErrorKind, Result, Write};
 use std::process;
 use std::process::{exit, Command};
 use std::string::String;
-use surreal_db::db::DBASE;
+use surreal_db::db::{DB,DBASE};
 //use num_cpus;
 use sysinfo::{Disks, System};
 use uuid::Uuid;
 //use log::error;
 use rpassword::read_password;
+use local_ip_address::local_ip;
 
 fn main() {
     let os = System::name();
@@ -35,12 +36,12 @@ fn firstTime() {
     let mut consent = String::new();
     let _ = stdin().read_line(&mut consent);
     let consent = consent.as_str().trim_ascii_end();
-    if consent.to_lowercase() == "yes" || 'y' {
+    if consent.to_lowercase() == "yes"  {
         println!("setting up now :)");
     }
-    // else if consent.trim_ascii_end() == "y" {
-    //     println!("setting up now :)");
-    // }
+    else if consent.trim_ascii_end() == "y" {
+        println!("setting up now :)");
+    }
     else if consent.trim_ascii_end() == "dev" {
         println!("okay");
     } else {
@@ -214,8 +215,18 @@ fn firstTime() {
 
         *&mut available_storage = dps;
     }
-    let core_count = sys.physical_core_count().unwrap();
-    let database = DBASE.clone();
+    let core_count = sys.physical_core_count().expect("could not read core count");
+    let startdb = Command::new("sh").arg("surreal").arg("start");
+    let ip = local_ip().expect("could not get ip to start db ");
+    let full_ip = format!("{}:8060",ip);
+    let mut dbase_conniection = DB {
+        addr: full_ip.as_str(),
+        remote: false,
+    };
+    // let database = DBASE;
+    // database.use_db("private_infer");
+    // database.use_ns("machine_info");
+    //input the info to the db.
 
     let yaml_config = ("
         machine:
@@ -247,12 +258,20 @@ fn is_valied_str(s: &String) -> bool {
         return false;
     };
 }
+// fn is_not_sql_injection(s:&str){
+//     let sql_words = ["","",];
+//     s.contains()
+// }
+//new idea all string in db that come from user is converted to ascii to prevent sql injections
+//it take more space but this in not a public server so it's about right
 
-// fn check_dependencies() -> Result<(),Box<dyn Error>>  {
-//     let surreal_db_check = Command::new("surreal")
-//         .arg("--version").output();
+// fn check_dependencies() -> Result<T, Error>  {
+//     let surreal_db_check = Command::new("sh")
+//         .arg("surreal")
+//         .arg("--version")
+//         .output().expect("surrealdb check faild to start");
 //     match surreal_db_check {
-//         Ok(_) => {println!("surrealDB is okay")}
+//         Ok(_) => {println!("surrealDB is Okay")}
 //         Err(_) => {
 //             println!("ERROR: surreal db not found");
 //             //eprintln!("{}",);
@@ -260,13 +279,26 @@ fn is_valied_str(s: &String) -> bool {
 //             //eprintln!("{}",error)
 //         }
 //     }
-//     let ffmpeg_check = Command::new("ffmpeg").output();
+//     let ffmpeg_check = Command::new("sh").arg("ffmpeg")
+//         .output();
 //     match ffmpeg_check {
-//         Ok(_) => {println!("ffmpeg is already installed")},
+//         Ok(_) => {println!("ffmpeg is Okay")},
 //         Err(e) => {
 //             println!("ERROR: ffmpeg not found");
-//             return  Error::new(ErrorKind::NotFound, "Ffmpeg not found");
+//             return  Error::new(ErrorKind::NotFound, "FFmpeg not found");
 //         }
 //
 //     }
+//     let openssl_check = Command::new("sh").arg("openssl")
+//         .arg("-sversion")
+//         .output();
+//     match openssl_check {
+//         Ok(_) => {println!("OpenSSL is Okay")},
+//         Err(e) => {
+//             println!("ERROR: OpenSSL not found");
+//             return  Error::new(ErrorKind::NotFound, "OpenSSL not found");
+//         }
+//
+//     }
+//
 // }
