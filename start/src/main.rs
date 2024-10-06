@@ -3,13 +3,13 @@ use std::io::{stdin, stdout, Error, ErrorKind, Result, Write};
 use std::process;
 use std::process::{exit, Command};
 use std::string::String;
-use surreal_db::db::{DB,DBASE};
+use surreal_db::db::{DB, DBASE};
 //use num_cpus;
 use sysinfo::{Disks, System};
 use uuid::Uuid;
 //use log::error;
-use rpassword::read_password;
 use local_ip_address::local_ip;
+use rpassword::read_password;
 
 fn main() {
     let os = System::name();
@@ -36,13 +36,11 @@ fn firstTime() {
     let mut consent = String::new();
     let _ = stdin().read_line(&mut consent);
     let consent = consent.as_str().trim_ascii_end();
-    if consent.to_lowercase() == "yes"  {
+    if consent.to_lowercase() == "yes" {
         println!("setting up now :)");
-    }
-    else if consent.trim_ascii_end() == "y" {
+    } else if consent.trim_ascii_end() == "y" {
         println!("setting up now :)");
-    }
-    else if consent.trim_ascii_end() == "dev" {
+    } else if consent.trim_ascii_end() == "dev" {
         println!("okay");
     } else {
         exit(1);
@@ -126,23 +124,21 @@ fn firstTime() {
     let server_status = status_u8;
     //TODO yaml value ^
 
-    println!("finshed getting server's identity");
+    println!("finished getting server's identity");
     println!("now getting the user's identity this will be the admin user for the server and a user to connect to other servers");
     //TODO input  = {password , name , username} data = {input, id, uuid, + registration server uuid  }
 
     let mut name = String::new();
     let _ = loop {
-        println!("name should be 3~20 charcters of any language ");
+        println!("name should be 3~20 characters of any language ");
         print!("name: ");
         stdout().flush().unwrap();
         let mut name_string: String = String::new();
         stdin().read_line(&mut name_string);
 
         let name_str = name_string.trim_ascii_end().to_owned();
-        let is_valied = is_valied_str(&name_str);
-        if (name_str.chars().count() <= 20)
-            && (name_str.chars().count() >= 3)
-            && (is_valied == true)
+        let is_valid = is_valid_str(&name_str);
+        if (name_str.chars().count() <= 20) && (name_str.chars().count() >= 3) && (is_valid == true)
         {
             *&mut name = name_str;
             break;
@@ -155,7 +151,7 @@ fn firstTime() {
     let mut user_name = String::new();
     let _ = loop {
         println!(
-            "username should be no spaces 3~20 charcters of any language numbers punctuation "
+            "username should be no spaces 3~20 characters of any language numbers punctuation "
         );
         print!("username: ");
         stdout().flush().unwrap();
@@ -163,10 +159,10 @@ fn firstTime() {
         let _ = stdin().read_line(&mut user_name_string).unwrap();
 
         let user_name_str = user_name_string.trim_ascii_end().to_owned();
-        let is_valied = is_valied_str(&user_name_str);
+        let is_valid = is_valid_str(&user_name_str);
         if (user_name_str.chars().count() <= 20)
             && (user_name_str.chars().count() >= 3)
-            && (is_valied == true)
+            && (is_valid == true)
         {
             *&mut user_name = user_name_str;
             break;
@@ -176,15 +172,15 @@ fn firstTime() {
     };
     let mut password = String::new();
     let _ = loop {
-        println!("password can be 3~20 charcters and numbers punctuation ");
+        println!("password can be 3~20 characters and numbers punctuation ");
         print!("password: ");
         stdout().flush().unwrap();
         let mut password_string = read_password().unwrap(); //String::new();
         let password_str = password_string.trim_ascii_end().to_owned();
-        let is_valied = is_valied_str(&password_str);
+        let is_valid = is_valid_str(&password_str);
         if (password_str.chars().count() <= 20)
             && (password_str.chars().count() >= 3)
-            && (is_valied == true)
+            && (is_valid == true)
         {
             //
             print!("Confirm password: ");
@@ -215,10 +211,12 @@ fn firstTime() {
 
         *&mut available_storage = dps;
     }
-    let core_count = sys.physical_core_count().expect("could not read core count");
+    let core_count = sys
+        .physical_core_count()
+        .expect("could not read core count");
     let startdb = Command::new("sh").arg("surreal").arg("start");
     let ip = local_ip().expect("could not get ip to start db ");
-    let full_ip = format!("{}:8060",ip);
+    let full_ip = format!("{}:8060", ip);
     let mut dbase_conniection = DB {
         addr: full_ip.as_str(),
         remote: false,
@@ -245,7 +243,7 @@ fn firstTime() {
     //     .expect("could not preform a shell command");
     //let config = config_make;
 }
-fn is_valied_str(s: &String) -> bool {
+fn is_valid_str(s: &String) -> bool {
     let numerics = s.chars().filter(|c| c.is_numeric()).count();
     let letters = s.chars().filter(|c| c.is_alphabetic()).count();
     let punc = s.chars().filter(|c| c.is_ascii_punctuation()).count();
@@ -269,7 +267,7 @@ fn is_valied_str(s: &String) -> bool {
 //     let surreal_db_check = Command::new("sh")
 //         .arg("surreal")
 //         .arg("--version")
-//         .output().expect("surrealdb check faild to start");
+//         .output().expect("surrealdb check failed to start");
 //     match surreal_db_check {
 //         Ok(_) => {println!("surrealDB is Okay")}
 //         Err(_) => {
