@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{stdin, stdout, Error, ErrorKind, Result, Write};
+use std::net::IpAddr;
 use std::process;
 use std::process::{exit, Command};
 use std::string::String;
@@ -243,6 +244,27 @@ fn firstTime() {
     //     .expect("could not preform a shell command");
     //let config = config_make;
 }
+fn openssl_cert(&ip: &IpAddr){
+    let data = format!("
+  [req]
+  distinguished_name = req_distinguished_name
+  req_extensions = v3_req
+  prompt = no
+  [req_distinguished_name]
+  CN = No-Domain Server
+  stateOrProvinceName = N/A
+  localityName = N/A
+  organizationName = Self-signed certificate
+  commonName = {i}: Self-signed certificate
+  [v3_req]
+  subjectAltName = @alt_names
+  [alt_names]
+  IP.1 = {i}",i = ip);
+    println!("creating ~/.config/connie/tmp/tls_req ");
+    let mut f = File::create("~/.config/connie/tmp/tls_req").expect("could not create a openssl tls config cert");
+    f.write_all(data.as_bytes()).expect("could not write data to req config");
+}
+
 fn is_valid_str(s: &String) -> bool {
     let numerics = s.chars().filter(|c| c.is_numeric()).count();
     let letters = s.chars().filter(|c| c.is_alphabetic()).count();
