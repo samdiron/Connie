@@ -1,3 +1,4 @@
+//rewrite to lib start
 use std::fs::{remove_file,File};
 use std::io::{stdin, stdout, Error, ErrorKind, Result, Write};
 use std::net::IpAddr;

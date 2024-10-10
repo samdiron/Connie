@@ -1,5 +1,4 @@
-make a uuid and store it in config/connie/conf.uuid; 
-make a check for the private ip addr;
+rewrite the start module to a lib
 
 start module {
 
