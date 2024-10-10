@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::fs::{remove_file,File};
 use std::io::{stdin, stdout, Error, ErrorKind, Result, Write};
 use std::net::IpAddr;
 use std::process;
@@ -47,7 +47,7 @@ fn firstTime() {
         exit(1);
     }
 
-    println!("process: creating file /.config/connie/connie_config.yaml");
+    println!("process: creating config");
     println!("//NOTE cant be more than 17 char or less than 3 it cant contain spaces");
     print!("server name: ");
     stdout().flush().unwrap();
@@ -217,11 +217,19 @@ fn firstTime() {
         .expect("could not read core count");
     let startdb = Command::new("sh").arg("surreal").arg("start");
     let ip = local_ip().expect("could not get ip to start db ");
-    let full_ip = format!("{}:8060", ip);
+    openssl_cert(&ip);
+    let full_ip = format!("{}:8060", &ip);
     let mut dbase_conniection = DB {
         addr: full_ip.as_str(),
         remote: false,
     };
+    let mut create_tls_cert = Command::new(sh).args("openssl req -x509 -nodes -days 730 -newkey rsa:2048 -keyout ~/Connie/key/key.pem -out ~/Connie/cert/cert.pem -config ~/.config/connie/tmp/san.cnf")
+        .output()
+        .expect("faild to excute openssl req command ");
+    //surrealdb strat command should look like this \\ surreal start --web-crt {path} --web-key {path} -b {fullip}
+    let command_string = format!("surreal start --web-crt '~/Connie/cert/cert.pem' --web-key '~/Connie/key/key.pem' -b '{i}'",i = full_ip);
+    let surreal_command  = Command::new("sh").args(command_string).output().expect("could not excute {}",command_string.as_str());
+
     // let database = DBASE;
     // database.use_db("private_infer");
     // database.use_ns("machine_info");
@@ -236,6 +244,8 @@ fn firstTime() {
           - Cores: {core_count}
         ");
     println!("{}", yaml_config);
+    let mut file = File::create("~/.config/connie/connie_config.yaml").expect("could not create connie_config.yaml");
+    file.write_all(yaml_config.as_bytes()).expect("could not write to connie_config.yaml");
 
     //let config_make = process::Command::new("sh")
     //    .arg("touch")
@@ -245,6 +255,7 @@ fn firstTime() {
     //let config = config_make;
 }
 fn openssl_cert(&ip: &IpAddr){
+    let path = "~/.config/connie/tmp/san.cnf";
     let data = format!("
   [req]
   distinguished_name = req_distinguished_name
@@ -260,8 +271,12 @@ fn openssl_cert(&ip: &IpAddr){
   subjectAltName = @alt_names
   [alt_names]
   IP.1 = {i}",i = ip);
-    println!("creating ~/.config/connie/tmp/tls_req ");
-    let mut f = File::create("~/.config/connie/tmp/tls_req").expect("could not create a openssl tls config cert");
+    println!("creating {}",path);
+    let exist = File::open(path).is_ok();
+    if exist = true {
+        remove_file(path);
+    }
+    let mut f = File::create(path).expect("could not create a openssl tls config cert");
     f.write_all(data.as_bytes()).expect("could not write data to req config");
 }
 
