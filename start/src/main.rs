@@ -202,7 +202,7 @@ fn firstTime() {
     let admin_uuid = Uuid::new_v4();
     let mut sys = System::new_all();
     sys.refresh_all();
-    let host_name = System::host_name();
+    let host_name = System::host_name().expect("string convert failed");
     let memory = sys.total_memory();
     let swap = sys.total_swap();
     let disks = Disks::new_with_refreshed_list();
@@ -216,27 +216,53 @@ fn firstTime() {
     let core_count = sys
         .physical_core_count()
         .expect("could not read core count");
-    let startdb = Command::new("sh").arg("surreal").arg("start");
+
+    //let startdb = Command::new("sh").arg("surreal").arg("start");
+
     let ip = local_ip().expect("could not get ip to start db ");
     openssl_cert(&ip);
+    let mut create_tls_cert = Command::new("sh").arg("openssl")
+        .arg("req")
+        .arg("-x509")
+        .arg("-nodes")
+        .arg("-days")
+        .arg("730")
+        .arg("-newkey")
+        .arg("rsa:2048")
+        .arg("-keyout")
+        .arg("~/Connie/key/key.pem")
+        .arg("-out")
+        .arg("~/Connie/cert/cert.pem")
+        .arg("-config")
+        .arg("~/.config/connie/tmp/san.cnf")
+        .output()
+        .expect("failed to run openssl req command ");
+
     let full_ip = format!("{}:8060", &ip);
+    let surreal_command  = Command::new("sh")
+        .arg("surreal")
+        .arg("start")
+        .arg("--web-crt")
+        .arg("'~/Connie/cert/cert.pem'")
+        .arg("--web-key")
+        .arg("'~/Connie/key/key.pem'")
+        .arg("-b")
+        .arg(full_ip.as_str())
+        //.args(command_string)
+        .output().expect("could not run surreal command");
     let mut dbase_conniection = DB {
         addr: full_ip.as_str(),
         remote: false,
     };
-    let mut create_tls_cert = Command::new(sh).args("openssl req -x509 -nodes -days 730 -newkey rsa:2048 -keyout ~/Connie/key/key.pem -out ~/Connie/cert/cert.pem -config ~/.config/connie/tmp/san.cnf")
-        .output()
-        .expect("faild to excute openssl req command ");
-    //surrealdb strat command should look like this \\ surreal start --web-crt {path} --web-key {path} -b {fullip}
-    let command_string = format!("surreal start --web-crt '~/Connie/cert/cert.pem' --web-key '~/Connie/key/key.pem' -b '{i}'",i = full_ip);
-    let surreal_command  = Command::new("sh").args(command_string).output().expect("could not excute {}",command_string.as_str());
+
+    //surrealdb start command should look like this \\ surreal start --web-crt {path} --web-key {path} -b {fullip}
 
     // let database = DBASE;
     // database.use_db("private_infer");
     // database.use_ns("machine_info");
     //input the info to the db.
 
-    let yaml_config = ("
+    let yaml_config = format!("
         machine:
           - Host_name: {host_name}
           - Meomory: {memory}
@@ -274,7 +300,7 @@ fn openssl_cert(&ip: &IpAddr){
   IP.1 = {i}",i = ip);
     println!("creating {}",path);
     let exist = File::open(path).is_ok();
-    if exist = true {
+    if exist == true {
         remove_file(path);
     }
     let mut f = File::create(path).expect("could not create a openssl tls config cert");
@@ -294,6 +320,32 @@ fn is_valid_str(s: &String) -> bool {
         return false;
     };
 }
+
+
+// .arg("surreal")
+// .arg("start")
+// .arg("--web-crt")
+// .arg("'~/Connie/cert/cert.pem'")
+// .arg("--web-key")
+// .arg("'~/Connie/key/key.pem'")
+// .arg("-b")
+// .arg("'{i}'")
+
+// .arg("openssl")
+// .arg("req")
+// .arg("-x509")
+// .arg("-nodes")
+// .arg("-days")
+// .arg("730')
+// .arg("-newkey")
+// .arg("rsa:2048")
+// .arg("-keyout")
+// .arg("~/Connie/key/key.pem")
+// .arg("-out")
+// .arg("~/Connie/cert/cert.pem")
+// .arg("-config")
+// .arg("~/.config/connie/tmp/san.cnf")
+
 // fn is_not_sql_injection(s:&str){
 //     let sql_words = ["","",];
 //     s.contains()
