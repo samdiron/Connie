@@ -5,8 +5,8 @@ edition = "2021"
 
 
 [dependencies]
-sysinfo = "0.31.4"
-surreal_db = {path= "../surreal_db"}
+sysinfo = "0.32.0"
+surreal_db = { path = "../surreal_db" }
 #serde_yaml = "0.9.34"
 log = "0.4.22"
 rpassword = "7.3.1"
