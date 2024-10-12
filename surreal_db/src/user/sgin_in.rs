@@ -1,11 +1,8 @@
-use once_cell::sync::Lazy;
 // Deserialize && token  will be needed later
-use serde::{Deserialize, Serialize};
-use surrealdb::engine::remote::ws::{Client, Wss};
+use serde::Serialize;
 use surrealdb::opt::auth::Scope;
-//use surrealdb::Surreal;
+
 use crate::db::DBASE;
-use crate::db::DB;
 
 //static DB: Lazy<Surreal<Client>> = Lazy::new(Surreal::init);
 //rename cpid to a better thing and add a uuid
@@ -16,12 +13,12 @@ pub struct User<'a> {
 }
 
 impl <'a>User<'a> {
-    pub async fn login_in(self) -> surrealdb::Result<()> {
+    pub async fn login_in(self) -> surrealdb::Result<(&'a str)> {
 
 
         let jwt = DBASE.signin(Scope {
                 namespace: "user",
-                database: "test",
+                database: "client",
                 scope: "user",
                 params: User {
                     cpid: self.cpid,
@@ -30,6 +27,6 @@ impl <'a>User<'a> {
             })
             .await?;
         let token = jwt.as_insecure_token();
-        Ok(())
+        Ok(token)
     }
 }

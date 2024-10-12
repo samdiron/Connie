@@ -50,7 +50,7 @@ pub fn openssl_cert(&ip: &str){
     f.write_all(data.as_bytes()).expect("could not write data to req config");
 }
 
-pub fn command() {
+pub fn open_command() {
     let mut create_tls_cert = Command::new("sh").arg("openssl")
         .arg("req")
         .arg("-x509")

@@ -1,39 +1,24 @@
-//rewrite to lib start
-use std::fs::{remove_file,File};
-use std::io::{stdin, stdout, Error, ErrorKind, Result, Write};
-use std::net::IpAddr;
-use std::process;
-use std::process::{exit, Command};
-use std::string::String;
-use surreal_db::db::{DB, DBASE};
-//use num_cpus;
-use sysinfo::{Disks, System};
-use uuid::Uuid;
-//use log::error;
+
+use std::fs::File;
+use std::io::{stdin, stdout, Write};
+use std::process::exit;
 use local_ip_address::local_ip;
 use rpassword::read_password;
+use sysinfo::{Disks, System};
+use uuid::Uuid;
+use surreal_db::{
+    db::{DB, DBASE},
+    user::
+};
+use crate::dependencies::{
+    ld_openssl::{open_command, openssl_cert},
+    ld_surrealdb::start_db_command,
+    depedncy_fn_check
+};
 
-fn main() {
-    let os = System::name();
-    if os.unwrap().as_str() == "Microsoft Windows" {
-        println!("you are on Microsoft Windows she don't like that");
-        Error::new(ErrorKind::Unsupported, "no Microsoft Eindows support");
-        exit(13); // it mean the os is window and they out of luck
-    };
 
-    let mut connie_config = File::open("/.config/connie/connie_config.yaml");
-    if connie_config.is_ok() {
-        let firsttime = false;
-        // let dependency_check = check_dependencies().is_ok();
-        // if dependency_check == false {
-        //     exit(2) //unmet dependency
-        // }
-    } else {
-        firstTime()
-    };
-}
-
-fn firstTime() {
+pub fn first_time() {
+    let _ = depedncy_fn_check();
     print!("do you want to setup Connie (yes/no): ");
     stdout().flush().unwrap();
     let mut consent = String::new();
@@ -112,7 +97,7 @@ fn firstTime() {
     let mut status_string: String = String::new();
     let mut status_u8: u8 = 0;
     loop {
-        stdin().read_line(&mut status_string);
+        stdin().read_line(&mut status_string).expect("1");
         let status = status_string.trim_ascii_end();
         if status == "0" {
             *&mut status_u8 = 0;
@@ -218,55 +203,32 @@ fn firstTime() {
         .physical_core_count()
         .expect("could not read core count");
 
-    //let startdb = Command::new("sh").arg("surreal").arg("start");
+    //let start_db = Command::new("sh").arg("surreal").arg("start");
 
     let ip = local_ip().expect("could not get ip to start db ");
-    openssl_cert(&ip);
-    let mut create_tls_cert = Command::new("sh").arg("openssl")
-        .arg("req")
-        .arg("-x509")
-        .arg("-nodes")
-        .arg("-days")
-        .arg("730")
-        .arg("-newkey")
-        .arg("rsa:2048")
-        .arg("-keyout")
-        .arg("~/Connie/key/key.pem")
-        .arg("-out")
-        .arg("~/Connie/cert/cert.pem")
-        .arg("-config")
-        .arg("~/.config/connie/tmp/san.cnf")
-        .output()
-        .expect("failed to run openssl req command ");
-
-    let full_ip = format!("{}:8060", &ip);
-    let surreal_command  = Command::new("sh")
-        .arg("surreal")
-        .arg("start")
-        .arg("--web-crt")
-        .arg("'~/Connie/cert/cert.pem'")
-        .arg("--web-key")
-        .arg("'~/Connie/key/key.pem'")
-        .arg("-b")
-        .arg(full_ip.as_str())
-        //.args(command_string)
-        .output().expect("could not run surreal command");
-    let mut dbase_conniection = DB {
+    let open_ip= format!("{ip}").as_str();
+    openssl_cert(open_ip);
+    open_command();
+    let full_ip = format!("{}:8060", ip).as_str();
+    start_db_command(full_ip);
+    let _ = DB {
         addr: full_ip.as_str(),
         remote: false,
     };
+    let database = DBASE.clone();
+    database.use_db("private_infer");
+    database.use_ns("machine_info");
 
-    //surrealdb start command should look like this \\ surreal start --web-crt {path} --web-key {path} -b {fullip}
-
-    // let database = DBASE;
-    // database.use_db("private_infer");
-    // database.use_ns("machine_info");
     //input the info to the db.
+
+
+
+
 
     let yaml_config = format!("
         machine:
           - Host_name: {host_name}
-          - Meomory: {memory}
+          - Memory: {memory}
           - Swap: {swap}
           - Storage: {available_storage}
           - Cores: {core_count}
@@ -275,37 +237,7 @@ fn firstTime() {
     let mut file = File::create("~/.config/connie/connie_config.yaml").expect("could not create connie_config.yaml");
     file.write_all(yaml_config.as_bytes()).expect("could not write to connie_config.yaml");
 
-    //let config_make = process::Command::new("sh")
-    //    .arg("touch")
-    //     .arg("~/.config/connie/connie_config.yaml")
-    //     .output()
-    //     .expect("could not preform a shell command");
-    //let config = config_make;
-}
-fn openssl_cert(&ip: &IpAddr){
-    let path = "~/.config/connie/tmp/san.cnf";
-    let data = format!("
-  [req]
-  distinguished_name = req_distinguished_name
-  req_extensions = v3_req
-  prompt = no
-  [req_distinguished_name]
-  CN = No-Domain Server
-  stateOrProvinceName = N/A
-  localityName = N/A
-  organizationName = Self-signed certificate
-  commonName = {i}: Self-signed certificate
-  [v3_req]
-  subjectAltName = @alt_names
-  [alt_names]
-  IP.1 = {i}",i = ip);
-    println!("creating {}",path);
-    let exist = File::open(path).is_ok();
-    if exist == true {
-        remove_file(path);
-    }
-    let mut f = File::create(path).expect("could not create a openssl tls config cert");
-    f.write_all(data.as_bytes()).expect("could not write data to req config");
+
 }
 
 fn is_valid_str(s: &String) -> bool {
@@ -321,73 +253,3 @@ fn is_valid_str(s: &String) -> bool {
         return false;
     };
 }
-
-
-// .arg("surreal")
-// .arg("start")
-// .arg("--web-crt")
-// .arg("'~/Connie/cert/cert.pem'")
-// .arg("--web-key")
-// .arg("'~/Connie/key/key.pem'")
-// .arg("-b")
-// .arg("'{i}'")
-
-// .arg("openssl")
-// .arg("req")
-// .arg("-x509")
-// .arg("-nodes")
-// .arg("-days")
-// .arg("730')
-// .arg("-newkey")
-// .arg("rsa:2048")
-// .arg("-keyout")
-// .arg("~/Connie/key/key.pem")
-// .arg("-out")
-// .arg("~/Connie/cert/cert.pem")
-// .arg("-config")
-// .arg("~/.config/connie/tmp/san.cnf")
-
-// fn is_not_sql_injection(s:&str){
-//     let sql_words = ["","",];
-//     s.contains()
-// }
-//new idea all string in db that come from user is converted to ascii to prevent sql injections
-//it take more space but this in not a public server so it's about right
-
-// fn check_dependencies() -> Result<T, Error>  {
-//     let surreal_db_check = Command::new("sh")
-//         .arg("surreal")
-//         .arg("--version")
-//         .output().expect("surrealdb check failed to start");
-//     match surreal_db_check {
-//         Ok(_) => {println!("surrealDB is Okay")}
-//         Err(_) => {
-//             println!("ERROR: surreal db not found");
-//             //eprintln!("{}",);
-//             Error::new(ErrorKind::NotFound ,"SurrealDB not found");
-//             //eprintln!("{}",error)
-//         }
-//     }
-//     let ffmpeg_check = Command::new("sh").arg("ffmpeg")
-//         .output();
-//     match ffmpeg_check {
-//         Ok(_) => {println!("ffmpeg is Okay")},
-//         Err(e) => {
-//             println!("ERROR: ffmpeg not found");
-//             return  Error::new(ErrorKind::NotFound, "FFmpeg not found");
-//         }
-//
-//     }
-//     let openssl_check = Command::new("sh").arg("openssl")
-//         .arg("-sversion")
-//         .output();
-//     match openssl_check {
-//         Ok(_) => {println!("OpenSSL is Okay")},
-//         Err(e) => {
-//             println!("ERROR: OpenSSL not found");
-//             return  Error::new(ErrorKind::NotFound, "OpenSSL not found");
-//         }
-//
-//     }
-//
-// }

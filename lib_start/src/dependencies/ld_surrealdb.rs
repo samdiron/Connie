@@ -1,4 +1,4 @@
-use std::fmt::format;
+#[allow(special_module_name)]
 use std::fs::File;
 use std::process::Command;
 use std::io::{Error, ErrorKind, Write};
@@ -13,7 +13,7 @@ pub fn check(home_path : &str) -> u8 {
         return 0
     }
     else {
-        let error_data = format!("{},\n",(Error::new(ErrorKind::NotFound , "SurrealDB not found"))).as_bytes();
+        let error_data = format!("{},\n",Error::new(ErrorKind::NotFound , "SurrealDB not found")).as_bytes();
         println!("{}",error_data);
         let path = format!("{}/surrealLogs/logs.csv",home_path) ;
         let mut  file = File::open(path).expect("could not open logs.csv");
@@ -22,8 +22,7 @@ pub fn check(home_path : &str) -> u8 {
     }
 
 }
-pub fn strat_command(full_ip:&str) {
-    let command_string = format!("surreal start --web-crt '~/Connie/cert/cert.pem' --web-key '~/Connie/key/key.pem' -b '{i}'",i = full_ip);
+pub fn start_db_command(full_ip: &str) {
     let surreal_command  = Command::new("sh").arg("surreal")
         .arg("start")
         .arg("--web-crt")

@@ -1,5 +1,6 @@
 //TODO do shit here
-
+use lib_start::init::start;
 fn main () {
-    println!("hi");
+    let _ = start();
+
 }
