@@ -13,11 +13,11 @@ pub fn check(home_path : &str) -> u8 {
         return 0
     }
     else {
-        let error_data = format!("{},\n",Error::new(ErrorKind::NotFound , "SurrealDB not found")).as_bytes();
+        let error_data = format!("{},\n",Error::new(ErrorKind::NotFound , "SurrealDB not found"));
         println!("{}",error_data);
         let path = format!("{}/surrealLogs/logs.csv",home_path) ;
         let mut  file = File::open(path).expect("could not open logs.csv");
-        file.write_all(error_data).expect("could not write to logs.csv");
+        file.write_all(error_data.as_bytes()).expect("could not write to logs.csv");
         return 1
     }
 
@@ -30,7 +30,7 @@ pub fn start_db_command(full_ip: &str) {
         .arg("--web-key")
         .arg("'~/Connie/key/key.pem'")
         .arg("-b")
-        .arg(full_ip.as_str())
+        .arg(full_ip)
         .output().expect("could not run surreal db start command");
 
 }

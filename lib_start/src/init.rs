@@ -9,7 +9,7 @@ pub fn start() {
     if os.unwrap().as_str() == "Microsoft Windows" {
         println!("you are on Microsoft Windows she don't like that");
         Error::new(ErrorKind::Unsupported, "no Microsoft Eindows support");
-        exit(13); // it mean the os is window and they out of luck
+        exit(13); // it means the os is window and they out of luck
     };
 
     let mut connie_config = File::open("/.config/connie/connie_config.yaml");

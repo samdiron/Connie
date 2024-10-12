@@ -1,14 +1,15 @@
 
-use std::fs::File;
+use std::fs::{create_dir, File};
 use std::io::{stdin, stdout, Write};
 use std::process::exit;
 use local_ip_address::local_ip;
 use rpassword::read_password;
 use sysinfo::{Disks, System};
 use uuid::Uuid;
+use tokio::runtime::Builder;
 use surreal_db::{
     db::{DB, DBASE},
-    user::
+    user::sign_up::DUser,
 };
 use crate::dependencies::{
     ld_openssl::{open_command, openssl_cert},
@@ -18,6 +19,10 @@ use crate::dependencies::{
 
 
 pub fn first_time() {
+    let rt = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
     let _ = depedncy_fn_check();
     print!("do you want to setup Connie (yes/no): ");
     stdout().flush().unwrap();
@@ -111,57 +116,10 @@ pub fn first_time() {
     }
     let server_status = status_u8;
     //TODO yaml value ^
-
-    println!("finished getting server's identity");
-    println!("now getting the user's identity this will be the admin user for the server and a user to connect to other servers");
-    //TODO input  = {password , name , username} data = {input, id, uuid, + registration server uuid  }
-
-    let mut name = String::new();
-    let _ = loop {
-        println!("name should be 3~20 characters of any language ");
-        print!("name: ");
-        stdout().flush().unwrap();
-        let mut name_string: String = String::new();
-        stdin().read_line(&mut name_string);
-
-        let name_str = name_string.trim_ascii_end().to_owned();
-        let is_valid = is_valid_str(&name_str);
-        if (name_str.chars().count() <= 20) && (name_str.chars().count() >= 3) && (is_valid == true)
-        {
-            *&mut name = name_str;
-            break;
-        } else {
-            println!("enter a valid name ");
-        };
-    };
-
-    //TODO name before username
-    let mut user_name = String::new();
-    let _ = loop {
-        println!(
-            "username should be no spaces 3~20 characters of any language numbers punctuation "
-        );
-        print!("username: ");
-        stdout().flush().unwrap();
-        let mut user_name_string: String = String::new();
-        let _ = stdin().read_line(&mut user_name_string).unwrap();
-
-        let user_name_str = user_name_string.trim_ascii_end().to_owned();
-        let is_valid = is_valid_str(&user_name_str);
-        if (user_name_str.chars().count() <= 20)
-            && (user_name_str.chars().count() >= 3)
-            && (is_valid == true)
-        {
-            *&mut user_name = user_name_str;
-            break;
-        } else {
-            println!("enter a valid username ");
-        };
-    };
-    let mut password = String::new();
-    let _ = loop {
+    let mut server_password = String::new();
+    loop {
         println!("password can be 3~20 characters and numbers punctuation ");
-        print!("password: ");
+        print!("server password: ");
         stdout().flush().unwrap();
         let mut password_string = read_password().unwrap(); //String::new();
         let password_str = password_string.trim_ascii_end().to_owned();
@@ -175,7 +133,7 @@ pub fn first_time() {
             stdout().flush().unwrap();
             let paswd_confirm = read_password().unwrap();
             if paswd_confirm == password_str {
-                *&mut password = password_str;
+                *&mut server_password = password_str;
                 break;
             } else {
                 println!("password do not match");
@@ -183,49 +141,130 @@ pub fn first_time() {
         } else {
             println!("enter a valid name ");
         };
-    };
-    let server_uuid = Uuid::new_v4();
-    let admin_uuid = Uuid::new_v4();
-    let mut sys = System::new_all();
-    sys.refresh_all();
-    let host_name = System::host_name().expect("string convert failed");
-    let memory = sys.total_memory();
-    let swap = sys.total_swap();
-    let disks = Disks::new_with_refreshed_list();
-    let mut available_storage: u64 = 1;
-    for disk in &disks {
-        let ds = disk.available_space();
-        let dps = ds + &available_storage;
-
-        *&mut available_storage = dps;
     }
-    let core_count = sys
-        .physical_core_count()
-        .expect("could not read core count");
+        println!("finished getting server's identity");
+        println!("now getting the user's identity this will be the admin user for the server and a user to connect to other servers");
+        //TODO input  = {password , name , username} data = {input, id, uuid, + registration server uuid  }
 
-    //let start_db = Command::new("sh").arg("surreal").arg("start");
+        let mut name = String::new();
+        let _ = loop {
+            println!("name should be 3~20 characters of any language ");
+            print!("name: ");
+            stdout().flush().unwrap();
+            let mut name_string: String = String::new();
+            stdin().read_line(&mut name_string);
 
-    let ip = local_ip().expect("could not get ip to start db ");
-    let open_ip= format!("{ip}").as_str();
-    openssl_cert(open_ip);
-    open_command();
-    let full_ip = format!("{}:8060", ip).as_str();
-    start_db_command(full_ip);
-    let _ = DB {
-        addr: full_ip.as_str(),
-        remote: false,
-    };
-    let database = DBASE.clone();
-    database.use_db("private_infer");
-    database.use_ns("machine_info");
+            let name_str = name_string.trim_ascii_end().to_owned();
+            let is_valid = is_valid_str(&name_str);
+            if (name_str.chars().count() <= 20) && (name_str.chars().count() >= 3) && (is_valid == true)
+            {
+                *&mut name = name_str;
+                break;
+            } else {
+                println!("enter a valid name ");
+            };
+        };
 
-    //input the info to the db.
+        //TODO name before username
+        let mut user_name = String::new();
+        let _ = loop {
+            println!(
+                "username should be no spaces 3~20 characters of any language numbers punctuation "
+            );
+            print!("username: ");
+            stdout().flush().unwrap();
+            let mut user_name_string: String = String::new();
+            let _ = stdin().read_line(&mut user_name_string).unwrap();
+
+            let user_name_str = user_name_string.trim_ascii_end().to_owned();
+            let is_valid = is_valid_str(&user_name_str);
+            if (user_name_str.chars().count() <= 20)
+                && (user_name_str.chars().count() >= 3)
+                && (is_valid == true)
+            {
+                *&mut user_name = user_name_str;
+                break;
+            } else {
+                println!("enter a valid username ");
+            };
+        };
+        let mut user_password = String::new();
+        loop {
+            println!("password can be 3~20 characters and numbers punctuation ");
+            print!("password: ");
+            stdout().flush().unwrap();
+            let mut password_string = read_password().unwrap(); //String::new();
+            let password_str = password_string.trim_ascii_end().to_owned();
+            let is_valid = is_valid_str(&password_str);
+            if (password_str.chars().count() <= 20)
+                && (password_str.chars().count() >= 3)
+                && (is_valid == true)
+            {
+                //
+                print!("Confirm password: ");
+                stdout().flush().unwrap();
+                let paswd_confirm = read_password().unwrap();
+                if paswd_confirm == password_str {
+                    *&mut user_password = password_str;
+                    break;
+                } else {
+                    println!("password do not match");
+                };
+            } else {
+                println!("enter a valid password ");
+            };
+        };
+        let server_uuid = Uuid::new_v4();
+        let admin_uuid = Uuid::new_v4();
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        let host_name = System::host_name().expect("string convert failed");
+        let memory = sys.total_memory();
+        let swap = sys.total_swap();
+        let disks = Disks::new_with_refreshed_list();
+        let mut available_storage: u64 = 1;
+        for disk in &disks {
+            let ds = disk.available_space();
+            let dps = ds + &available_storage;
+
+            *&mut available_storage = dps;
+        }
+        let core_count = sys
+            .physical_core_count()
+            .expect("could not read core count");
+
+        //let start_db = Command::new("sh").arg("surreal").arg("start");
+
+        let ip = local_ip().expect("could not get ip to start db ");
+        let open_ip = format!("{ip}");
+        openssl_cert(open_ip.as_str());
+        open_command();
+        let full_ip = format!("{}:8060", ip);
+        start_db_command(full_ip.as_str());
+        let _ = DB {
+            addr: full_ip.as_str(),
+            remote: false,
+        };
+        // let database = DBASE.clone();
+        // database.use_db("private_infer");
+        // database.use_ns("machine_info");
+        let admin = DUser {
+            is_admin: true,
+            name: name.as_str(),
+            user_name: user_name.as_str(),
+            pass: user_password.as_str(),
+            cpid: admin_uuid,
+        };
+
+        let user_token= rt.block_on(admin.sign_up_admin()).expect("could not get token");
+        //.expect("could not get user token");
+        let data = format!("{},\n",user_token);
+        let mut file = File::create_new("~/Connie/tmp/admin_jwt.csv").expect("could not create file");
+        file.write_all(data.as_bytes()).expect("could not write data to file");
 
 
 
-
-
-    let yaml_config = format!("
+        let yaml_config = format!("
         machine:
           - Host_name: {host_name}
           - Memory: {memory}
@@ -233,12 +272,11 @@ pub fn first_time() {
           - Storage: {available_storage}
           - Cores: {core_count}
         ");
-    println!("{}", yaml_config);
-    let mut file = File::create("~/.config/connie/connie_config.yaml").expect("could not create connie_config.yaml");
-    file.write_all(yaml_config.as_bytes()).expect("could not write to connie_config.yaml");
-
-
+        println!("{}", yaml_config);
+        let mut file = File::create("~/.config/connie/connie_config.yaml").expect("could not create connie_config.yaml");
+        file.write_all(yaml_config.as_bytes()).expect("could not write to connie_config.yaml");
 }
+
 
 fn is_valid_str(s: &String) -> bool {
     let numerics = s.chars().filter(|c| c.is_numeric()).count();
@@ -251,5 +289,7 @@ fn is_valid_str(s: &String) -> bool {
         return true;
     } else {
         return false;
-    };
+    }
 }
+
+    //feba

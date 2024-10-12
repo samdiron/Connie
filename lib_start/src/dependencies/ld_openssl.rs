@@ -6,7 +6,8 @@ use std::process::Command;
 pub fn check(home_path: &str) -> u8 {
     println!("process: OpenSSL Check");
     let mut openssl_check = Command::new("sh")
-        .args("openssl --version")
+        .arg("openssl")
+        .arg("--version")
         .output().is_ok();
         //.expect("ERROR: could not run openssl --version");
     // we will pretend that we have a version requairment of
@@ -15,16 +16,16 @@ pub fn check(home_path: &str) -> u8 {
         return 0
     }
     else {
-        let error_data = format!("{},\n",(Error::new(ErrorKind::NotFound , "OpenSSL not found"))).as_bytes();
+        let error_data = format!("{},\n",(Error::new(ErrorKind::NotFound , "OpenSSL not found")));
         println!("{}",error_data);
         let path = format!("{}/logs.csv",home_path);
         let mut  file = File::open(path).expect("could not open logs.csv");
-        file.write_all(error_data).expect("could not write to logs.csv");
+        file.write_all(error_data.as_bytes()).expect("could not write to logs.csv");
         return 1
     }
 }
 
-pub fn openssl_cert(&ip: &str){
+pub fn openssl_cert(ip: &str){
     let path = "~/.config/connie/tmp/san.cnf";
     let data = format!("
   [req]
