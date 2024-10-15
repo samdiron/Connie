@@ -18,7 +18,7 @@ use crate::dependencies::{
 };
 
 
-pub fn first_time() {
+pub fn first_time() -> std::io::Result<u8> {
     let rt = Builder::new_current_thread()
         .enable_all()
         .build()
@@ -38,6 +38,12 @@ pub fn first_time() {
     } else {
         exit(1);
     }
+    println!("process: creating ~/Connie");
+    create_dir("~/Connie")?;
+    println!("process: creating ~/Connie/tmp");
+    create_dir("~/Connie/tmp")?;
+    println!("process: creating ~/.config/connie");
+    create_dir("~/.config/connie")?;
 
     println!("process: creating config");
     println!("//NOTE cant be more than 17 char or less than 3 it cant contain spaces");
@@ -79,7 +85,7 @@ pub fn first_time() {
     let _ = stdin().read_line(&mut max_client_string);
     //
     let max_client = max_client_string.trim_ascii_end();
-    //TODO the value enterd in config.yaml ^
+    //TODO the value for in config.yaml ^
     let is_max_client_number = max_client.chars().all(|c| c.is_ascii_digit());
     if is_max_client_number == false {
         println!("enter only numbers larger that 0");
@@ -236,13 +242,13 @@ pub fn first_time() {
         //let start_db = Command::new("sh").arg("surreal").arg("start");
 
         let ip = local_ip().expect("could not get ip to start db ");
-        let open_ip = format!("{ip}");
-        openssl_cert(open_ip.as_str());
+        let str_ip = format!("{ip}").as_str();
+        openssl_cert(str_ip);
         open_command();
-        let full_ip = format!("{}:8060", ip);
-        start_db_command(full_ip.as_str());
+
+        start_db_command(str_ip);
         let _ = DB {
-            addr: full_ip.as_str(),
+            addr: str_ip.as_str(),
             remote: false,
         };
         // let database = DBASE.clone();
@@ -292,4 +298,4 @@ fn is_valid_str(s: &String) -> bool {
     }
 }
 
-    //feba
+
