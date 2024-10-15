@@ -1,3 +1,4 @@
+use std::fmt::format;
 #[allow(special_module_name)]
 use std::fs::File;
 use std::process::Command;
@@ -22,7 +23,8 @@ pub fn check(home_path : &str) -> u8 {
     }
 
 }
-pub fn start_db_command(full_ip: &str) {
+pub fn start_db_command(ip: &str) -> u8 {
+    let full_ip = format!("{}:8060",ip).as_str();
     let surreal_command  = Command::new("sh").arg("surreal")
         .arg("start")
         .arg("--web-crt")
@@ -32,5 +34,6 @@ pub fn start_db_command(full_ip: &str) {
         .arg("-b")
         .arg(full_ip)
         .output().expect("could not run surreal db start command");
+    return 0
 
 }
