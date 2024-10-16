@@ -7,16 +7,19 @@ edition = "2021"
 resolver = "1"
 members = [
 
-  "tcp_test/protocol",
   "tcp_test/client",
   "tcp_test/server",
-  "surreal_db", "start", "lib_start", "protocol/tcp",
+  "surreal_db",
+  "start",
+  "lib_start",
+  "protocol/tcp",
 
 ]
 
 [dependencies]
-local-ip-address = "0.6.2"
-rcgen = "0.13.1"
-lib_start = {path= "./lib_start"}
+# local-ip-address = "0.6.2"
+# rcgen = "0.13.1"
+# lib_start = {path= "./lib_start"}
+#
+# #i know it's just for a commit not cuz i wanted it
 
-#i know it's just for a commit not cuz i wanted it
