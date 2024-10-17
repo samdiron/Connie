@@ -1,9 +1,8 @@
-#[allow(special_module_name)]
 use std::fs::File;
 use std::io::{Error, ErrorKind, Write};
 use std::process::Command;
 
-pub fn check(home_path: &str) -> u8 {
+pub fn surreal_ld_check(home_path: &str) -> u8 {
     let surreal_db_check = Command::new("sh")
         .arg("surreal")
         .arg("--version")
@@ -26,6 +25,7 @@ pub fn check(home_path: &str) -> u8 {
     }
 }
 pub fn start_db_command(ip: &str) -> u8 {
+    println!("process: starting SurrealDB");
     let full_ip = format!("{}:8060", ip);
     Command::new("sh")
         .arg("surreal")
@@ -38,6 +38,6 @@ pub fn start_db_command(ip: &str) -> u8 {
         .arg(full_ip.as_str())
         .output()
         .expect("could not run surreal db start command");
+    println!("finished: SurrealDB started on port 8060");
     return 0;
 }
-

@@ -3,7 +3,7 @@ use std::io::Write;
 use std::io::{Error, ErrorKind};
 use std::process::Command;
 
-pub fn check(home_path: &str) -> u8 {
+pub fn openssl_ld_check(home_path: &str) -> u8 {
     println!("process: OpenSSL Check");
     let openssl_check = Command::new("sh")
         .arg("openssl")
@@ -29,7 +29,28 @@ pub fn check(home_path: &str) -> u8 {
     }
 }
 
+pub fn open_command() {
+    Command::new("sh")
+        .arg("openssl")
+        .arg("req")
+        .arg("-x509")
+        .arg("-nodes")
+        .arg("-days")
+        .arg("730")
+        .arg("-newkey")
+        .arg("rsa:2048")
+        .arg("-keyout")
+        .arg("~/Connie/key/key.pem")
+        .arg("-out")
+        .arg("~/Connie/cert/cert.pem")
+        .arg("-config")
+        .arg("~/.config/connie/tmp/san.cnf")
+        .output()
+        .expect("failed to run openssl req command ");
+}
+
 pub fn openssl_cert(ip: &str) {
+    println!("process: creating openssl certificate");
     let path = "~/.config/connie/tmp/san.cnf";
     let data = format!(
         "
@@ -52,29 +73,11 @@ pub fn openssl_cert(ip: &str) {
     println!("creating {}", path);
     let exist = File::open(path).is_ok();
     if exist == true {
-        remove_file(path);
+        let _ = remove_file(path).expect("could not remove old san.cnf");
     }
     let mut f = File::create(path).expect("could not create a openssl tls config cert");
     f.write_all(data.as_bytes())
         .expect("could not write data to req config");
-}
-
-pub fn open_command() {
-    Command::new("sh")
-        .arg("openssl")
-        .arg("req")
-        .arg("-x509")
-        .arg("-nodes")
-        .arg("-days")
-        .arg("730")
-        .arg("-newkey")
-        .arg("rsa:2048")
-        .arg("-keyout")
-        .arg("~/Connie/key/key.pem")
-        .arg("-out")
-        .arg("~/Connie/cert/cert.pem")
-        .arg("-config")
-        .arg("~/.config/connie/tmp/san.cnf")
-        .output()
-        .expect("failed to run openssl req command ");
+    open_command();
+    println!("finished: openssl certificate successfully yay")
 }
