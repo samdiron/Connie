@@ -47,6 +47,7 @@ pub fn open_command() {
         .arg("~/.config/connie/tmp/san.cnf")
         .output()
         .expect("failed to run openssl req command ");
+    println!("process: created openssl certificate");
 }
 
 pub fn openssl_cert(ip: &str) {

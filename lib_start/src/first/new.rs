@@ -1,6 +1,6 @@
 use crate::dependencies::{
-    depedncy_fn_check,
-    ld_openssl::{open_command, openssl_cert},
+    //depedncy_fn_check,
+    ld_openssl::openssl_cert,
     ld_surrealdb::start_db_command,
 };
 use local_ip_address::local_ip;
@@ -8,8 +8,10 @@ use rpassword::read_password;
 use std::fs::{create_dir, File};
 use std::io::{stdin, stdout, Write};
 use std::process::exit;
+use surreal_db::server::structs::Hardware;
 use surreal_db::{
     db::{DB, DBASE},
+    server::structs::LocalMachine,
     user::sign_up::DUser,
 };
 use sysinfo::{Disks, System};
@@ -18,7 +20,7 @@ use uuid::Uuid;
 
 pub fn first_time() -> std::io::Result<u8> {
     let rt = Builder::new_current_thread().enable_all().build().unwrap();
-    let _ = depedncy_fn_check();
+    //let _ = depedncy_fn_check();
     print!("do you want to setup Connie (yes/no): ");
     stdout().flush().unwrap();
     let mut consent = String::new();
@@ -33,10 +35,6 @@ pub fn first_time() -> std::io::Result<u8> {
     } else {
         exit(1);
     }
-    println!("process: creating ~/Connie");
-    create_dir("~/Connie")?;
-    println!("process: creating ~/Connie/tmp");
-    create_dir("~/Connie/tmp")?;
     println!("process: creating ~/.config/connie");
     create_dir("~/.config/connie")?;
 
@@ -74,28 +72,32 @@ pub fn first_time() -> std::io::Result<u8> {
             }
         }
     };
-    let mut max_client_string: String = String::new();
-    print!("maximum clients connecting to the server at the same time: ");
-    stdout().flush().unwrap();
-    let _ = stdin().read_line(&mut max_client_string);
+    // let mut max_client_string: String = String::new();
+    // print!("//note it can't be bigger than 255: maximum clients connecting to the server at the same time: ");
+    // stdout().flush().unwrap();
+    // let _ = stdin().read_line(&mut max_client_string);
+    // let mut max_clients: u32 = 0;
+    // let max_client_allowed = max_client_string.trim_ascii_end();
+    // //TODO the value for in config.yaml ^
+    // let is_max_client_number = max_client_allowed.chars().all(|c| c.is_ascii_digit());
+    // if is_max_client_number == false {
+    //     println!("enter only numbers larger that 0");
+    //     loop {
+    //         print!("enter a number: ");
+    //         stdout().flush().unwrap();
+    //         let _ = stdin().read_line(&mut max_client_string);
+    //         let is_max_client_number = max_client_allowed.chars().all(|c| c.is_ascii_digit());
+    //         if is_max_client_number {
+    //             *&mut max_clients = max_client_allowed.parse().unwrap();
+    //             break;
+    //         } else {
+    //             println!("are we really doing this ");
+    //         }
+    //     }
+    // } else {
+    //     *&mut max_clients = max_client_allowed.parse().unwrap();
+    // };
     //
-    let max_client = max_client_string.trim_ascii_end();
-    //TODO the value for in config.yaml ^
-    let is_max_client_number = max_client.chars().all(|c| c.is_ascii_digit());
-    if is_max_client_number == false {
-        println!("enter only numbers larger that 0");
-        loop {
-            print!("enter a number: ");
-            stdout().flush().unwrap();
-            let _ = stdin().read_line(&mut server_name_string);
-            let is_max_client_number = max_client.chars().all(|c| c.is_ascii_digit());
-            if is_max_client_number {
-                break;
-            } else {
-                println!("are we really doing this ");
-            }
-        }
-    };
     println!("server: 0 ");
     println!("client & server: 1");
     print!("choose a server status(0/1): ");
@@ -220,14 +222,13 @@ pub fn first_time() -> std::io::Result<u8> {
     let mut sys = System::new_all();
     sys.refresh_all();
     let host_name = System::host_name().expect("string convert failed");
-    let memory = sys.total_memory();
-    let swap = sys.total_swap();
+    let machine_memory = sys.total_memory();
+    let machine_swap = sys.total_swap();
     let disks = Disks::new_with_refreshed_list();
     let mut available_storage: u64 = 1;
     for disk in &disks {
         let ds = disk.available_space();
         let dps = ds + &available_storage;
-
         *&mut available_storage = dps;
     }
     let core_count = sys
@@ -239,16 +240,28 @@ pub fn first_time() -> std::io::Result<u8> {
     let ip = local_ip().expect("could not get ip to start db ");
     let str_ip = format!("{ip}");
     openssl_cert(str_ip.as_str());
-    open_command();
 
     start_db_command(str_ip.as_str());
     DB {
         addr: str_ip.as_str(),
         remote: false,
     };
+
     // let database = DBASE.clone();
-    // database.use_db("private_infer");
-    // database.use_ns("machine_info");
+    let machine = LocalMachine {
+        cpid: server_uuid,
+        passwd: server_password.as_str(),
+        host_name: host_name.as_str(),
+        status: server_status,
+        // max_client: max_clients,
+        hardware: Hardware {
+            swap: machine_swap,
+            cpu_core_count: core_count,
+            memory: machine_memory,
+        },
+    };
+    let _ = rt.block_on(machine.create()).unwrap();
+
     let admin = DUser {
         is_admin: true,
         name: name.as_str(),
@@ -270,8 +283,8 @@ pub fn first_time() -> std::io::Result<u8> {
         "
         machine:
           - Host_name: {host_name}
-          - Memory: {memory}
-          - Swap: {swap}
+          - Memory: {machine_memory}
+          - Swap: {machine_swap}
           - Storage: {available_storage}
           - Cores: {core_count}
         "

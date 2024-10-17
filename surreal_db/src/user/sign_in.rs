@@ -1,8 +1,8 @@
 // Deserialize && token  will be needed later
+use crate::db::DBASE;
 use serde::Serialize;
 use surrealdb::opt::auth::Scope;
 use uuid::Uuid;
-use crate::db::DBASE;
 
 //static DB: Lazy<Surreal<Client>> = Lazy::new(Surreal::init);
 //rename cpid to a better thing and add a uuid
@@ -12,11 +12,10 @@ pub struct User<'a> {
     pub pass: &'a str,
 }
 
-impl <'a>User<'a> {
-    pub async fn login_in(self) -> surrealdb::Result<(String)> {
-
-
-        let jwt = DBASE.signin(Scope {
+impl<'a> User<'a> {
+    pub async fn login_in(self) -> surrealdb::Result<String> {
+        let jwt = DBASE
+            .signin(Scope {
                 namespace: "user",
                 database: "client",
                 scope: "user",
