@@ -247,7 +247,7 @@ pub fn first_time() -> std::io::Result<i32> {
     let machine = LocalMachine {
         cpid: server_uuid,
         passwd: server_password,
-        host_name: host_name,
+        host_name: host_name.clone(),
         status: server_status,
         // max_client: max_clients,
         hardware: Hardware {
