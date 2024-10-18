@@ -9,16 +9,12 @@ use std::fs::{create_dir, File};
 use std::io::{stdin, stdout, Write};
 use std::process::exit;
 use surreal_db::server::structs::Hardware;
-use surreal_db::{
-    db::{DB, DBASE},
-    server::structs::LocalMachine,
-    user::sign_up::DUser,
-};
+use surreal_db::{db::DB, server::structs::LocalMachine, user::sign_up::DUser};
 use sysinfo::{Disks, System};
 use tokio::runtime::Builder;
 use uuid::Uuid;
 
-pub fn first_time() -> std::io::Result<u8> {
+pub fn first_time() -> std::io::Result<i32> {
     let rt = Builder::new_current_thread().enable_all().build().unwrap();
     //let _ = depedncy_fn_check();
     print!("do you want to setup Connie (yes/no): ");
@@ -250,8 +246,8 @@ pub fn first_time() -> std::io::Result<u8> {
     // let database = DBASE.clone();
     let machine = LocalMachine {
         cpid: server_uuid,
-        passwd: server_password.as_str(),
-        host_name: host_name.as_str(),
+        passwd: server_password,
+        host_name: host_name,
         status: server_status,
         // max_client: max_clients,
         hardware: Hardware {

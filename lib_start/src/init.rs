@@ -3,14 +3,14 @@ use crate::dependencies::ld_openssl::{openssl_cert, openssl_ld_check};
 use crate::dependencies::ld_surrealdb::{start_db_command, surreal_ld_check};
 use crate::first::new::first_time;
 use local_ip_address::local_ip;
-use rpassword::read_password;
+//use rpassword::read_password;
 use std::fs::File;
 use std::io::{Error, ErrorKind};
 use std::process::exit;
 use surreal_db::db::DB;
-use sysinfo::{Disks, System}; // we will need to check the disk usage here
+use sysinfo::System; //{Disks, System}; // we will need to check the disk usage here
 
-pub fn start() {
+pub async fn start() {
     let home_path = "~/Connie";
     let os = System::name();
     if os.unwrap().as_str() == "Microsoft Windows" {
@@ -37,13 +37,9 @@ pub fn start() {
             addr: ip.as_str(),
             remote: false,
         };
-
-        // let dependency_check = check_dependencies().is_ok();
-        // if dependency_check == false {
-        //     exit(2) //unmet dependency
-        // }
     } else {
         let firs_time_state = first_time().expect("first_time process error");
-        println!("process finished with {}", firs_time_state);
+        println!("now will exit if you want to start rerun connie");
+        exit(firs_time_state);
     };
 }

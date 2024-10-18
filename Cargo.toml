@@ -21,5 +21,7 @@ rpassword = "7.3.1"
 local-ip-address = "0.6.2"
 rcgen = "0.13.1"
 lib_start = { path = "./lib_start" }
+ratatui = "0.28.1"
+clap = "4.5.20"
 #
 # #i know it's just for a commit not cuz i wanted it
