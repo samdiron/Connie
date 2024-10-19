@@ -8,10 +8,14 @@ use std::fs::File;
 use std::io::{Error, ErrorKind};
 use std::process::exit;
 use surreal_db::db::DB;
+use surreal_db::server::structs::{start_minfo, LocalMachine};
 use sysinfo::System; //{Disks, System}; // we will need to check the disk usage here
-
+use tokio::runtime::Builder;
+#[tokio::main]
 pub async fn start() {
     let home_path = "~/Connie";
+    let rt = Builder::new_current_thread().enable_all().build().unwrap();
+
     let os = System::name();
     if os.unwrap().as_str() == "Microsoft Windows" {
         println!("you are on Microsoft Windows she don't like that");
@@ -33,12 +37,15 @@ pub async fn start() {
         let ip = format!("{}", ip);
         openssl_cert(ip.as_str());
         start_db_command(ip.as_str());
-        DB {
+        let db_conn = DB {
             addr: ip.as_str(),
             remote: false,
         };
+        db_conn.connect().await;
+        let machine: LocalMachine = start_minfo().unwrap().await;
+        let passwd = machine.passwd;
     } else {
-        let firs_time_state = first_time().expect("first_time process error");
+        let firs_time_state = rt.block(first_time()).expect("first_time process error");
         println!("now will exit if you want to start rerun connie");
         exit(firs_time_state);
     };

@@ -8,7 +8,7 @@ pub fn nix_ld_check(home_path: &str) -> u8 {
         .arg("--version")
         .output()
         .is_ok();
-    if nix == true {
+    if nix {
         return 0;
     } else {
         let error_data = format!(

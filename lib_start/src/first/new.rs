@@ -9,13 +9,11 @@ use std::fs::{create_dir, File};
 use std::io::{stdin, stdout, Write};
 use std::process::exit;
 use surreal_db::server::structs::Hardware;
-use surreal_db::{db::DB, server::structs::LocalMachine, user::sign_up::DUser};
+use surreal_db::{server::structs::LocalMachine, user::sign_up::DUser};
 use sysinfo::{Disks, System};
-use tokio::runtime::Builder;
 use uuid::Uuid;
 
-pub fn first_time() -> std::io::Result<i32> {
-    let rt = Builder::new_current_thread().enable_all().build().unwrap();
+pub async fn first_time() -> std::io::Result<i32> {
     //let _ = depedncy_fn_check();
     print!("do you want to setup Connie (yes/no): ");
     stdout().flush().unwrap();
@@ -238,12 +236,7 @@ pub fn first_time() -> std::io::Result<i32> {
     openssl_cert(str_ip.as_str());
 
     start_db_command(str_ip.as_str());
-    DB {
-        addr: str_ip.as_str(),
-        remote: false,
-    };
 
-    // let database = DBASE.clone();
     let machine = LocalMachine {
         cpid: server_uuid,
         passwd: server_password,
@@ -256,19 +249,17 @@ pub fn first_time() -> std::io::Result<i32> {
             memory: machine_memory,
         },
     };
-    let _ = rt.block_on(machine.create()).unwrap();
+    machine.create();
 
     let admin = DUser {
         is_admin: true,
-        name: name.as_str(),
-        user_name: user_name.as_str(),
-        pass: user_password.as_str(),
+        name: name,
+        user_name: user_name,
+        pass: user_password,
         cpid: admin_uuid,
     };
 
-    let user_token = rt
-        .block_on(admin.sign_up_admin())
-        .expect("could not get token");
+    let user_token = admin.sign_up_admin().await.expect("could not get token");
     //.expect("could not get user token");
     let data = format!("{},\n", user_token);
     let mut file = File::create_new("~/Connie/tmp/admin_jwt.csv").expect("could not create file");

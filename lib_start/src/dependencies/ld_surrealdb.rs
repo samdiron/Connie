@@ -24,7 +24,7 @@ pub fn surreal_ld_check(home_path: &str) -> u8 {
         return 1;
     }
 }
-pub fn start_db_command(ip: &str) -> u8 {
+pub fn start_db_command(ip: &str) -> i32 {
     println!("process: starting SurrealDB");
     let full_ip = format!("{}:8060", ip);
     Command::new("sh")
