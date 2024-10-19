@@ -1,4 +1,4 @@
-use std::hash::Hash;
+// use std::hash::Hash;
 // Deserialize && token  will be needed later
 use crate::db::DBASE;
 use serde::{Deserialize, Serialize};
@@ -15,14 +15,14 @@ pub struct DUser {
     pub pass: String,
 }
 #[derive(Serialize)]
-pub struct User<'a> {
+pub struct User {
     pub user_name: String,
     pub name: String,
     pub cpid: Uuid,
     pub pass: String,
 }
 impl DUser {
-    pub async fn sign_up_admin(self) -> surrealdb::Result<(String)> {
+    pub async fn sign_up_admin(self) -> surrealdb::Result<String> {
         let jwt = DBASE
             .signup(Scope {
                 namespace: "private_infer",
@@ -42,8 +42,8 @@ impl DUser {
     }
 }
 
-impl<'a> User<'a> {
-    pub async fn sign_up(self) -> surrealdb::Result<(String)> {
+impl User {
+    pub async fn sign_up(self) -> surrealdb::Result<String> {
         let jwt = DBASE
             .signup(Scope {
                 namespace: "user",

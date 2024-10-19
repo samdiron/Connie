@@ -249,7 +249,7 @@ pub async fn first_time() -> std::io::Result<i32> {
             memory: machine_memory,
         },
     };
-    machine.create();
+    machine.create().await;
 
     let admin = DUser {
         is_admin: true,
