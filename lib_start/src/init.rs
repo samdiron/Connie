@@ -4,14 +4,60 @@ use crate::dependencies::ld_surrealdb::{start_db_command, surreal_ld_check};
 use crate::first::new::first_time;
 use local_ip_address::local_ip;
 use rpassword::read_password;
-use std::fs::File;
-use std::io::{stdout, Error, ErrorKind, Result, Write};
+use std::fs::{remove_file,File};
+use std::io::{stdout, Error, ErrorKind, Read, Result, Write};
 use std::process::exit;
 use surreal_db::db::DB;
 use surreal_db::server::structs::{start_minfo, LocalMachine};
+use sysinfo::get_current_pid;
 use sysinfo::System; //{Disks, System}; // we will need to check the disk usage here
                      //use tokio::runtime::Builder;
-fn check_pid_lockfile() -> i32 {}
+fn create_pid(mut f: File) {
+    println!("process: finished checking pid file lock");
+    let current = get_current_pid()
+        .expect("could not get current pid")
+        .to_string();
+    f.write_all(current.as_bytes()).unwrap();
+    f.flush().unwrap();
+}
+
+fn check_pid_lockfile() -> Result<i32> {
+    println!("process: checking pid file lock");
+    let e_bool = File::open("~/.config/connie/tmp/pid_file").is_ok();
+
+    if e_bool == true{
+        let mut pid_lock_file = String::new();
+        let mut f = File::open("~/.config/connie/tmp/pid_file").unwrap();
+        f.read_to_string(&mut pid_lock_file)?;
+        let mut sys = System::new();
+        sys.refresh_all();
+        let mut is_it: i32 = 2;
+        for pid in sys.processes() {
+            if pid_lock_file.contains(pid) == true {
+                *&mut is_it = 1;
+                println!("there is a connie process already running");
+            } else {
+                *&mut is_it = 0;
+                println!("process: finished checking pid file lock");
+                remove_file("~/.config/tmp/pid_file").expect("TODO: panic message");
+                let file = File::create_new("~/.config/tmp/pid_file")
+                    .expect("error while creating a new pid_lock");
+                create_pid(file);
+            }
+        }
+        drop(sys);
+        drop(pid_lock_file);
+
+        Ok(is_it)
+    } else {
+        let file = File::create_new("~/.config/connie/tmp/pid_file")
+            .expect("could not create new pid lock file");
+        create_pid(file);
+        Ok(0)
+
+    }.expect("TODO: panic message");
+    Ok(0)
+}
 pub async fn start() -> Result<LocalMachine> {
     let home_path = "~/Connie";
     //let rt = Builder::new_current_thread().enable_all().build().unwrap();

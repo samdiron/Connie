@@ -1,5 +1,5 @@
 use crate::dependencies::{
-    //depedncy_fn_check,
+    //dependency_fn_check,
     ld_openssl::openssl_cert,
     ld_surrealdb::start_db_command,
 };
@@ -14,7 +14,7 @@ use sysinfo::{Disks, System};
 use uuid::Uuid;
 
 pub async fn first_time() -> std::io::Result<i32> {
-    //let _ = depedncy_fn_check();
+    //let _ = dependency_fn_check();
     print!("do you want to setup Connie (yes/no): ");
     stdout().flush().unwrap();
     let mut consent = String::new();
@@ -249,12 +249,12 @@ pub async fn first_time() -> std::io::Result<i32> {
             memory: machine_memory,
         },
     };
-    machine.create().await;
+    machine.create().await.expect("TODO: panic message");
 
     let admin = DUser {
         is_admin: true,
-        name: name,
-        user_name: user_name,
+        name,
+        user_name,
         pass: user_password,
         cpid: admin_uuid,
     };
@@ -291,9 +291,9 @@ fn is_valid_str(s: &String) -> bool {
     //let num = s.chars().all(|c| c.is_ascii_digit()).count();
     let length = s.chars().count();
     let total = numerics + letters + punc;
-    if total == length {
-        return true;
+    return if total == length {
+        true
     } else {
-        return false;
+        false
     }
 }
