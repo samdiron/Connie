@@ -10,8 +10,8 @@ use std::process::exit;
 use surreal_db::db::DB;
 use surreal_db::server::structs::{start_minfo, LocalMachine};
 use sysinfo::System; //{Disks, System}; // we will need to check the disk usage here
-//use tokio::runtime::Builder;
-
+                     //use tokio::runtime::Builder;
+fn check_pid_lockfile() -> i32 {}
 pub async fn start() -> Result<LocalMachine> {
     let home_path = "~/Connie";
     //let rt = Builder::new_current_thread().enable_all().build().unwrap();

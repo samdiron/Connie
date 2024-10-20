@@ -22,7 +22,9 @@ local-ip-address = "0.6.2"
 rcgen = "0.13.1"
 lib_start = { path = "./lib_start" }
 ratatui = "0.28.1"
-clap = "4.5.20"
+clap = { version = "4.5.20", features = ["cargo"] }
 tokio = "1.40.0"
+
+
 #
 # #i know it's just for a commit not cuz i wanted it
