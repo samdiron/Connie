@@ -30,18 +30,20 @@ fn main() {
     // make a PID lock filei in start
      let rt = Runtime::new().unwrap();
 
-    let is_ready : bool =  match_result.get_on::<bool>("start").unwrap();
-    if is_ready{
+    let is_ready : bool =  match_result.get_one::<bool>("start").unwrap().clone();
+    if is_ready {
     let _machine = rt.block_on(start()).expect("could not get machine info");
     println!("connie is up and ready");
-    let matches = rt.block_on(commands()).expect("could not get user input");
-           
-    
+    let matches = rt.block_on(commands()).expect("could not get user input").clone();
+    let matches_ = matches.get_one::<bool>("connect").unwrap().clone();
+        if matches_ {
+        println!("okay");
+        }
     }
 }
 
 
-async fn commands() -> Result<(ArgMatches)> {
+async fn commands() -> std::io::Result<ArgMatches> {
 let match_result: ArgMatches = command!()
         .about("Connie is a private home server used to connect with other connie servers privately it can stream movies music and store private files ")
         .group(ArgGroup::new("server-user"))
@@ -51,9 +53,8 @@ let match_result: ArgMatches = command!()
             .conflicts_with("connect")
             .help("binds connie to local_ip:4443 tcp"))
         .arg(Arg::new("connect")
-            .short("c")
             .long("connect"))
-        .arg(Arg::new("verbose").short("v").long("verbose"))    
+        .arg(Arg::new("verbose").long("verbose"))    
         .get_matches();
-    Ok(match_result);
+    Ok(match_result)
 } 
