@@ -25,7 +25,7 @@ pub fn check_pid_lockfile() -> i32 {
     println!("process: checking pid file lock");
     let e_bool: bool = File::open("~/.config/connie/tmp/pid_file").is_ok();
 
-    if e_bool {
+    return if e_bool {
         let mut pid_lock_file = String::new();
         let mut f = File::open("~/.config/connie/tmp/pid_file").unwrap();
         f.read_to_string(&mut pid_lock_file).expect("exp");
@@ -34,7 +34,7 @@ pub fn check_pid_lockfile() -> i32 {
         let mut is_it: i32 = 2;
         for pid in sys.processes() {
             if pid_lock_file.contains(pid.0.to_string().as_str()) == true {
-                *&mut is_it = 1;
+                *&mut is_it = 0;
                 println!("there is a connie process already running");
             } else {
                 *&mut is_it = 0;
@@ -45,19 +45,17 @@ pub fn check_pid_lockfile() -> i32 {
                 create_pid(file);
             }
         }
-        f.close()
         drop(sys);
         drop(pid_lock_file);
 
-        return is_it
+        is_it
     } else {
         let file = File::create_new("~/.config/connie/tmp/pid_file")
             .expect("could not create new pid lock file");
         create_pid(file);
-        return 0;
-
-    }.expect("TODO: panic message");
-     return 1;
+        0
+    }; //.expect("TODO: panic message");
+     //return 1;
 }
 pub async fn start() -> Result<LocalMachine> {
     let home_path = "~/Connie";
