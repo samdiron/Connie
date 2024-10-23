@@ -2,6 +2,7 @@ use crate::dependencies::ld_nix::nix_ld_check;
 use crate::dependencies::ld_openssl::{openssl_cert, openssl_ld_check};
 use crate::dependencies::ld_surrealdb::{start_db_command, surreal_ld_check};
 use crate::first::new::first_time;
+use crate::common::path::{c_path,h_path};
 use local_ip_address::local_ip;
 use rpassword::read_password;
 use std::fs::{remove_file,File};
@@ -11,7 +12,9 @@ use surreal_db::db::DB;
 use surreal_db::server::structs::{start_minfo, LocalMachine};
 use sysinfo::get_current_pid;
 use sysinfo::System; //{Disks, System}; // we will need to check the disk usage here
-                     //use tokio::runtime::Builder;
+//use tokio::runtime::Builder;
+
+
 fn create_pid(mut f: File) {
     println!("process: finished checking pid file lock");
     let current = get_current_pid()
@@ -22,12 +25,17 @@ fn create_pid(mut f: File) {
 }
 
 pub fn check_pid_lockfile() -> i32 {
+    let cp = c_path();
+    let full_path = format!("{cp}/tmp/pid_file");
     println!("process: checking pid file lock");
-    let e_bool: bool = File::open("~/.config/connie/tmp/pid_file").is_ok();
+    let mut e_bool: bool = File::open(full_path.as_str()).is_ok();
+    if File::open(cp).is_err_and(|e| e.kind() == ErrorKind::NotFound ){
+        *&mut e_bool = true
+    }
 
     return if e_bool {
         let mut pid_lock_file = String::new();
-        let mut f = File::open("~/.config/connie/tmp/pid_file").unwrap();
+        let mut f = File::open(full_path.as_str()).unwrap();
         f.read_to_string(&mut pid_lock_file).expect("exp");
         let mut sys = System::new();
         sys.refresh_all();
@@ -39,8 +47,8 @@ pub fn check_pid_lockfile() -> i32 {
             } else {
                 *&mut is_it = 0;
                 println!("process: finished checking pid file lock");
-                remove_file("~/.config/tmp/pid_file").expect("TODO: panic message");
-                let file = File::create_new("~/.config/tmp/pid_file")
+                remove_file(full_path.as_str()).expect("TODO: panic message");
+                let file = File::create_new(full_path.as_str())
                     .expect("error while creating a new pid_lock");
                 create_pid(file);
             }
@@ -50,7 +58,7 @@ pub fn check_pid_lockfile() -> i32 {
 
         is_it
     } else {
-        let file = File::create_new("~/.config/connie/tmp/pid_file")
+        let file = File::create_new(full_path.as_str())
             .expect("could not create new pid lock file");
         create_pid(file);
         0
@@ -58,8 +66,10 @@ pub fn check_pid_lockfile() -> i32 {
      //return 1;
 }
 pub async fn start() -> Result<LocalMachine> {
-    let home_path = "~/Connie";
-    //let rt = Builder::new_current_thread().enable_all().build().unwrap();
+    let cp = c_path();
+    println!("{}",cp);
+    let hp = h_path();
+    let home_path = format!("{hp}/Connie");
 
     let os = System::name();
     if os.unwrap().as_str() == "Microsoft Windows" {
@@ -67,13 +77,13 @@ pub async fn start() -> Result<LocalMachine> {
         Error::new(ErrorKind::Unsupported, "no Microsoft Windows support");
         exit(13); // it means the os is window and they out of luck
     };
-
-    let connie_config = File::open("/.config/connie/connie_config.yaml");
-    if connie_config.is_ok() {
+    let cdp = format!("{cp}/connie_config.yaml");
+    let connie_config = File::open(cdp).is_ok();
+    if connie_config {
         // let first_time = false;
-        let dependencies_surreal = surreal_ld_check(home_path);
-        let dependencies_openssl = openssl_ld_check(home_path);
-        let dependencies_nix = nix_ld_check(home_path);
+        let dependencies_surreal = surreal_ld_check(home_path.as_str());
+        let dependencies_openssl = openssl_ld_check(home_path.as_str());
+        let dependencies_nix = nix_ld_check(home_path.as_str());
         let dependencies_check = dependencies_surreal + dependencies_nix + dependencies_openssl;
         if dependencies_check != 0 {
             exit(6);
@@ -106,7 +116,6 @@ pub async fn start() -> Result<LocalMachine> {
                 }
             }
         }
-        drop(connie_config);
         Ok(machine)
     } else {
         let firs_time_state = first_time().await.expect("first_time process error");
@@ -114,7 +123,7 @@ pub async fn start() -> Result<LocalMachine> {
         // Err(e) -> {
         //     eprintln!("{}",e);
         // };
-        exit(firs_time_state);
+        exit(firs_time_state)
     }
     //drop(connie_config)
 }

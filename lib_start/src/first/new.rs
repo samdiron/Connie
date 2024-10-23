@@ -1,7 +1,13 @@
-use crate::dependencies::{
-    //dependency_fn_check,
+use crate::{
+    dependencies::{
     ld_openssl::openssl_cert,
     ld_surrealdb::start_db_command,
+    }
+    ,common::path::{
+        c_path,
+        h_path
+    },
+
 };
 use local_ip_address::local_ip;
 use rpassword::read_password;
@@ -12,6 +18,7 @@ use surreal_db::server::structs::Hardware;
 use surreal_db::{server::structs::LocalMachine, user::sign_up::DUser};
 use sysinfo::{Disks, System};
 use uuid::Uuid;
+
 
 pub async fn first_time() -> std::io::Result<i32> {
     //let _ = dependency_fn_check();
@@ -30,7 +37,11 @@ pub async fn first_time() -> std::io::Result<i32> {
         exit(1);
     }
     println!("process: creating ~/.config/connie");
-    create_dir("~/.config/connie")?;
+    let c_dir = c_path();
+    let config_path = format!("{c_dir}/connie");
+
+
+    create_dir(config_path.as_str())?;
 
     println!("process: creating config");
     println!("//NOTE cant be more than 17 char or less than 3 it cant contain spaces");
@@ -262,7 +273,9 @@ pub async fn first_time() -> std::io::Result<i32> {
     let user_token = admin.sign_up_admin().await.expect("could not get token");
     //.expect("could not get user token");
     let data = format!("{},\n", user_token);
-    let mut file = File::create_new("~/Connie/tmp/admin_jwt.csv").expect("could not create file");
+    let home_p = h_path();
+    let home = format!("{home_p}/Connie/tmp/admin_jwt.csv");
+    let mut file = File::create_new(home.as_str()).expect("could not create file");
     file.write_all(data.as_bytes())
         .expect("could not write data to file");
 
@@ -277,7 +290,8 @@ pub async fn first_time() -> std::io::Result<i32> {
         "
     );
     println!("{}", yaml_config);
-    let mut file = File::create("~/.config/connie/connie_config.yaml")
+    let config_yml = format!("{config_path}/connie_config.yaml");
+    let mut file = File::create(config_yml.as_str())
         .expect("could not create connie_config.yaml");
     file.write_all(yaml_config.as_bytes())
         .expect("could not write to connie_config.yaml");

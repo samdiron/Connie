@@ -2,8 +2,13 @@ use std::fs::{remove_file, File};
 use std::io::Write;
 use std::io::{Error, ErrorKind};
 use std::process::Command;
+use crate::common::path::h_path;
+use crate::common::path::c_path;
+
+
 
 pub fn openssl_ld_check(home_path: &str) -> u8 {
+
     println!("process: OpenSSL Check");
     let openssl_check = Command::new("sh")
         .arg("openssl")
@@ -11,25 +16,31 @@ pub fn openssl_ld_check(home_path: &str) -> u8 {
         .output()
         .is_ok();
     //.expect("ERROR: could not run openssl --version");
-    // we will pretend that we have a version requairment of
+    // we will pretend that we have a version requirement of
     // OpenSSL 3.3.0
-    if openssl_check == true {
-        return 0;
+    return if openssl_check == true {
+        0
     } else {
         let error_data = format!(
             "{},\n",
-            (Error::new(ErrorKind::NotFound, "OpenSSL not found"))
+            Error::new(ErrorKind::NotFound, "OpenSSL not found")
         );
         println!("{}", error_data);
         let path = format!("{}/logs.csv", home_path);
         let mut file = File::open(path).expect("could not open logs.csv");
         file.write_all(error_data.as_bytes())
             .expect("could not write to logs.csv");
-        return 1;
+        1
     }
 }
 
 pub fn open_command() {
+    let cp = c_path();
+    let hp = h_path();
+    let thp = hp.clone();
+    let san_p = format!("{cp}/tmp/san.cnf");
+    let cert_p = format!("{hp}/Connie/cert/cert.pem");
+    let key_p = format!("{thp}/Connie/cert/cert.pem");
     Command::new("sh")
         .arg("openssl")
         .arg("req")
@@ -40,19 +51,21 @@ pub fn open_command() {
         .arg("-newkey")
         .arg("rsa:2048")
         .arg("-keyout")
-        .arg("~/Connie/key/key.pem")
+        .arg(key_p)
         .arg("-out")
-        .arg("~/Connie/cert/cert.pem")
+        .arg(cert_p)
         .arg("-config")
-        .arg("~/.config/connie/tmp/san.cnf")
+        .arg(san_p)
         .output()
         .expect("failed to run openssl req command ");
     println!("process: created openssl certificate");
 }
 
 pub fn openssl_cert(ip: &str) {
+    let cp = c_path();
     println!("process: creating openssl certificate");
-    let path = "~/.config/connie/tmp/san.cnf";
+    let path = format!("{cp}/tmp/san.cnf");
+
     let data = format!(
         "
   [req]
@@ -71,14 +84,13 @@ pub fn openssl_cert(ip: &str) {
   IP.1 = {i}",
         i = ip
     );
-    println!("creating {}", path);
-    let exist = File::open(path).is_ok();
+    println!("creating {}", path.as_str());
+    let exist = File::open(path.as_str()).is_ok();
     if exist == true {
-        let _ = remove_file(path).expect("could not remove old san.cnf");
+        let _ = remove_file(path.as_str()).expect("could not remove old san.cnf");
     }
-    let mut f = File::create(path).expect("could not create a openssl tls config cert");
-    f.write_all(data.as_bytes())
-        .expect("could not write data to req config");
+    let mut f = File::create(path.as_str()).expect("could not create a openssl tls config cert");
+    f.write_all(data.as_bytes()).expect("could not write data to req config");
     open_command();
     println!("finished: openssl certificate successfully yay")
 }
