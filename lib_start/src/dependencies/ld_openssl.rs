@@ -1,4 +1,4 @@
-use std::fs::{remove_file, File};
+use std::fs::{remove_file, File, exists};
 use std::io::Write;
 use std::io::{Error, ErrorKind};
 use std::process::Command;
@@ -65,6 +65,7 @@ pub fn openssl_cert(ip: &str) {
     let cp = c_path();
     println!("process: creating openssl certificate");
     let path = format!("{cp}/tmp/san.cnf");
+    // let dir_p = format!("{cp}/tmp");
 
     let data = format!(
         "
@@ -76,7 +77,7 @@ pub fn openssl_cert(ip: &str) {
   CN = No-Domain Server
   stateOrProvinceName = N/A
   localityName = N/A
-  organizationName = Self-signed certificate
+  organizationName = Connie_server
   commonName = {i}: Self-signed certificate
   [v3_req]
   subjectAltName = @alt_names
@@ -85,11 +86,11 @@ pub fn openssl_cert(ip: &str) {
         i = ip
     );
     println!("creating {}", path.as_str());
-    let exist = File::open(path.as_str()).is_ok();
+    let exist = exists(path.as_str()).unwrap();
     if exist == true {
         let _ = remove_file(path.as_str()).expect("could not remove old san.cnf");
     }
-    let mut f = File::create(path.as_str()).expect("could not create a openssl tls config cert");
+    let mut f = File::create_new(path.as_str()).expect("could not create a openssl tls config cert");
     f.write_all(data.as_bytes()).expect("could not write data to req config");
     open_command();
     println!("finished: openssl certificate successfully yay")

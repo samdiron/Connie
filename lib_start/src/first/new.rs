@@ -11,8 +11,9 @@ use crate::{
 };
 use local_ip_address::local_ip;
 use rpassword::read_password;
-use std::fs::{create_dir, File};
+use std::fs::{exists, create_dir_all, File};
 use std::io::{stdin, stdout, Write};
+use std::path::PathBuf;
 use std::process::exit;
 use surreal_db::server::structs::Hardware;
 use surreal_db::{server::structs::LocalMachine, user::sign_up::DUser};
@@ -38,10 +39,23 @@ pub async fn first_time() -> std::io::Result<i32> {
     }
     println!("process: creating ~/.config/connie");
     let c_dir = c_path();
-    let config_path = format!("{c_dir}/connie");
+    let config_path = format!("{}/",c_dir.as_str());
+    let check = exists(config_path.as_str()).expect("i have nothing");
+    let mut  path_tmp = PathBuf::new();
+    path_tmp.push(config_path.as_str());
+    path_tmp.push("/tmp");
+    let check_tmp = exists(path_tmp.clone()).expect("could not check config/tmp");
+    if check == false {
+        // create_dir(config_path.as_str()).expect("could not create config dir");
+        //let mut  path = PathBuf::new();
+
+        let _ = create_dir_all(path_tmp).expect("TODO: panic message");
+    }else if  check_tmp == false {
+        let _ = create_dir_all(path_tmp).expect("TODO: panic message");
+    }
 
 
-    create_dir(config_path.as_str())?;
+
 
     println!("process: creating config");
     println!("//NOTE cant be more than 17 char or less than 3 it cant contain spaces");
@@ -254,6 +268,7 @@ pub async fn first_time() -> std::io::Result<i32> {
         host_name: host_name.clone(),
         status: server_status,
         // max_client: max_clients,
+        server_name: server_name_string,
         hardware: Hardware {
             swap: machine_swap,
             cpu_core_count: core_count,

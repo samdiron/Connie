@@ -9,6 +9,7 @@ pub struct LocalMachine {
     pub host_name: String,
     pub hardware: Hardware,
     pub status: u8,
+    pub server_name: String
     // pub max_client: u32,
 }
 #[derive(Debug, Serialize, Deserialize)]
@@ -42,6 +43,7 @@ impl LocalMachine {
                 cpid: self.cpid,
                 passwd: self.passwd,
                 status: self.status,
+                server_name: self.server_name,
                 // max_client: self.max_client,
                 hardware: Hardware {
                     cpu_core_count: self.hardware.cpu_core_count,

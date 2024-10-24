@@ -1,4 +1,5 @@
-use std::fs::File;
+use std::fs::exists;
+use std::fs::{create_dir_all, File};
 use std::io::{Error, ErrorKind, Write};
 use std::process::Command;
 use crate::common::path::h_path;
@@ -20,6 +21,12 @@ pub fn surreal_ld_check(home_path: &str) -> u8 {
         );
         println!("{}", error_data);
         let path = format!("{}/surreal/logs.csv", home_path);
+        let check = exists(path.as_str()).unwrap();
+        if check == false {
+            //let path_to_l = format!("{}/surreal",home_path);
+            File::create_new(path.as_str())
+                .expect("could not make a surreal/logs.csv");
+        };
         let mut file = File::open(path).expect("could not open logs.csv");
         file.write_all(error_data.as_bytes())
             .expect("could not write to logs.csv");
