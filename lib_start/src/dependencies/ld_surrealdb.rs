@@ -1,3 +1,4 @@
+
 use std::fs::exists;
 use std::fs::{create_dir_all, File};
 use std::io::{Error, ErrorKind, Write};
@@ -13,7 +14,7 @@ pub fn surreal_ld_check(home_path: &str) -> u8 {
         .output()
         .is_ok();
     //.expect("surreal check failed to start");
-    return if surreal_db_check == true {
+    return if !surreal_db_check {
         0
     } else {
         let error_data = format!(
@@ -24,7 +25,7 @@ pub fn surreal_ld_check(home_path: &str) -> u8 {
         let path = format!("{}/surreal", home_path);
         let path_csv  = format!("{path}/logs.csv");
         let check = exists(path.as_str()).unwrap();
-        if check == false {
+        if !check {
             //let path_to_l = format!("{}/surreal",home_path);
             create_dir_all(path.as_str()).unwrap();
             let mut p_ath = PathBuf::new();
@@ -39,7 +40,7 @@ pub fn surreal_ld_check(home_path: &str) -> u8 {
         1
     }
 }
-pub fn start_db_command(ip: &str) -> i32 {
+pub async fn start_db_command(ip: &str) -> i32 {
     println!("process: starting SurrealDB");
     let hp = h_path();
     let hp2 = hp.clone();
@@ -48,7 +49,7 @@ pub fn start_db_command(ip: &str) -> i32 {
     let cert_p = format!("{hp2}/Connie/cert/cert.pem");
     let key_p = format!("{hp3}/Connie/cert/cert.pem");
     let full_ip = format!("{}:8060", ip);
-    Command::new("sh")
+    let _ = Command::new("sh")
         .arg("surreal")
         .arg("start")
         .arg(db_path)//"rocksdb:/Connie/surreal/Connie.db")
@@ -60,6 +61,6 @@ pub fn start_db_command(ip: &str) -> i32 {
         .arg(full_ip.as_str())
         .output()
         .expect("could not run surreal db start command");
-    println!("finished: SurrealDB started on port 8060");
+    println!("finished: SurrealDB started on port 8060 ");
     return 0;
 }

@@ -1,5 +1,4 @@
 #![allow(clippy::if_same_then_else)]
-#![allow(clippy::deref_addrof)]
 use crate::{
     dependencies::{
     ld_openssl::openssl_cert,
@@ -69,7 +68,7 @@ pub async fn first_time() -> std::io::Result<i32> {
     println!("//NOTE cant be more than 17 char or less than 3 it cant contain spaces");
     print!("server name: ");
     stdout().flush().unwrap();
-    let mut server_name_string: String = String::new();
+    let mut server_name_string: String  = String::new();
     let _ = stdin().read_line(&mut server_name_string);
 
     let server_name = server_name_string.trim_ascii_end();
@@ -130,15 +129,15 @@ pub async fn first_time() -> std::io::Result<i32> {
     print!("choose a server status(0/1): ");
     stdout().flush().unwrap();
     let mut status_string: String = String::new();
-    let mut status_u8: u8 = 0;
+    let status_u8: u8 ;
     loop {
         stdin().read_line(&mut status_string).expect("1");
         let status = status_string.trim_ascii_end();
         if status == "0" {
-            *&mut status_u8 = 0;
+            status_u8 = 0;
             break;
         } else if status == "1" {
-            *&mut status_u8 = 1;
+            status_u8 = 1;
             break;
         } else {
             println!("enter a valid number");
@@ -146,7 +145,7 @@ pub async fn first_time() -> std::io::Result<i32> {
     }
     let server_status = status_u8;
     //TODO yaml value ^
-    let mut server_password = String::new();
+    let server_password: String;// = String::new();
     loop {
         println!("password can be 3~20 characters and numbers punctuation ");
         print!("server password: ");
@@ -163,7 +162,7 @@ pub async fn first_time() -> std::io::Result<i32> {
             stdout().flush().unwrap();
             let paswd_confirm = read_password().unwrap();
             if paswd_confirm == password_str {
-                *&mut server_password = password_str;
+                server_password = password_str;
                 break;
             } else {
                 println!("password do not match");
@@ -176,7 +175,7 @@ pub async fn first_time() -> std::io::Result<i32> {
     println!("now getting the user's identity this will be the admin user for the server and a user to connect to other servers");
     //TODO input  = {password , name , username} data = {input, id, uuid, + registration server uuid  }
 
-    let mut name = String::new();
+    let name: String; //= String::new();
     loop {
         println!("name should be 3~20 characters of any language ");
         print!("name: ");
@@ -188,7 +187,7 @@ pub async fn first_time() -> std::io::Result<i32> {
         let is_valid = is_valid_str(&name_str);
         if (name_str.chars().count() <= 20) && (name_str.chars().count() >= 3) && is_valid
         {
-            *&mut name = name_str;
+            name = name_str;
             break;
         } else {
             println!("enter a valid name ");
@@ -196,7 +195,7 @@ pub async fn first_time() -> std::io::Result<i32> {
     };
 
     //TODO name before username
-    let mut user_name = String::new();
+    let user_name : String; // 
     loop {
         println!(
             "username should be no spaces 3~20 characters of any language numbers punctuation "
@@ -212,20 +211,20 @@ pub async fn first_time() -> std::io::Result<i32> {
             && (user_name_str.chars().count() >= 3)
             && is_valid
         {
-            *&mut user_name = user_name_str;
+            user_name = user_name_str;
             break;
         } else {
             println!("enter a valid username ");
         };
     };
-    let mut user_password = String::new();
+    let user_password: String;
     loop {
         println!("password can be 3~20 characters and numbers punctuation ");
         print!("password: ");
         stdout().flush().unwrap();
         let password_string = read_password().unwrap(); //String::new();
         let password_str = password_string.trim_ascii_end().to_owned();
-        let is_valid = is_valid_str(&password_str);
+        let is_valid = is_valid_str(password_str.as_str());
         if (password_str.chars().count() <= 20)
             && (password_str.chars().count() >= 3)
             && is_valid
@@ -235,7 +234,7 @@ pub async fn first_time() -> std::io::Result<i32> {
             stdout().flush().unwrap();
             let paswd_confirm = read_password().unwrap();
             if paswd_confirm == password_str {
-                *&mut user_password = password_str;
+                user_password = password_str;
                 break;
             } else {
                 println!("password do not match");
@@ -252,11 +251,11 @@ pub async fn first_time() -> std::io::Result<i32> {
     let machine_memory = sys.total_memory();
     let machine_swap = sys.total_swap();
     let disks = Disks::new_with_refreshed_list();
-    let mut available_storage: u64 = 1;
+    let mut available_storage: u64 = 0 ;
     for disk in &disks {
         let ds = disk.available_space();
-        let dps = ds + &available_storage;
-        *&mut available_storage = dps;
+        let dps = ds + available_storage;
+        available_storage = dps;
     }
     let core_count = sys
         .physical_core_count()
@@ -265,9 +264,9 @@ pub async fn first_time() -> std::io::Result<i32> {
 
     let ip = local_ip().expect("could not get ip to start db ");
     let str_ip = format!("{ip}");
-    openssl_cert(str_ip.as_str());
+    openssl_cert(str_ip.as_str()).await;
 
-    start_db_command(str_ip.as_str());
+    start_db_command(str_ip.as_str()).await;
     
     let database_init_conn = DB {
         addr: str_ip.as_str(),
@@ -329,16 +328,12 @@ pub async fn first_time() -> std::io::Result<i32> {
     Ok(0)
 }
 
-fn is_valid_str(s: &String) -> bool {
+fn is_valid_str(s: &str) -> bool {
     let numerics = s.chars().filter(|c| c.is_numeric()).count();
     let letters = s.chars().filter(|c| c.is_alphabetic()).count();
     let punc = s.chars().filter(|c| c.is_ascii_punctuation()).count();
     //let num = s.chars().all(|c| c.is_ascii_digit()).count();
     let length = s.chars().count();
     let total = numerics + letters + punc;
-    return if total == length {
-        true
-    } else {
-        false
-    }
+    return  total == length 
 }

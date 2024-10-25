@@ -1,3 +1,4 @@
+
 use std::fs::{create_dir_all, exists, remove_file, File};
 use std::io::Write;
 use std::io::{Error, ErrorKind};
@@ -35,13 +36,13 @@ pub fn openssl_ld_check(home_path: &str) -> u8 {
     }
 }
 
-pub fn open_command() {
+pub async fn open_command() -> i32{
     let cp = c_path();
     let hp = h_path();
     let san_p = format!("{}/tmp/san.cnf",cp.as_str());
     let cert_p = format!("{}/Connie/cert/cert.pem",hp.as_str());
     let key_p = format!("{}/Connie/cert/cert.pem",hp.as_str());
-    Command::new("sh")
+    let command = Command::new("sh")
         .arg("openssl")
         .arg("req")
         .arg("-x509")
@@ -57,11 +58,17 @@ pub fn open_command() {
         .arg("-config")
         .arg(san_p)
         .output()
-        .expect("failed to run openssl req command ");
-    println!("process: created openssl certificate");
+        .is_ok();//expect("failed to run openssl req command ");
+    return if command {
+       0 
+    }else {
+        1
+    };
+    // println!("process: created openssl certificate ");
+    
 }
 
-pub fn openssl_cert(ip: &str) {
+pub async fn openssl_cert(ip: &str) -> i32 {
     let cp = c_path();
     println!("process: creating openssl certificate");
     let path = format!("{cp}/tmp/san.cnf");
@@ -98,6 +105,8 @@ pub fn openssl_cert(ip: &str) {
     }
     let mut f = File::create(path.as_str()).expect("could not create a openssl tls config cert");
     f.write_all(data.as_bytes()).expect("could not write data to req config");
-    open_command();
-    println!("finished: openssl certificate successfully yay")
+    let cert_state = open_command().await;
+    println!("cert state = {}",cert_state);
+    return cert_state
+    
 }

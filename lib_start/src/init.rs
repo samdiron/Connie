@@ -30,7 +30,7 @@ pub fn check_pid_lockfile() -> i32 {
     println!("process: checking pid file lock");
     let mut e_bool: bool = File::open(full_path.as_str()).is_ok();
     if File::open(cp).is_err_and(|e| e.kind() == ErrorKind::NotFound ){
-        *&mut e_bool = true
+        e_bool = true
     }
 
     return if e_bool {
@@ -41,11 +41,11 @@ pub fn check_pid_lockfile() -> i32 {
         sys.refresh_all();
         let mut is_it: i32 = 2;
         for pid in sys.processes() {
-            if pid_lock_file.contains(pid.0.to_string().as_str()) == true {
-                *&mut is_it = 0;
+            if pid_lock_file.contains(pid.0.to_string().as_str()) {
+                is_it = 0;
                 println!("there is a connie process already running");
             } else {
-                *&mut is_it = 0;
+                is_it = 0;
                 println!("process: finished checking pid file lock");
                 remove_file(full_path.as_str()).expect("TODO: panic message");
                 let file = File::create_new(full_path.as_str())
@@ -90,8 +90,8 @@ pub async fn start() -> Result<LocalMachine> {
         }
         let ip = local_ip().expect("could no get ip");
         let ip = format!("{}", ip);
-        openssl_cert(ip.as_str());
-        start_db_command(ip.as_str());
+        let _os =openssl_cert(ip.as_str()).await;
+        let _ds = start_db_command(ip.as_str()).await;
         let db_conn = DB {
             addr: ip.as_str(),
             remote: false,
