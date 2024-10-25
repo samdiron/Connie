@@ -62,9 +62,10 @@ pub fn check_pid_lockfile() -> i32 {
             .expect("could not create new pid lock file");
         create_pid(file);
         0
-    }; //.expect("TODO: panic message");
-     //return 1;
+    }; 
 }
+
+
 pub async fn start() -> Result<LocalMachine> {
     let cp = c_path();
     println!("{}",cp);

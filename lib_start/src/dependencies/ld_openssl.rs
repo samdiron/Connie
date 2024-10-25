@@ -41,7 +41,7 @@ pub async fn open_command() -> i32{
     let hp = h_path();
     let san_p = format!("{}/tmp/san.cnf",cp.as_str());
     let cert_p = format!("{}/Connie/cert/cert.pem",hp.as_str());
-    let key_p = format!("{}/Connie/cert/cert.pem",hp.as_str());
+    let key_p = format!("{}/Connie/key/key.pem",hp.as_str());
     let command = Command::new("sh")
         .arg("openssl")
         .arg("req")
