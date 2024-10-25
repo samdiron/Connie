@@ -1,6 +1,7 @@
-use std::fs::{remove_file, File, exists};
+use std::fs::{create_dir_all, exists, remove_file, File};
 use std::io::Write;
 use std::io::{Error, ErrorKind};
+use std::path::PathBuf;
 use std::process::Command;
 use crate::common::path::h_path;
 use crate::common::path::c_path;
@@ -18,7 +19,7 @@ pub fn openssl_ld_check(home_path: &str) -> u8 {
     //.expect("ERROR: could not run openssl --version");
     // we will pretend that we have a version requirement of
     // OpenSSL 3.3.0
-    return if openssl_check == true {
+    return if openssl_check {
         0
     } else {
         let error_data = format!(
@@ -37,10 +38,9 @@ pub fn openssl_ld_check(home_path: &str) -> u8 {
 pub fn open_command() {
     let cp = c_path();
     let hp = h_path();
-    let thp = hp.clone();
-    let san_p = format!("{cp}/tmp/san.cnf");
-    let cert_p = format!("{hp}/Connie/cert/cert.pem");
-    let key_p = format!("{thp}/Connie/cert/cert.pem");
+    let san_p = format!("{}/tmp/san.cnf",cp.as_str());
+    let cert_p = format!("{}/Connie/cert/cert.pem",hp.as_str());
+    let key_p = format!("{}/Connie/cert/cert.pem",hp.as_str());
     Command::new("sh")
         .arg("openssl")
         .arg("req")
@@ -65,8 +65,14 @@ pub fn openssl_cert(ip: &str) {
     let cp = c_path();
     println!("process: creating openssl certificate");
     let path = format!("{cp}/tmp/san.cnf");
-    // let dir_p = format!("{cp}/tmp");
-
+    let dir_p = format!("{cp}/tmp");
+    let mut  pathbuf = PathBuf::new();
+    pathbuf.push(dir_p);
+    let check = pathbuf.exists();
+    if !check {
+        create_dir_all(pathbuf.clone()).expect("could not create dir");
+        pathbuf.push(path.as_str());
+    }
     let data = format!(
         "
   [req]
@@ -87,10 +93,10 @@ pub fn openssl_cert(ip: &str) {
     );
     println!("creating {}", path.as_str());
     let exist = exists(path.as_str()).unwrap();
-    if exist == true {
-        let _ = remove_file(path.as_str()).expect("could not remove old san.cnf");
+    if exist {
+        remove_file(path.as_str()).expect("could not remove old san.cnf");
     }
-    let mut f = File::create_new(path.as_str()).expect("could not create a openssl tls config cert");
+    let mut f = File::create(path.as_str()).expect("could not create a openssl tls config cert");
     f.write_all(data.as_bytes()).expect("could not write data to req config");
     open_command();
     println!("finished: openssl certificate successfully yay")

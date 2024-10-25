@@ -1,3 +1,5 @@
+#![allow(clippy::if_same_then_else)]
+#![allow(clippy::deref_addrof)]
 use crate::{
     dependencies::{
     ld_openssl::openssl_cert,
@@ -16,7 +18,13 @@ use std::io::{stdin, stdout, Write};
 use std::path::PathBuf;
 use std::process::exit;
 use surreal_db::server::structs::Hardware;
-use surreal_db::{server::structs::LocalMachine, user::sign_up::DUser};
+use surreal_db::{
+    server::structs::LocalMachine,
+    user::sign_up::DUser,
+    db::DB,
+    // db::DBASE,
+
+};
 use sysinfo::{Disks, System};
 use uuid::Uuid;
 
@@ -31,7 +39,7 @@ pub async fn first_time() -> std::io::Result<i32> {
     if consent.to_lowercase() == "yes" {
         println!("setting up now :)");
     } else if consent.trim_ascii_end() == "y" {
-        println!("setting up now :)");
+        println!("okay setting up now :)");
     } else if consent.trim_ascii_end() == "dev" {
         println!("okay");
     } else {
@@ -39,19 +47,19 @@ pub async fn first_time() -> std::io::Result<i32> {
     }
     println!("process: creating ~/.config/connie");
     let c_dir = c_path();
-    let config_path = format!("{}/",c_dir.as_str());
-    let check = exists(config_path.as_str()).expect("i have nothing");
+    let config_path = c_dir.as_str();
+    let check = exists(config_path).expect("i have nothing");
     let mut  path_tmp = PathBuf::new();
-    path_tmp.push(config_path.as_str());
+    path_tmp.push(config_path);
     path_tmp.push("/tmp");
     let check_tmp = exists(path_tmp.clone()).expect("could not check config/tmp");
-    if check == false {
+    if !check {
         // create_dir(config_path.as_str()).expect("could not create config dir");
         //let mut  path = PathBuf::new();
 
-        let _ = create_dir_all(path_tmp).expect("TODO: panic message");
-    }else if  check_tmp == false {
-        let _ = create_dir_all(path_tmp).expect("TODO: panic message");
+        create_dir_all(path_tmp).expect("TODO: panic message");
+    }else if  !check_tmp {
+        create_dir_all(path_tmp).expect("TODO: panic message");
     }
 
 
@@ -148,7 +156,7 @@ pub async fn first_time() -> std::io::Result<i32> {
         let is_valid = is_valid_str(&password_str);
         if (password_str.chars().count() <= 20)
             && (password_str.chars().count() >= 3)
-            && (is_valid == true)
+            && is_valid
         {
             //
             print!("Confirm password: ");
@@ -169,7 +177,7 @@ pub async fn first_time() -> std::io::Result<i32> {
     //TODO input  = {password , name , username} data = {input, id, uuid, + registration server uuid  }
 
     let mut name = String::new();
-    let _ = loop {
+    loop {
         println!("name should be 3~20 characters of any language ");
         print!("name: ");
         stdout().flush().unwrap();
@@ -178,7 +186,7 @@ pub async fn first_time() -> std::io::Result<i32> {
 
         let name_str = name_string.trim_ascii_end().to_owned();
         let is_valid = is_valid_str(&name_str);
-        if (name_str.chars().count() <= 20) && (name_str.chars().count() >= 3) && (is_valid == true)
+        if (name_str.chars().count() <= 20) && (name_str.chars().count() >= 3) && is_valid
         {
             *&mut name = name_str;
             break;
@@ -189,7 +197,7 @@ pub async fn first_time() -> std::io::Result<i32> {
 
     //TODO name before username
     let mut user_name = String::new();
-    let _ = loop {
+    loop {
         println!(
             "username should be no spaces 3~20 characters of any language numbers punctuation "
         );
@@ -202,7 +210,7 @@ pub async fn first_time() -> std::io::Result<i32> {
         let is_valid = is_valid_str(&user_name_str);
         if (user_name_str.chars().count() <= 20)
             && (user_name_str.chars().count() >= 3)
-            && (is_valid == true)
+            && is_valid
         {
             *&mut user_name = user_name_str;
             break;
@@ -220,7 +228,7 @@ pub async fn first_time() -> std::io::Result<i32> {
         let is_valid = is_valid_str(&password_str);
         if (password_str.chars().count() <= 20)
             && (password_str.chars().count() >= 3)
-            && (is_valid == true)
+            && is_valid
         {
             //
             print!("Confirm password: ");
@@ -254,18 +262,26 @@ pub async fn first_time() -> std::io::Result<i32> {
         .physical_core_count()
         .expect("could not read core count");
 
-    //let start_db = Command::new("sh").arg("surreal").arg("start");
 
     let ip = local_ip().expect("could not get ip to start db ");
     let str_ip = format!("{ip}");
     openssl_cert(str_ip.as_str());
 
     start_db_command(str_ip.as_str());
+    
+    let database_init_conn = DB {
+        addr: str_ip.as_str(),
+        remote: false,
+    };
+    database_init_conn.connect().await.expect("could not connect to db");
+    // let _db = DBASE.clone();
 
+
+    let host2 = host_name.clone();
     let machine = LocalMachine {
         cpid: server_uuid,
         passwd: server_password,
-        host_name: host_name.clone(),
+        host_name: host2,
         status: server_status,
         // max_client: max_clients,
         server_name: server_name_string,

@@ -13,7 +13,7 @@ pub struct DB<'a> {
 impl<'a> DB<'a> {
     pub async fn connect(self) -> surrealdb::Result<()> {
         let ip = format!("{}:8060", self.addr);
-        if self.remote == false {
+        if !self.remote {
             DBASE.connect::<Ws>(ip.as_str()).await?;
             Ok(())
         } else {
