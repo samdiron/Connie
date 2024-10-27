@@ -3,7 +3,7 @@ use std::fs::exists;
 use std::fs::{create_dir_all, File};
 use std::io::{Error, ErrorKind, Write};
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, exit, Stdio};
 use crate::common::path::h_path;
 
 
@@ -49,7 +49,7 @@ pub async fn start_db_command(ip: &str) -> i32 {
     let cert_p = format!("{hp2}/Connie/cert/cert.pem");
     let key_p = format!("{hp3}/Connie/cert/cert.pem");
     let full_ip = format!("{}:8060", ip);
-    let _ = Command::new("sh")
+    let command = Command::new("sh")
         .arg("surreal")
         .arg("start")
         .arg(db_path)//"rocksdb:/Connie/surreal/Connie.db")
@@ -59,8 +59,19 @@ pub async fn start_db_command(ip: &str) -> i32 {
         .arg(key_p)
         .arg("-b")
         .arg(full_ip.as_str())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .output()
         .expect("could not run surreal db start command");
-    println!("finished: SurrealDB started on port 8060 ");
-    return 0;
+    let status = command.status;
+    return if status.success() {
+        println!("finished: SurrealDB started on port 8060 ");
+        0
+    } else {
+        println!("error surreal  command");
+        exit(190);
+
+
+    }
+
 }

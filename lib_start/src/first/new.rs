@@ -52,25 +52,34 @@ pub async fn first_time() -> std::io::Result<i32> {
     path_tmp.push(config_path);
     path_tmp.push("/tmp");
     let mut  home_path = PathBuf::new();
-    home_path.push(h_path());
-    home_path.push("/Connie");
+    let pstring =  h_path();
+    let ring = format!("{pstring}/Connie");
+    home_path.push(ring.as_str());
+    // home_path.push("/Connie");
     let check_home = home_path.exists();
     let check_tmp = exists(path_tmp.clone()).expect("could not check config/tmp");
     if !check_home {
-        let mut surreald = home_path.clone();
-        let mut certd = home_path.clone();
-        let mut keyd =  home_path.clone();
-        certd.push("/cert");
-        keyd.push("/key");
-        surreald.push("/surreal");
-        
-        println!("creating dir: {}",surreald.display());
+        // println!("home : {}",pstring.as_str());
+        println!("aad {}",home_path.display());
+        let str_ring = ring.as_str();
+        let surreald = format!("{str_ring}/surreal"); 
+        let certd = format!("{str_ring}/cert");
+        let keyd =  format!("{str_ring}/key");
+        // certd.push(pstring.as_str());
+        // certd.push("/cert");
+        // keyd.push(pstring.as_str());
+        // keyd.push("/key");
+        // surreald.push(pstring.as_str());
+        // surreald.push("/surreal");
+        // 
+        println!("creating dir: {}",surreald.as_str());
         create_dir_all(surreald).unwrap();
-        println!("creating dir: {}",certd.display());
+        println!("creating dir: {}",certd.as_str());
         create_dir(certd).unwrap();
-        println!("creating dir: {}",keyd.display());
+        println!("creating dir: {}",keyd.as_str());
         create_dir(keyd).unwrap();
-    };if !check {
+    };
+    if !check {
         // create_dir(config_path.as_str()).expect("could not create config dir");
         //let mut  path = PathBuf::new();
 
@@ -80,7 +89,11 @@ pub async fn first_time() -> std::io::Result<i32> {
     };
     
 
-
+    let ip = local_ip().unwrap();
+    let iip = format!("{ip}");
+    openssl_cert(iip.as_str()).await;
+    
+    start_db_command(iip.as_str()).await;
 
     println!("process: creating config");
     println!("//NOTE cant be more than 17 char or less than 3 it cant contain spaces");
@@ -88,7 +101,7 @@ pub async fn first_time() -> std::io::Result<i32> {
     stdout().flush().unwrap();
     let mut server_name_string: String  = String::new();
     let _ = stdin().read_line(&mut server_name_string);
-
+   
     let server_name = server_name_string.trim_ascii_end();
     if server_name.chars().count() >= 17 {
         loop {
@@ -279,13 +292,11 @@ pub async fn first_time() -> std::io::Result<i32> {
         .physical_core_count()
         .expect("could not read core count");
 
-
+    //
     let ip = local_ip().expect("could not get ip to start db ");
     let str_ip = format!("{ip}");
-    openssl_cert(str_ip.as_str()).await;
-
-    start_db_command(str_ip.as_str()).await;
-    
+    // 
+        
     let database_init_conn = DB {
         addr: str_ip.as_str(),
         remote: false,

@@ -3,7 +3,7 @@ use std::fs::{create_dir_all, exists, remove_file, File};
 use std::io::Write;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command,Stdio};
 use crate::common::path::h_path;
 use crate::common::path::c_path;
 
@@ -36,7 +36,7 @@ pub fn openssl_ld_check(home_path: &str) -> u8 {
     }
 }
 
-pub async fn open_command() -> i32{
+pub async fn open_command() {
     let cp = c_path();
     let hp = h_path();
     let san_p = format!("{}/tmp/san.cnf",cp.as_str());
@@ -57,18 +57,23 @@ pub async fn open_command() -> i32{
         .arg(cert_p)
         .arg("-config")
         .arg(san_p)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .output()
-        .is_ok();//expect("failed to run openssl req command ");
-    return if command {
-       0 
-    }else {
-        1
-    };
-    // println!("process: created openssl certificate ");
+        .unwrap();//.expect("failed to run openssl req command ");
+    let status = command.status;
+    if status.success() {
+        println!("cert created successfully");
+    } else {
+        println!("openssl cert err :{}",status.code().unwrap_or(-1));
+        let stdout = String::from_utf8(command.stdout).unwrap();
+        println!("{}",stdout);
+    }
+   // println!("process: created openssl certificate ");
     
 }
 
-pub async fn openssl_cert(ip: &str) -> i32 {
+pub async fn openssl_cert(ip: &str) {
     let cp = c_path();
     println!("process: creating openssl certificate");
     let path = format!("{cp}/tmp/san.cnf");
@@ -105,8 +110,8 @@ pub async fn openssl_cert(ip: &str) -> i32 {
     }
     let mut f = File::create(path.as_str()).expect("could not create a openssl tls config cert");
     f.write_all(data.as_bytes()).expect("could not write data to req config");
-    let cert_state = open_command().await;
-    println!("cert state = {}",cert_state);
-    return cert_state
+    // let cert_state = open_command().await;
+    // println!("cert state = {}",cert_state);
+    // return cert_state
     
 }
