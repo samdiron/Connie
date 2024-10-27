@@ -1,4 +1,3 @@
-use std::fmt::format;
 use std::io::Write;
 use std::sync::Arc;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
@@ -82,7 +81,7 @@ impl TestPki {
         ];
         let ca_key = KeyPair::generate_for(alg).unwrap();
         let ca_cert = ca_params.self_signed(&ca_key).unwrap();
-        let mut local_ip = local_ip().unwrap();
+        let local_ip = local_ip().unwrap();
         let ip = format!("{}",local_ip);
         //let ip = String::from(("{}",local_ip));
         // Create a server end entity cert issued by the CA.
