@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use surrealdb::engine::remote::ws::{Client, Ws, Wss};
 use surrealdb::Surreal;
-
+// use lazy_static::lazy_static;
 pub static DBASE: Lazy<Surreal<Client>> = Lazy::new(Surreal::init);
 
 #[derive()]
