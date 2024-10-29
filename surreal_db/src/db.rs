@@ -1,7 +1,37 @@
+use std::path::PathBuf;
 use once_cell::sync::Lazy;
 use surrealdb::engine::remote::ws::{Client, Ws, Wss};
 use surrealdb::Surreal;
-// use lazy_static::lazy_static;
+use surrealdb::engine::local::Db;
+use lazy_static::lazy_static;
+use surrealdb::engine::local::RocksDb;
+use directories::BaseDirs;
+
+
+fn h_path() -> String {
+    let mut path :PathBuf = PathBuf::new();
+    if let Some(base) = BaseDirs::new() {
+        *&mut path = base.home_dir().to_owned();
+    }
+    let sg = path.to_str().unwrap();
+    let string = sg.to_owned();
+    let string = format!("{string}/Connie/surreal/Connie.db");
+    return string
+}
+
+async fn base() -> Surreal<Db>{//surrealdb::api::engine::local::Db> {
+    let path = h_path();
+    let db = Surreal::new::<RocksDb>(path).await.expect("could not connect to db ");
+    return db
+}
+pub lazy_static! {
+    static ref PATH : String = { let path = h_path(); return path};
+    static ref DATABASE: Surreal<surrealdb::api::engine::local::Db>  = {
+        let bind = base().poll();
+        return bind
+    }
+}
+
 pub static DBASE: Lazy<Surreal<Client>> = Lazy::new(Surreal::init);
 
 #[derive()]

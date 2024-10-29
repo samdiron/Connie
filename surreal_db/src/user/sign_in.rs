@@ -5,7 +5,7 @@ use surrealdb::opt::auth::Scope;
 use uuid::Uuid;
 
 //static DB: Lazy<Surreal<Client>> = Lazy::new(Surreal::init);
-//rename cpid to a better thing and add a uuid
+//rename cpid to a better thing and add an uuid
 #[derive(Serialize)]
 pub struct User<'a> {
     pub cpid: Uuid,
