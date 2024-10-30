@@ -24,7 +24,7 @@ pub struct User {
 impl DUser {
     pub async fn sign_up_admin(self) -> surrealdb::Result<String> {
         let jwt = DBASE
-            .signup(Credentials {
+            .signup(Scope {
                 namespace: "private_infer",
                 database: "admin",
                 scope: "user",

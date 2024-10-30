@@ -2,7 +2,7 @@
 use crate::{
     dependencies::{
     ld_openssl::openssl_cert,
-    ld_surrealdb::start_db_command,
+    // ld_surrealdb::start_db_command,
     }
     ,common::path::{
         c_path,
@@ -20,8 +20,6 @@ use surreal_db::server::structs::Hardware;
 use surreal_db::{
     server::structs::LocalMachine,
     user::sign_up::DUser,
-    db::DB,
-    // db::DBASE,
 
 };
 use sysinfo::{Disks, System};
@@ -93,7 +91,7 @@ pub async fn first_time() -> std::io::Result<i32> {
     let iip = format!("{ip}");
     openssl_cert(iip.as_str()).await;
     
-    start_db_command(iip.as_str()).await;
+    // start_db_command(iip.as_str()).await;
 
     println!("process: creating config");
     println!("//NOTE cant be more than 17 char or less than 3 it cant contain spaces");
@@ -292,18 +290,18 @@ pub async fn first_time() -> std::io::Result<i32> {
         .physical_core_count()
         .expect("could not read core count");
 
-    //
-    let ip = local_ip().expect("could not get ip to start db ");
-    let str_ip = format!("{ip}");
+    // //
+    // let ip = local_ip().expect("could not get ip to start db ");
+    // let str_ip = format!("{ip}");
     // 
         
-    let database_init_conn = DB {
-        addr: str_ip.as_str(),
-        remote: false,
-    };
-    database_init_conn.connect().await.expect("could not connect to db");
-    // let _db = DBASE.clone();
-
+    // let database_init_conn = DB {
+    //     addr: str_ip.as_str(),
+    //     remote: false,
+    // };
+    // database_init_conn.connect().await.expect("could not connect to db");
+    // // let _db = DBASE.clone();
+    //
 
     let host2 = host_name.clone();
     let machine = LocalMachine {

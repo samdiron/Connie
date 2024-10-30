@@ -1,6 +1,6 @@
 use crate::db::DBASE;
 use serde::{Deserialize, Serialize};
-use surrealdb::RecordId;
+use surrealdb::opt::RecordId;
 use uuid::Uuid;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LocalMachine {

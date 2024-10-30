@@ -1,3 +1,4 @@
+#![allow(clippy::clone_on_copy)]
 // use std::process::exit;
 use clap::{command, ArgGroup, Arg, ArgMatches};
 use lib_start::init::start;

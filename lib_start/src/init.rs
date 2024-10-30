@@ -8,7 +8,7 @@ use rpassword::read_password;
 use std::fs::{remove_file,File};
 use std::io::{stdout, Error, ErrorKind, Read, Result, Write};
 use std::process::exit;
-use surreal_db::db::DB;
+// use surreal_db::db::DB;
 use surreal_db::server::structs::{start_minfo, LocalMachine};
 use sysinfo::get_current_pid;
 use sysinfo::System; //{Disks, System}; // we will need to check the disk usage here
@@ -93,11 +93,11 @@ pub async fn start() -> Result<LocalMachine> {
         let ip = format!("{}", ip);
         let _os =openssl_cert(ip.as_str()).await;
         let _ds = start_db_command(ip.as_str()).await;
-        let db_conn = DB {
-            addr: ip.as_str(),
-            remote: false,
-        };
-        let _ = db_conn.connect().await;
+        // let db_conn = DB {
+        //     addr: ip.as_str(),
+        //     remote: false,
+        // };
+        // let _ = db_conn.connect().await;
         let machine = start_minfo().await.expect("could not get machine info ");
         let passwd = machine.passwd.clone();
         let mut i = 0;
