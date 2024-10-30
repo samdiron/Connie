@@ -2,7 +2,7 @@
 // Deserialize && token  will be needed later
 use crate::db::DBASE;
 use serde::{Deserialize, Serialize};
-use surrealdb::opt::auth::Credentials;
+use surrealdb::opt::auth::Scope;
 use uuid::Uuid;
 //static DB: Lazy<Surreal<Client>> = Lazy::new(Surreal::init);
 //rename cpid to a better thing and add an uuid
@@ -45,7 +45,7 @@ impl DUser {
 impl User {
     pub async fn sign_up(self) -> surrealdb::Result<String> {
         let jwt = DBASE
-            .signup(Credentials {
+            .signup(Scope {
                 namespace: "user",
                 database: "test",
                 scope: "user",
