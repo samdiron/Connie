@@ -20,6 +20,7 @@ use surreal_db::server::structs::Hardware;
 use surreal_db::{
     server::structs::LocalMachine,
     user::sign_up::DUser,
+    db::DBC,
 
 };
 use sysinfo::{Disks, System};
@@ -90,7 +91,13 @@ pub async fn first_time() -> std::io::Result<i32> {
     let ip = local_ip().unwrap();
     let iip = format!("{ip}");
     openssl_cert(iip.as_str()).await;
-    
+    let db_conn = DBC {
+        addr: None,
+        remote: false,
+        lm: true,
+    };
+    db_conn.connect().await;
+
     // start_db_command(iip.as_str()).await;
 
     println!("process: creating config");

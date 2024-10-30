@@ -1,4 +1,4 @@
-use crate::db::DBASE;
+use crate::db::DB;
 use serde::{Deserialize, Serialize};
 use surrealdb::opt::RecordId;
 use uuid::Uuid;
@@ -24,7 +24,7 @@ pub struct Record {
     id: RecordId,
 }
 pub async fn start_minfo() -> surrealdb::Result<LocalMachine> {
-    let db = DBASE.clone();
+    let db = DB.clone();
     db.use_ns("local_unit").use_db("private_infer").await?;
     let machine: Option<LocalMachine> = db.select(("unit", "localmachine")).await?;
     let unwrapped = machine.unwrap();
@@ -34,7 +34,7 @@ pub async fn start_minfo() -> surrealdb::Result<LocalMachine> {
 
 impl LocalMachine {
     pub async fn create(self) -> surrealdb::Result<()> {
-        let db = DBASE.clone();
+        let db = DB.clone();
         db.use_ns("local_unit").use_db("private_infer").await?;
         let created: Option<Record> = db
             .create(("unit", "local_machine"))

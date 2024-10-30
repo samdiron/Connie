@@ -1,6 +1,6 @@
 // use std::hash::Hash;
 // Deserialize && token  will be needed later
-use crate::db::DBASE;
+use crate::db::DB;
 use serde::{Deserialize, Serialize};
 use surrealdb::opt::auth::Scope;
 use uuid::Uuid;
@@ -23,7 +23,7 @@ pub struct User {
 }
 impl DUser {
     pub async fn sign_up_admin(self) -> surrealdb::Result<String> {
-        let jwt = DBASE
+        let jwt = DB
             .signup(Scope {
                 namespace: "private_infer",
                 database: "admin",
@@ -44,7 +44,7 @@ impl DUser {
 
 impl User {
     pub async fn sign_up(self) -> surrealdb::Result<String> {
-        let jwt = DBASE
+        let jwt = DB
             .signup(Scope {
                 namespace: "user",
                 database: "test",
