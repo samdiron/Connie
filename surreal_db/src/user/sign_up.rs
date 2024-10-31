@@ -30,15 +30,16 @@ impl DUser {
                 scope: "user",
                 params: DUser {
                     is_admin: self.is_admin,
-                    user_name: self.user_name,
+                    user_name: self.user_name.clone(),
                     name: self.name,
                     cpid: self.cpid,
                     pass: self.pass,
                 },
             })
             .await?;
-        let token = jwt.into_insecure_token();
-        Ok(token)
+        let token = jwt.as_insecure_token();
+        println!("admin user signup token generated for user:{}",self.user_name);
+        Ok(token.to_owned())
     }
 }
 
@@ -57,7 +58,7 @@ impl User {
                 },
             })
             .await?;
-        let token = jwt.into_insecure_token();
-        Ok(token)
+        let token = jwt.as_insecure_token();
+        Ok(token.to_owned())
     }
 }

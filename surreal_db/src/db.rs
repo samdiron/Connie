@@ -1,5 +1,5 @@
 #![allow(clippy::let_and_return)]
-
+#![allow(clippy::collapsible_else_if)]
 
 use std::path::PathBuf;
 use std::process::exit;
@@ -41,6 +41,7 @@ impl DBC {
             let path = h_path();
             let rocks = format!("rocksdb://{path}");
             DB.connect::<RocksDb>(rocks).await.expect("could not connect to local db");
+            println!("lmdb connected")
         }else {
             
             if let Some(addr) = self.addr {

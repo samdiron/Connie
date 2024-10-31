@@ -53,7 +53,6 @@ impl LocalMachine {
             })
             .await?;
         dbg!(created);
-        drop(db);
         Ok(())
     }
 }

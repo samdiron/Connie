@@ -16,7 +16,7 @@ use std::fs::{create_dir, create_dir_all, exists, File};
 use std::io::{stdin, stdout, Write};
 use std::path::PathBuf;
 use std::process::exit;
-use surreal_db::server::structs::Hardware;
+use surreal_db::{db::DB, server::structs::Hardware};
 use surreal_db::{
     server::structs::LocalMachine,
     user::sign_up::DUser,
@@ -97,7 +97,7 @@ pub async fn first_time() -> std::io::Result<i32> {
         lm: true,
     };
     db_conn.connect().await;
-
+    DB.use_ns("machine").use_db("count").await.expect("no db");
     // start_db_command(iip.as_str()).await;
 
     println!("process: creating config");
