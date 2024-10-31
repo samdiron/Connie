@@ -22,9 +22,9 @@ pub struct User {
     pub pass: String,
 }
 impl DUser {
-    pub async fn sign_up_admin(self) -> surrealdb::Result<String> {
+    pub async fn sign_up_admin(self) -> surrealdb::Result<()> {
         let jwt = DB
-            .signup(Credentials {
+            .signup(Scope {
                 namespace: "private_infer",
                 database: "admin",
                 scope: "user",
@@ -46,7 +46,7 @@ impl DUser {
 
 impl User {
     pub async fn sign_up(self) -> surrealdb::Result<String> {
-        let jwt = DBASE
+        let jwt = DB
             .signup(Scope {
                 namespace: "user",
                 database: "test",
