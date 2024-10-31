@@ -1,9 +1,7 @@
 // Deserialize && token  will be needed later
 use crate::db::DB;
 use serde::Serialize;
-use surrealdb::opt::auth::Root;
-use surrealdb::opt::auth::Record;
-
+use surrealdb::opt::auth::Scope;
 use uuid::Uuid;
 //static DB: Lazy<Surreal<Client>> = Lazy::new(Surreal::init);
 //rename cpid to a better thing and add an uuid
@@ -15,22 +13,11 @@ pub struct User<'a> {
 
 impl<'a> User<'a> {
     pub async fn login_in(self) -> surrealdb::Result<String> {
-       DB.signin(Root{
-            username: "root",
-            password: "root",
-        }).await?;
-       let sql = r#"
-    DEFINE ACCESS User_access ON DATABASE TYPE RECORD DURATION 24h
-    SIGNIN ( SELECT * FROM user WHERE cpid = $cpid AND crypto::argon2::compare(pass, $pass) )
-"#;
-        DB.query(sql).await?.check()?;
- 
-
         let jwt = DB
-            .signin(Record{
+            .signin(Scope{
                 namespace: "user",
                 database: "client",
-                access: "User_access",
+                scope: "user",
                 params: User {
                     cpid: self.cpid,
                     pass: self.pass,
