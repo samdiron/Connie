@@ -1,6 +1,6 @@
 use crate::db::DB;
 use serde::{Deserialize, Serialize};
-use surrealdb::opt::RecordId;
+// use surrealdb::opt::auth::Record;
 use uuid::Uuid;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LocalMachine {
@@ -18,11 +18,6 @@ pub struct Hardware {
     pub swap: u64,
     pub memory: u64,
 }
-#[derive(Deserialize, Debug)]
-pub struct Record {
-    #[allow(dead_code)]
-    id: RecordId,
-}
 pub async fn start_minfo() -> surrealdb::Result<LocalMachine> {
     let db = DB.clone();
     db.use_ns("local_unit").use_db("private_infer").await?;
@@ -36,7 +31,7 @@ impl LocalMachine {
     pub async fn create(self) -> surrealdb::Result<()> {
         let db = DB.clone();
         db.use_ns("local_unit").use_db("private_infer").await?;
-        let created: Option<Record> = db
+        let created: Option<LocalMachine> = db
             .create(("unit", "local_machine"))
             .content(LocalMachine {
                 host_name: self.host_name,
@@ -51,7 +46,7 @@ impl LocalMachine {
                     memory: self.hardware.memory,
                 },
             })
-            .await?;
+            .await.expect("could not create machine");
         dbg!(created);
         Ok(())
     }

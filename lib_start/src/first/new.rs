@@ -334,14 +334,8 @@ pub async fn first_time() -> std::io::Result<i32> {
         cpid: admin_uuid,
     };
 
-    let user_token = admin.sign_up_admin().await.expect("could not get token");
-    //.expect("could not get user token");
-    let data = format!("{},\n", user_token);
-    let home_p = h_path();
-    let home = format!("{home_p}/Connie/tmp/admin_jwt.csv");
-    let mut file = File::create_new(home.as_str()).expect("could not create file");
-    file.write_all(data.as_bytes())
-        .expect("could not write data to file");
+    admin.sign_up_admin().await.expect("could not get token");
+
 
     let yaml_config = format!(
         "

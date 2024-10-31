@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 serde = "1.0.204"
-surrealdb = { version = "1.5.5", features = ["kv-rocksdb" , "kv-mem"] }
+surrealdb = { version = "2.0.4", features = ["kv-rocksdb", "kv-mem"] }
 tokio = "1.39.2"
 once_cell = "1.19.0"
 log = "0.4.22"
