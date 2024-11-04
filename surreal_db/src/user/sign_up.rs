@@ -27,7 +27,7 @@ impl DUser {
             .signup(Scope {
                 namespace: "private_infer",
                 database: "admin",
-                scope: "user",
+                scope: "admin",
                 params: DUser {
                     is_admin: self.is_admin,
                     user_name: self.user_name,
