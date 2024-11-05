@@ -5,13 +5,7 @@ edition = "2021"
 
 [workspace]
 resolver = "1"
-members = [
-
-  "surreal_db",
-  "lib_start",
-  "protocol/tcp",
-
-]
+members = ["surreal_db", "lib_start", "protocol/tcp"]
 
 [dependencies]
 rpassword = "7.3.1"
@@ -21,7 +15,6 @@ lib_start = { path = "./lib_start" }
 #ratatui = "0.28.1"
 clap = { version = "4.5.20", features = ["cargo"] }
 tokio = "1.40.0"
-
 
 #
 # #i know it's just for a commit not cuz i wanted it

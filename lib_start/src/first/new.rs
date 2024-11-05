@@ -1,10 +1,7 @@
 #![allow(clippy::if_same_then_else)]
 use crate::{
-    dependencies::{
-    ld_openssl::openssl_cert,
-    // ld_surrealdb::start_db_command,
-    }
-    ,common::path::{
+    dependencies::ld_openssl::openssl_cert,
+    common::path::{
         c_path,
         h_path
     },
@@ -19,7 +16,7 @@ use std::process::exit;
 use surreal_db::{db::DB, server::structs::Hardware};
 use surreal_db::{
     server::structs::LocalMachine,
-    user::sign_up::DUser,
+    user::sign_up::User,
     db::DBC,
 
 };
@@ -326,15 +323,15 @@ pub async fn first_time() -> std::io::Result<i32> {
     };
     machine.create().await.expect("TODO: panic message");
 
-    let admin = DUser {
-        is_admin: true,
+    let admin = User {
+        is_admin: Some(true),
         name,
         user_name,
         pass: user_password,
         cpid: admin_uuid,
     };
 
-    admin.sign_up_admin().await.expect("could not get token");
+    admin.sign_up_A().await.expect("could not get token");
 
 
     let yaml_config = format!(
