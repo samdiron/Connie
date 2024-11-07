@@ -3,48 +3,76 @@ rewrite the start module to a lib
 learn surrealql
 
 
-start module {
 
-  make a function to see if it's first time starting{
-      check db 
-      check logs
-      check config files 
-      check handshack file 
-      server name 
-      check if server ban 
-    };
+error codes {
+4 int 
+first int {
+    dependency error 0 {
+        second int {
+            ffmpeg 1;
+            surrealdb 2;
+            nix 3;
+            net tools 4;
+            rocks db 5;
+            clang 6;
+            
+        }
+    }
+    os error 1 {
+        normal linux distro 0,
+        mac uncompatiple 1,
+        windows uncompatiple 2
+        uncompatiple os 3,
+    }
+}
 
-  make function to check hardware {
-      cpu module 
-      cpu cores / threads 
-      gpu module /vram,
-      ram,
-      storage ,
-      
+third int {
+    type of error 
+    
+    not found 0;,
+    old version 1;,
+    unresponseve 2;,
+    uncompatiple 3;,
+    
+}
+fourth int {
+    exited with the error 1,
+    exeted normally 0,
     }
 
-  make a function to make first time start {
-      display user agrement and code of conduct
-      display actions happening in first time start
-      ask if main server (a server that wont have the client backend to use less storage )//note: you can't use it as a client you can always install client side run ("cli command:want")
-      ask admin name 
-      ask admin password
-      ask numbers of client allowed at a time
-      ask do you want to continue and display the storage that will be used and -
-      what checks will happen now 
-      check os 
-      create uuid 
-      server name /client name 
-      check dependency
-      check connie version 
-      make a handshack file {
-          uuid 
-          server name 
-          connie version 
-        }
+example {
+    ffmped not found: 0101;
+    os uncompatiple: 1331;
+    nix not found: 0300;
 
-    };
-};
+}
+}
+
+
+
+
+
+protocols {
+    common {
+        encryiption,
+        packetizer,
+        handshake,
+        port 4442 connie_db_unit,
+        tls,
+    },
+    port 4443 tcp{
+        get,
+        send,
+    }
+    port 4445rtmp{
+        get stream,
+        send stream,
+    }
+    https4444{
+        tokens,
+        login info,
+    }
+}
 
 
 db module {
