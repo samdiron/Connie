@@ -5,7 +5,7 @@ edition = "2021"
 
 [workspace]
 resolver = "1"
-members = ["surreal_db", "lib_start", "protocol/tcp", "common_lib"]
+members = ["surreal_db", "lib_start", "protocol/tcp", "common_lib", "protocol/multicast"]
 
 [dependencies]
 rpassword = "7.3.1"
