@@ -113,3 +113,16 @@ db module {
 
 
 
+end-to-end-encryption for auth data gets exchanged in the hand shake and gets stored in db 
+and gets used for every time gets stored with a hash-table
+
+files/pariions encryiption: LUKS {
+        encrypt,
+        decrypt,
+}
+
+
+
+
+
+
