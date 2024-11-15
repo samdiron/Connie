@@ -1,6 +1,4 @@
 pub mod cast;
-pub mod scan;
-pub mod man;
 
 
 #[macro_use]
