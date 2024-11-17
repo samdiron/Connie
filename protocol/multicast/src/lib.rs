@@ -19,7 +19,6 @@ mod test {
         assert!(IPV4.is_multicast()); 
     }
 
-
     use crate::IPV6;
     fn ipv6_multicast_test() 
     {

@@ -1,14 +1,18 @@
 use std::net::{IpAddr, SocketAddr};
 
-use tokio::net::UdpSocket; 
+use std::net::UdpSocket; 
 use common_lib::cheat_sheet::MULTICAST_PORT;
 
 
-pub async fn cast_and_buffer(ip: IpAddr) {
+pub fn cast_and_buffer(ip: IpAddr) {
     let addr = SocketAddr::new(ip, MULTICAST_PORT);
-    let socket = UdpSocket::bind(addr).await.unwrap();
-    let msg = b"hello world is any body there";
-    socket.send(msg).await.unwrap();
+    let socket = UdpSocket::bind(addr).unwrap();
+    let msg = b"hello world is any body there\n";
+    socket.send(msg).unwrap();
+    let mut buffer = [0; 30];
+    let answer = socket.recv(&mut buffer).expect("could not get buffer");
+    let str_answer= answer.to_string();
+    println!("{:?}",str_answer);
 
 }  
 
