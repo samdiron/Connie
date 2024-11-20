@@ -1,4 +1,4 @@
-use std::net::{IpAddr, SocketAddr};
+use std::{net::{IpAddr, SocketAddr}, str::FromStr};
 
 use tokio::net::UdpSocket; 
 use common_lib::cheat_sheet::MULTICAST_PORT;
@@ -27,11 +27,15 @@ pub async fn cast_and_buffer(ip: IpAddr, command: u8)
         {
             let mut buffer = Vec::new();
             let (size, src) = socket.recv_from(&mut buffer).await.unwrap();
+            println!("source ip: {}",src);
             if size > 0 
             {
                 let string_msg = String::from_utf8_lossy(&buffer[..size]);
                 let message_info :Vec<&str> = string_msg.split("//").collect();
-               
+                let ip1 = SocketAddr::from_str(message_info[2]).unwrap();
+                if ip1 != src {
+                    println!("what");
+                }
 
 
 

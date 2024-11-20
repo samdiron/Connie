@@ -1,3 +1,4 @@
+use multicast::cast::cast_and_buffer;
 use crate::dependencies::ld_nix::nix_ld_check;
 use crate::dependencies::ld_openssl::{openssl_cert, openssl_ld_check};
 use crate::dependencies::ld_surrealdb::{start_db_command, surreal_ld_check};
@@ -7,7 +8,10 @@ use local_ip_address::local_ip;
 use rpassword::read_password;
 use std::fs::{remove_file,File};
 use std::io::{stdout, Error, ErrorKind, Read, Result, Write};
+use std::net::IpAddr;
 use std::process::exit;
+use std::str::FromStr;
+use std::sync::Arc;
 // use surreal_db::db::DB;
 use surreal_db::server::structs::{start_minfo, LocalMachine};
 use sysinfo::get_current_pid;
@@ -117,6 +121,11 @@ pub async fn start() -> Result<LocalMachine> {
                 }
             }
         }
+
+        let cast_ip = IpAddr::from_str(ip.as_str()).expect("TODO : ip str to addr msg");
+        
+        let _ = Arc::new(cast_and_buffer(cast_ip, 0));
+        
         Ok(machine)
     } else {
         let firs_time_state = first_time().await.expect("first_time process error");
