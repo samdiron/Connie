@@ -124,7 +124,7 @@ pub async fn start() -> Result<LocalMachine> {
 
         let cast_ip = IpAddr::from_str(ip.as_str()).expect("TODO : ip str to addr msg");
         
-        let _ = Arc::new(cast_and_buffer(cast_ip, 0));
+        cast_and_buffer(cast_ip, 0);
         
         Ok(machine)
     } else {
