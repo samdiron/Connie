@@ -1,11 +1,7 @@
 #![allow(clippy::if_same_then_else)]
 use crate::{
+    common::path::{c_path, h_path},
     dependencies::ld_openssl::openssl_cert,
-    common::path::{
-        c_path,
-        h_path
-    },
-
 };
 use local_ip_address::local_ip;
 use rpassword::read_password;
@@ -14,15 +10,9 @@ use std::io::{stdin, stdout, Write};
 use std::path::PathBuf;
 use std::process::exit;
 use surreal_db::{db::DB, server::structs::Hardware};
-use surreal_db::{
-    server::structs::LocalMachine,
-    user::sign_up::User,
-    db::DBC,
-
-};
+use surreal_db::{db::DBC, server::structs::LocalMachine, user::sign_up::User};
 use sysinfo::{Disks, System};
 use uuid::Uuid;
-
 
 pub async fn first_time() -> std::io::Result<i32> {
     //let _ = dependency_fn_check();
@@ -44,11 +34,11 @@ pub async fn first_time() -> std::io::Result<i32> {
     let c_dir = c_path();
     let config_path = c_dir.as_str();
     let check = exists(config_path).expect("i have nothing");
-    let mut  path_tmp = PathBuf::new();
+    let mut path_tmp = PathBuf::new();
     path_tmp.push(config_path);
     path_tmp.push("/tmp");
-    let mut  home_path = PathBuf::new();
-    let pstring =  h_path();
+    let mut home_path = PathBuf::new();
+    let pstring = h_path();
     let ring = format!("{pstring}/Connie");
     home_path.push(ring.as_str());
     // home_path.push("/Connie");
@@ -56,23 +46,23 @@ pub async fn first_time() -> std::io::Result<i32> {
     let check_tmp = exists(path_tmp.clone()).expect("could not check config/tmp");
     if !check_home {
         // println!("home : {}",pstring.as_str());
-        println!("aad {}",home_path.display());
+        println!("aad {}", home_path.display());
         let str_ring = ring.as_str();
-        let surreald = format!("{str_ring}/surreal"); 
+        let surreald = format!("{str_ring}/surreal");
         let certd = format!("{str_ring}/cert");
-        let keyd =  format!("{str_ring}/key");
+        let keyd = format!("{str_ring}/key");
         // certd.push(pstring.as_str());
         // certd.push("/cert");
         // keyd.push(pstring.as_str());
         // keyd.push("/key");
         // surreald.push(pstring.as_str());
         // surreald.push("/surreal");
-        // 
-        println!("creating dir: {}",surreald.as_str());
+        //
+        println!("creating dir: {}", surreald.as_str());
         create_dir_all(surreald).unwrap();
-        println!("creating dir: {}",certd.as_str());
+        println!("creating dir: {}", certd.as_str());
         create_dir(certd).unwrap();
-        println!("creating dir: {}",keyd.as_str());
+        println!("creating dir: {}", keyd.as_str());
         create_dir(keyd).unwrap();
     };
     if !check {
@@ -80,11 +70,13 @@ pub async fn first_time() -> std::io::Result<i32> {
         //let mut  path = PathBuf::new();
 
         create_dir_all(path_tmp).expect("TODO: panic message");
-    }else if  !check_tmp {
+    } else if !check_tmp {
         create_dir_all(path_tmp).expect("TODO: panic message");
     };
-    
 
+    // TODO : run define db functions here
+    //
+    // ;
     let ip = local_ip().unwrap();
     let iip = format!("{ip}");
     openssl_cert(iip.as_str()).await;
@@ -101,9 +93,9 @@ pub async fn first_time() -> std::io::Result<i32> {
     println!("//NOTE cant be more than 17 char or less than 3 it cant contain spaces");
     print!("server name: ");
     stdout().flush().unwrap();
-    let mut server_name_string: String  = String::new();
+    let mut server_name_string: String = String::new();
     let _ = stdin().read_line(&mut server_name_string);
-   
+
     let server_name = server_name_string.trim_ascii_end();
     if server_name.chars().count() >= 17 {
         loop {
@@ -162,7 +154,7 @@ pub async fn first_time() -> std::io::Result<i32> {
     print!("choose a server status(0/1): ");
     stdout().flush().unwrap();
     let mut status_string: String = String::new();
-    let status_u8: u8 ;
+    let status_u8: u8;
     loop {
         stdin().read_line(&mut status_string).expect("1");
         let status = status_string.trim_ascii_end();
@@ -178,7 +170,7 @@ pub async fn first_time() -> std::io::Result<i32> {
     }
     let server_status = status_u8;
     //TODO yaml value ^
-    let server_password: String;// = String::new();
+    let server_password: String; // = String::new();
     loop {
         println!("password can be 3~20 characters and numbers punctuation ");
         print!("server password: ");
@@ -186,10 +178,7 @@ pub async fn first_time() -> std::io::Result<i32> {
         let password_string = read_password().unwrap(); //String::new();
         let password_str = password_string.trim_ascii_end().to_owned();
         let is_valid = is_valid_str(&password_str);
-        if (password_str.chars().count() <= 20)
-            && (password_str.chars().count() >= 3)
-            && is_valid
-        {
+        if (password_str.chars().count() <= 20) && (password_str.chars().count() >= 3) && is_valid {
             //
             print!("Confirm password: ");
             stdout().flush().unwrap();
@@ -218,17 +207,16 @@ pub async fn first_time() -> std::io::Result<i32> {
 
         let name_str = name_string.trim_ascii_end().to_owned();
         let is_valid = is_valid_str(&name_str);
-        if (name_str.chars().count() <= 20) && (name_str.chars().count() >= 3) && is_valid
-        {
+        if (name_str.chars().count() <= 20) && (name_str.chars().count() >= 3) && is_valid {
             name = name_str;
             break;
         } else {
             println!("enter a valid name ");
         };
-    };
+    }
 
     //TODO name before username
-    let user_name : String; // 
+    let user_name: String; //
     loop {
         println!(
             "username should be no spaces 3~20 characters of any language numbers punctuation "
@@ -240,16 +228,14 @@ pub async fn first_time() -> std::io::Result<i32> {
 
         let user_name_str = user_name_string.trim_ascii_end().to_owned();
         let is_valid = is_valid_str(&user_name_str);
-        if (user_name_str.chars().count() <= 20)
-            && (user_name_str.chars().count() >= 3)
-            && is_valid
+        if (user_name_str.chars().count() <= 20) && (user_name_str.chars().count() >= 3) && is_valid
         {
             user_name = user_name_str;
             break;
         } else {
             println!("enter a valid username ");
         };
-    };
+    }
     let user_password: String;
     loop {
         println!("password can be 3~20 characters and numbers punctuation ");
@@ -258,10 +244,7 @@ pub async fn first_time() -> std::io::Result<i32> {
         let password_string = read_password().unwrap(); //String::new();
         let password_str = password_string.trim_ascii_end().to_owned();
         let is_valid = is_valid_str(password_str.as_str());
-        if (password_str.chars().count() <= 20)
-            && (password_str.chars().count() >= 3)
-            && is_valid
-        {
+        if (password_str.chars().count() <= 20) && (password_str.chars().count() >= 3) && is_valid {
             //
             print!("Confirm password: ");
             stdout().flush().unwrap();
@@ -284,7 +267,7 @@ pub async fn first_time() -> std::io::Result<i32> {
     let machine_memory = sys.total_memory();
     let machine_swap = sys.total_swap();
     let disks = Disks::new_with_refreshed_list();
-    let mut available_storage: u64 = 0 ;
+    let mut available_storage: u64 = 0;
     for disk in &disks {
         let ds = disk.available_space();
         let dps = ds + available_storage;
@@ -297,8 +280,8 @@ pub async fn first_time() -> std::io::Result<i32> {
     // //
     // let ip = local_ip().expect("could not get ip to start db ");
     // let str_ip = format!("{ip}");
-    // 
-        
+    //
+
     // let database_init_conn = DB {
     //     addr: str_ip.as_str(),
     //     remote: false,
@@ -333,7 +316,6 @@ pub async fn first_time() -> std::io::Result<i32> {
 
     admin.sign_up_A().await.expect("could not get token");
 
-
     let yaml_config = format!(
         "
         machine:
@@ -346,8 +328,7 @@ pub async fn first_time() -> std::io::Result<i32> {
     );
     println!("{}", yaml_config);
     let config_yml = format!("{config_path}/connie_config.yaml");
-    let mut file = File::create(config_yml.as_str())
-        .expect("could not create connie_config.yaml");
+    let mut file = File::create(config_yml.as_str()).expect("could not create connie_config.yaml");
     file.write_all(yaml_config.as_bytes())
         .expect("could not write to connie_config.yaml");
     Ok(0)
@@ -360,5 +341,5 @@ fn is_valid_str(s: &str) -> bool {
     //let num = s.chars().all(|c| c.is_ascii_digit()).count();
     let length = s.chars().count();
     let total = numerics + letters + punc;
-    return  total == length 
+    return total == length;
 }

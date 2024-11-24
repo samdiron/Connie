@@ -10,7 +10,7 @@ async fn validate_multicast() {
     // example of handshake req {
     //      status: 0/1 \#/
     //      srerver_name or client_name \#/
-    //      cpid \_/
+    //      cpid \#/
     //      (ready to connect status: 0/1) \#/
     //      (connie Version) .
     //
@@ -22,6 +22,8 @@ async fn validate_multicast() {
     // and at the end a single . to mark the end of the handshake req
     //
 }
+
+//TODO :create a function to make the handshake file  
 
 // msg form : 0 or 1// server or client name // cpid #
 // to save power we could replace the ip from the msg by using recv_from src ;
