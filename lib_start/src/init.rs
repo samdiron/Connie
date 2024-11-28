@@ -1,12 +1,12 @@
-use multicast::cast::cast_and_buffer;
+use crate::common::path::{c_path, h_path};
 use crate::dependencies::ld_nix::nix_ld_check;
 use crate::dependencies::ld_openssl::{openssl_cert, openssl_ld_check};
 use crate::dependencies::ld_surrealdb::{start_db_command, surreal_ld_check};
 use crate::first::new::first_time;
-use crate::common::path::{c_path,h_path};
 use local_ip_address::local_ip;
+use multicast::cast::cast_and_buffer;
 use rpassword::read_password;
-use std::fs::{remove_file,File};
+use std::fs::{remove_file, File};
 use std::io::{stdout, Error, ErrorKind, Read, Result, Write};
 use std::net::IpAddr;
 use std::process::exit;
@@ -14,8 +14,7 @@ use std::str::FromStr;
 use surreal_db::server::structs::{start_minfo, LocalMachine};
 use sysinfo::get_current_pid;
 use sysinfo::System; //{Disks, System}; // we will need to check the disk usage here
-//use tokio::runtime::Builder;
-
+                     //use tokio::runtime::Builder;
 
 fn create_pid(mut f: File) {
     println!("process: finished checking pid file lock");
@@ -31,7 +30,7 @@ pub fn check_pid_lockfile() -> i32 {
     let full_path = format!("{cp}/tmp/pid_file");
     println!("process: checking pid file lock");
     let mut e_bool: bool = File::open(full_path.as_str()).is_ok();
-    if File::open(cp).is_err_and(|e| e.kind() == ErrorKind::NotFound ){
+    if File::open(cp).is_err_and(|e| e.kind() == ErrorKind::NotFound) {
         e_bool = true
     }
 
@@ -60,17 +59,16 @@ pub fn check_pid_lockfile() -> i32 {
 
         is_it
     } else {
-        let file = File::create_new(full_path.as_str())
-            .expect("could not create new pid lock file");
+        let file =
+            File::create_new(full_path.as_str()).expect("could not create new pid lock file");
         create_pid(file);
         0
-    }; 
+    };
 }
-
 
 pub async fn start() -> Result<LocalMachine> {
     let cp = c_path();
-    println!("{}",cp);
+    println!("{}", cp);
     let hp = h_path();
     let home_path = format!("{hp}/Connie");
 
@@ -93,7 +91,7 @@ pub async fn start() -> Result<LocalMachine> {
         }
         let ip = local_ip().expect("could no get ip");
         let ip = format!("{}", ip);
-        let _os =openssl_cert(ip.as_str()).await;
+        let _os = openssl_cert(ip.as_str()).await;
         let _ds = start_db_command(ip.as_str()).await;
         // let db_conn = DB {
         //     addr: ip.as_str(),
@@ -120,10 +118,10 @@ pub async fn start() -> Result<LocalMachine> {
             }
         }
 
-        let cast_ip = IpAddr::from_str(ip.as_str()).expect("TODO : ip str to addr msg");
-        
-        cast_and_buffer(cast_ip, 0);
-        
+        // let cast_ip = IpAddr::from_str(ip.as_str()).expect("TODO : ip str to addr msg");
+
+        // let _ = cast_and_buffer(cast_ip, 0).await;
+
         Ok(machine)
     } else {
         let firs_time_state = first_time().await.expect("first_time process error");

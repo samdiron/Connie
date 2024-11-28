@@ -46,7 +46,7 @@ impl DBC {
             DB.connect::<RocksDb>(rocks)
                 .await
                 .expect("could not connect to local db");
-            println!("lmdb connected")
+            println!("local machine database connected")
         } else {
             if let Some(addr) = self.addr {
                 let ip = format!("{}:8060", addr);

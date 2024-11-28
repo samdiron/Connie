@@ -9,7 +9,7 @@ use std::fs::{create_dir, create_dir_all, exists, File};
 use std::io::{stdin, stdout, Write};
 use std::path::PathBuf;
 use std::process::exit;
-use surreal_db::db::first_time_db_def;
+use surreal_db::db::{first_time_db_def, DB};
 use surreal_db::server::structs::Hardware;
 use surreal_db::{db::DBC, server::structs::LocalMachine, user::sign_up::User};
 use sysinfo::{Disks, System};
@@ -86,12 +86,41 @@ pub async fn first_time() -> std::io::Result<i32> {
         remote: false,
         lm: true,
     };
+    println!("up");
+    /* let db = DB.clone(); */
     db_conn.connect().await;
+    // let sql = format!("
+    //     DEFINE SCOPE IF NOT EXISTS  admin SESSION 2h;
+    //  SIGNUP ( CREATE admin SET name = $name, user_name = $user_name, pass = crypto::argon2::generate($pass));
+    //  SIGNIN ( SELECT * FROM admin WHERE cpid = $cpid AND crypto::argon2::compare(pass, $pass) );");
+    // db.use_ns("private_infer")
+    //     .use_db("admin")
+    //     .await
+    //     .expect("1245");
+    // let _query_result = db
+    //     .query(sql)
+    //     .await
+    //     .expect("could not run admin scope query");
+    // db.use_ns("users").use_db("test").await.expect("12098t5");
+    // let sql2 = format!("
+    //     DEFINE SCOPE IF NOT EXISTS  user SESSION 12h;
+    //  SIGNUP ( CREATE user SET name = $name, user_name = $user_name, pass = crypto::argon2::generate($pass));
+    //  SIGNIN ( SELECT * FROM user WHERE cpid = $cpid AND crypto::argon2::compare(pass, $pass) );");
+    //
+    // let _query_result = db
+    //     .query(sql2)
+    //     .await
+    //     .expect("could not run user scope query");
     let db_define = first_time_db_def().await.is_ok();
-    if db_define {
+    println!("mid");
+    if db_define == true {
+        println!("db connection established");
     } else {
+        println!("error will exit");
         exit(2021)
     }
+    println!("down");
+
     // start_db_command(iip.as_str()).await;
 
     println!("process: creating config");
