@@ -11,8 +11,6 @@ use std::io::{stdout, Error, ErrorKind, Read, Result, Write};
 use std::net::IpAddr;
 use std::process::exit;
 use std::str::FromStr;
-use std::sync::Arc;
-// use surreal_db::db::DB;
 use surreal_db::server::structs::{start_minfo, LocalMachine};
 use sysinfo::get_current_pid;
 use sysinfo::System; //{Disks, System}; // we will need to check the disk usage here

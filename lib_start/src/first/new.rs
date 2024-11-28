@@ -9,7 +9,8 @@ use std::fs::{create_dir, create_dir_all, exists, File};
 use std::io::{stdin, stdout, Write};
 use std::path::PathBuf;
 use std::process::exit;
-use surreal_db::{db::DB, server::structs::Hardware};
+use surreal_db::db::first_time_db_def;
+use surreal_db::server::structs::Hardware;
 use surreal_db::{db::DBC, server::structs::LocalMachine, user::sign_up::User};
 use sysinfo::{Disks, System};
 use uuid::Uuid;
@@ -78,15 +79,19 @@ pub async fn first_time() -> std::io::Result<i32> {
     //
     // ;
     let ip = local_ip().unwrap();
-    let iip = format!("{ip}");
-    openssl_cert(iip.as_str()).await;
+    let db_ip = format!("{ip}");
+    openssl_cert(db_ip.as_str()).await;
     let db_conn = DBC {
         addr: None,
         remote: false,
         lm: true,
     };
     db_conn.connect().await;
-    DB.use_ns("machine").use_db("count").await.expect("no db");
+    let db_define = first_time_db_def().await.is_ok();
+    if db_define {
+    } else {
+        exit(2021)
+    }
     // start_db_command(iip.as_str()).await;
 
     println!("process: creating config");
@@ -304,10 +309,10 @@ pub async fn first_time() -> std::io::Result<i32> {
             memory: machine_memory,
         },
     };
+
     machine.create().await.expect("TODO: panic message");
 
     let admin = User {
-        is_admin: Some(true),
         name,
         user_name,
         pass: user_password,
