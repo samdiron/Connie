@@ -47,99 +47,92 @@ pub async fn define_scope_admin() -> surrealdb::Result<()> {
         .use_db("admin")
         .await
         .expect("1245");
-    let sql = "
-DEFINE TABLE admin TYPE ANY SCHEMALESS
-	PERMISSIONS
-		FOR select, create
-			WHERE $auth
-		FOR update, delete
-			WHERE created_by = $auth
-;
-DEFINE FIELD name ON user TYPE string
-	PERMISSIONS FULL
-;
-DEFINE FIELD user_name ON user TYPE string
-	PERMISSIONS FULL
-;
-DEFINE FIELD pass ON user TYPE string
-	PERMISSIONS FULL
-;
-
-
-DEFINE ACCESS admin ON DATABASE TYPE RECORD
-	SIGNUP ( CREATE user:cpid SET name = $name, user_name = $user_name, pass = crypto::argon2::generate($pass) )
-	SIGNIN ( SELECT * FROM user WHERE email = $email AND crypto::argon2::compare(pass, $pass) )
-	DURATION FOR TOKEN 10m, FOR SESSION 6h
-;
+    let sql_table = "
+    DEFINE TABLE admin TYPE ANY SCHEMALESS
+	    PERMISSIONS
+		    FOR select, create
+			    WHERE $auth,
+		    FOR update, delete
+			    WHERE created_by = $auth
+    ;
+    DEFINE FIELD name ON admin TYPE string
+	    PERMISSIONS FULL
+    ;
+    DEFINE FIELD user_name ON admin TYPE string
+	    PERMISSIONS FULL
+    ;
+    DEFINE FIELD pass ON admin TYPE string
+	    PERMISSIONS FULL
+    ;
 
 ";
-    //  let sql = format!("
-    //  DEFINE SCOPE IF NOT EXISTS  admin SESSION {ADMIN_SEEION_TIME}h
-    // SIGNUP ( CREATE admin SET name = $name, user_name = $user_name, pass = crypto::argon2::generate($pass) )
-    // SIGNIN ( SELECT * FROM admin WHERE cpid = $cpid AND crypto::argon2::compare(pass, $pass) )");
-    db.use_ns("users").use_db("test").await.expect("todo :msg ");
-    let query_result = db.query(sql).await?;
-    println!("{sql}");
-    dbg!(query_result);
+    db.use_ns("private_infer")
+        .use_db("admin")
+        .await
+        .expect("todo :msg ");
+
+    //TODO: format this query after version 2.0.0;
+    //to ACCESS
+    let scope_query = "
+    DEFINE SCOPE admin  SESSION 24h // ON DATABASE TYPE RECORD
+	    SIGNUP ( CREATE admin SET id = $cpid ,name = $name, user_name = $user_name, pass = crypto::argon2::generate($pass) )
+	    SIGNIN ( SELECT * FROM admin WHERE id = $cpid AND crypto::argon2::compare(pass, $pass) )
+	    //DURATION FOR TOKEN 10m, FOR SESSION 6h
+    ;
+";
+    let table_query_result = db.query(sql_table).await.expect("could not run a db query");
+    dbg!(table_query_result);
+    let scope_query_result = db
+        .query(scope_query)
+        .await
+        .expect("could not run a db query: scope");
+    dbg!(scope_query_result);
     Ok(())
-    // if err_is_ok {
-    //     let query_result = query_result.unwrap();
-    //     println!("query executed successfully");
-    //     Ok(query_result)
-    // } else {
-    //     let err = query_result.unwrap_err();
-    //     Err(err)
-    // }
 }
 
 pub async fn define_scope_user() -> surrealdb::Result<()> {
     let db = DB.clone();
-    db.use_ns("users").use_db("test").await.expect("12098t5");
-    let sql = "
-DEFINE TABLE user TYPE ANY SCHEMALESS
-	PERMISSIONS
-		FOR select, create
-			WHERE $auth
-		FOR update, delete
-			WHERE created_by = $auth
-;
-DEFINE FIELD name ON user TYPE string
-	PERMISSIONS FULL
-;
-DEFINE FIELD user_name ON user TYPE string
-	PERMISSIONS FULL
-;
-DEFINE FIELD pass ON user TYPE string
-	PERMISSIONS FULL
-;
-
-
-DEFINE ACCESS user ON DATABASE TYPE RECORD
-	SIGNUP ( CREATE user:cpid SET name = $name, user_name = $user_name, pass = crypto::argon2::generate($pass) )
-	SIGNIN ( SELECT * FROM user WHERE email = $email AND crypto::argon2::compare(pass, $pass) )
-	DURATION FOR TOKEN 15m, FOR SESSION 12h
-;
-
-
+    db.use_ns("users")
+        .use_db("test")
+        .await
+        .expect("could not use ns/db");
+    let table_query = "
+    DEFINE TABLE user TYPE ANY SCHEMALESS
+	    PERMISSIONS
+		    FOR select, create
+			    WHERE $auth
+		    FOR update, delete
+			    WHERE created_by = $auth
+    ;
+    DEFINE FIELD name ON user TYPE string
+	    PERMISSIONS FULL
+    ;
+    DEFINE FIELD user_name ON user TYPE string
+	    PERMISSIONS FULL
+    ;
+    DEFINE FIELD pass ON user TYPE string
+	    PERMISSIONS FULL
+    ;
 ";
-    //    let sql = format!("
-    //    DEFINE SCOPE IF NOT EXISTS  user SESSION {USER_SESSION_TIME}h
-    //   SIGNUP ( CREATE user SET name = $name, user_name = $user_name, pass = crypto::argon2::generate($pass), is_admin = $is_admib  )
-    // SIGNIN ( SELECT * FROM user WHERE cpid = $cpid AND crypto::argon2::compare(pass, $pass) )");
+    let scope_query = "
+    DEFINE SCOPE user //SESSION 24h //ON DATABASE TYPE RECORD
+	    SIGNUP ( CREATE user SET id = $cpid ,name = $name, user_name = $user_name, pass = crypto::argon2::generate($pass) )
+	    SIGNIN ( SELECT * FROM user WHERE id = $cpid AND crypto::argon2::compare(pass, $pass) )
+	    //DURATION FOR TOKEN 15m, FOR SESSION 12h
+    ;
+";
 
-    let query_result = db.query(sql).await?;
-    println!("{sql}");
+    let query_result = db
+        .query(table_query)
+        .await
+        .expect("could not run a db query:table");
     dbg!(query_result);
+    let scope_query_result = db
+        .query(scope_query)
+        .await
+        .expect("could not run a db query:scope");
+    dbg!(scope_query_result);
     Ok(())
-    // let err_is_ok = query_result.is_ok();
-    // if err_is_ok {
-    //     let query_result = query_result.unwrap();
-    //     println!("query executed successfully");
-    //     Ok(query_result)
-    // } else {
-    //     let err = query_result.unwrap_err();
-    //     Err(err)
-    // }
 }
 
 // TODO: user scope function
