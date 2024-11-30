@@ -1,45 +1,6 @@
 use crate::db::DB;
 
-pub static USER_SESSION_TIME: u8 = 12;
-pub static ADMIN_SEEION_TIME: u8 = 24;
 
-//
-//
-// db.use_ns("namespace").use_db("database").await?;
-//
-//     db.query(
-//         "
-//         DEFINE TABLE user SCHEMALESS
-//          PERMISSIONS FOR
-//             CREATE, SELECT WHERE $auth,
-//             FOR UPDATE, DELETE WHERE created_by = $auth;
-//          DEFINE FIELD name ON TABLE user TYPE string;
-//          DEFINE FILED user_name ON TABLE user TYPE string;
-//          DEFINE FILED cpid on table user TYPE string;
-//
-//
-//
-//
-//         DEFINE TABLE admin
-//         PERMISSIONS FOR
-//             CREATE, SELECT WHERE $auth,
-//             FOR UPDATE, DELETE WHERE created_by = $auth;
-//     DEFINE FIELD name ON TABLE admin TYPE string;
-//     DEFINE FILED user_name ON TABLE admin TYPE string;
-//     DEFINE FIELD name ON TABLE user TYPE string;
-//     DEFINE FILED cpid on table admin TYPE string;
-//     DEFINE FIELD created_by ON TABLE admin VALUE $auth READONLY;
-//     DEFINE SCOPE IF NOT EXISTS  admin SESSION {ADMIN_SEEION_TIME}h
-//	      SIGNUP ( CREATE admin SET name = $name, user_name = $user_name, pass = crypto::argon2::generate($pass) )
-//	      SIGNIN ( SELECT * FROM admin WHERE cpid = $cpid AND crypto::argon2::compare(pass, $pass) )");
-
-//     DEFINE INDEX unique_name ON TABLE user FIELDS name UNIQUE;
-//     DEFINE ACCESS account ON DATABASE TYPE RECORD
-// 	SIGNUP ( CREATE user SET name = $name, pass = crypto::argon2::generate($pass) )
-// 	SIGNIN ( SELECT * FROM user WHERE name = $name AND crypto::argon2::compare(pass, $pass) )
-// 	DURATION FOR TOKEN 15m, FOR SESSION 12h
-// ;",
-//     )
 
 pub async fn define_scope_admin() -> surrealdb::Result<()> {
     let db = DB.clone();
