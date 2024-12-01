@@ -118,9 +118,9 @@ pub async fn start() -> Result<LocalMachine> {
             }
         }
 
-        // let cast_ip = IpAddr::from_str(ip.as_str()).expect("TODO : ip str to addr msg");
+        let cast_ip = IpAddr::from_str(ip.as_str()).expect("TODO : ip str to addr msg");
 
-        // let _ = cast_and_buffer(cast_ip, 0).await;
+        let _ = cast_and_buffer(cast_ip, 0).await;
 
         Ok(machine)
     } else {
