@@ -46,19 +46,13 @@ pub async fn first_time() -> std::io::Result<i32> {
     let check_tmp = exists(path_tmp.clone()).expect("could not check config/tmp");
     if !check_home {
         // println!("home : {}",pstring.as_str());
-        println!("aad {}", home_path.display());
+        println!("add {}", home_path.display());
         let str_ring = ring.as_str();
         let surreald = format!("{str_ring}/surreal");
         let certd = format!("{str_ring}/cert");
         let keyd = format!("{str_ring}/key");
-        // certd.push(pstring.as_str());
-        // certd.push("/cert");
-        // keyd.push(pstring.as_str());
-        // keyd.push("/key");
-        // surreald.push(pstring.as_str());
-        // surreald.push("/surreal");
-        //
         println!("creating dir: {}", surreald.as_str());
+
         create_dir_all(surreald).unwrap();
         println!("creating dir: {}", certd.as_str());
         create_dir(certd).unwrap();
@@ -66,9 +60,6 @@ pub async fn first_time() -> std::io::Result<i32> {
         create_dir(keyd).unwrap();
     };
     if !check {
-        // create_dir(config_path.as_str()).expect("could not create config dir");
-        //let mut  path = PathBuf::new();
-
         create_dir_all(path_tmp).expect("TODO: panic message");
     } else if !check_tmp {
         create_dir_all(path_tmp).expect("TODO: panic message");
@@ -128,32 +119,7 @@ pub async fn first_time() -> std::io::Result<i32> {
             }
         }
     };
-    // let mut max_client_string: String = String::new();
-    // print!("//note it can't be bigger than 255: maximum clients connecting to the server at the same time: ");
-    // stdout().flush().unwrap();
-    // let _ = stdin().read_line(&mut max_client_string);
-    // let mut max_clients: u32 = 0;
-    // let max_client_allowed = max_client_string.trim_ascii_end();
-    // //TODO the value for in config.yaml ^
-    // let is_max_client_number = max_client_allowed.chars().all(|c| c.is_ascii_digit());
-    // if is_max_client_number == false {
-    //     println!("enter only numbers larger that 0");
-    //     loop {
-    //         print!("enter a number: ");
-    //         stdout().flush().unwrap();
-    //         let _ = stdin().read_line(&mut max_client_string);
-    //         let is_max_client_number = max_client_allowed.chars().all(|c| c.is_ascii_digit());
-    //         if is_max_client_number {
-    //             *&mut max_clients = max_client_allowed.parse().unwrap();
-    //             break;
-    //         } else {
-    //             println!("are we really doing this ");
-    //         }
-    //     }
-    // } else {
-    //     *&mut max_clients = max_client_allowed.parse().unwrap();
-    // };
-    //
+
     println!("server: 0 ");
     println!("client & server: 1");
     print!("choose a server status(0/1): ");
@@ -200,9 +166,8 @@ pub async fn first_time() -> std::io::Result<i32> {
     }
     println!("finished getting server's identity");
     println!("now getting the user's identity this will be the admin user for the server and a user to connect to other servers");
-    //TODO input  = {password , name , username} data = {input, id, uuid, + registration server uuid  }
 
-    let name: String; //= String::new();
+    let name: String;
     loop {
         println!("name should be 3~20 characters of any language ");
         print!("name: ");
@@ -220,8 +185,7 @@ pub async fn first_time() -> std::io::Result<i32> {
         };
     }
 
-    //TODO name before username
-    let user_name: String; //
+    let user_name: String;
     loop {
         println!(
             "username should be no spaces 3~20 characters of any language numbers punctuation "
@@ -246,7 +210,7 @@ pub async fn first_time() -> std::io::Result<i32> {
         println!("password can be 3~20 characters and numbers punctuation ");
         print!("password: ");
         stdout().flush().unwrap();
-        let password_string = read_password().unwrap(); //String::new();
+        let password_string = read_password().unwrap();
         let password_str = password_string.trim_ascii_end().to_owned();
         let is_valid = is_valid_str(password_str.as_str());
         if (password_str.chars().count() <= 20) && (password_str.chars().count() >= 3) && is_valid {
@@ -282,26 +246,12 @@ pub async fn first_time() -> std::io::Result<i32> {
         .physical_core_count()
         .expect("could not read core count");
 
-    // //
-    // let ip = local_ip().expect("could not get ip to start db ");
-    // let str_ip = format!("{ip}");
-    //
-
-    // let database_init_conn = DB {
-    //     addr: str_ip.as_str(),
-    //     remote: false,
-    // };
-    // database_init_conn.connect().await.expect("could not connect to db");
-    // // let _db = DBASE.clone();
-    //
-
     let host2 = host_name.clone();
     let machine = LocalMachine {
         cpid: server_uuid,
         passwd: server_password,
         host_name: host2,
         status: server_status,
-        // max_client: max_clients,
         server_name: server_name_string,
         hardware: Hardware {
             swap: machine_swap,
