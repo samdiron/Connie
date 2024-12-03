@@ -15,7 +15,7 @@ use sysinfo::{Disks, System};
 use uuid::Uuid;
 
 pub async fn first_time() -> std::io::Result<i32> {
-    let _ = dependency_fn_check();
+    // let _ = dependency_fn_check();
     print!("do you want to setup Connie (yes/no): ");
     stdout().flush().unwrap();
     let mut consent = String::new();
