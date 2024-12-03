@@ -1,7 +1,5 @@
 use crate::db::DB;
 
-
-
 pub async fn define_scope_admin() -> surrealdb::Result<()> {
     let db = DB.clone();
     db.use_ns("private_infer")
@@ -25,6 +23,9 @@ pub async fn define_scope_admin() -> surrealdb::Result<()> {
     DEFINE FIELD pass ON admin TYPE string
 	    PERMISSIONS FULL
     ;
+    DEFINE FIELD cpid ON admin TYPE string
+        PERMISSIONS FULL
+    ;
 
 ";
     db.use_ns("private_infer")
@@ -36,8 +37,8 @@ pub async fn define_scope_admin() -> surrealdb::Result<()> {
     //to ACCESS
     let scope_query = "
     DEFINE SCOPE admin  SESSION 24h // ON DATABASE TYPE RECORD
-	    SIGNUP ( CREATE admin SET id = $cpid ,name = $name, user_name = $user_name, pass = crypto::argon2::generate($pass) )
-	    SIGNIN ( SELECT * FROM admin WHERE id = $cpid AND crypto::argon2::compare(pass, $pass) )
+	    SIGNUP ( CREATE admin SET cpid = $cpid ,name = $name, user_name = $user_name, pass = crypto::argon2::generate($pass) )
+	    SIGNIN ( SELECT * FROM admin WHERE cpid = $cpid AND crypto::argon2::compare(pass, $pass) )
 	    //DURATION FOR TOKEN 10m, FOR SESSION 6h
     ;
 ";
@@ -74,11 +75,14 @@ pub async fn define_scope_user() -> surrealdb::Result<()> {
     DEFINE FIELD pass ON user TYPE string
 	    PERMISSIONS FULL
     ;
+    DEFINE FIELD pass ON user TYPE string
+        PERMISSIONS FULL
+    ;
 ";
     let scope_query = "
     DEFINE SCOPE user //SESSION 24h //ON DATABASE TYPE RECORD
-	    SIGNUP ( CREATE user SET id = $cpid ,name = $name, user_name = $user_name, pass = crypto::argon2::generate($pass) )
-	    SIGNIN ( SELECT * FROM user WHERE id = $cpid AND crypto::argon2::compare(pass, $pass) )
+	    SIGNUP ( CREATE user SET cpid = $cpid ,name = $name, user_name = $user_name, pass = crypto::argon2::generate($pass) )
+	    SIGNIN ( SELECT * FROM user WHERE cpid = $cpid AND crypto::argon2::compare(pass, $pass) )
 	    //DURATION FOR TOKEN 15m, FOR SESSION 12h
     ;
 ";

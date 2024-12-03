@@ -27,9 +27,7 @@ pub static DB: Lazy<Surreal<Db>> = Lazy::new(Surreal::init);
 pub static WDB: Lazy<Surreal<Client>> = Lazy::new(Surreal::init);
 
 pub async fn first_time_db_def() -> surrealdb::Result<()> {
-    println!("cunt");
     let _admin = define_scope_admin().await?;
-    println!("cunt");
     let _user = define_scope_user().await?;
     Ok(())
 }

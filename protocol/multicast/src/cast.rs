@@ -4,26 +4,26 @@ use common_lib::cheat_sheet::MULTICAST_PORT;
 use tokio::net::UdpSocket;
 
 // TODO : make athis function
-async fn validate_multicast() {
-    // used to validate the multicast an then do a handshake and to look up
-    // if the unit is a connie and if it's already connected before
-    // example of handshake req {
-    //      status: 0/1 \#/
-    //      srerver_name or client_name \#/
-    //      cpid \#/
-    //      (ready to connect status: 0/1) \#/
-    //      (connie Version) .
-    //
-    //
-    // }
-    // note \#/ is used as a split psattern due to being not a common
-    // pattern for names or password
-    // or cpid
-    // and at the end a single . to mark the end of the handshake req
-    //
-}
+// async fn validate_multicast() {
+// used to validate the multicast an then do a handshake and to look up
+// if the unit is a connie and if it's already connected before
+// example of handshake req {
+//      status: 0/1 \#/
+//      srerver_name or client_name \#/
+//      cpid \#/
+//      (ready to connect status: 0/1) \#/
+//      (connie Version) .
+//
+//
+// }
+// note \#/ is used as a split psattern due to being not a common
+// pattern for names or password
+// or cpid
+// and at the end a single . to mark the end of the handshake req
+//
+// }
 
-//TODO :create a function to make the handshake file  
+//TODO :create a function to make the handshake file
 
 // msg form : 0 or 1// server or client name // cpid #
 // to save power we could replace the ip from the msg by using recv_from src ;

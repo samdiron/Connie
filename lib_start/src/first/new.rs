@@ -15,7 +15,7 @@ use sysinfo::{Disks, System};
 use uuid::Uuid;
 
 pub async fn first_time() -> std::io::Result<i32> {
-    //let _ = dependency_fn_check();
+    let _ = dependency_fn_check();
     print!("do you want to setup Connie (yes/no): ");
     stdout().flush().unwrap();
     let mut consent = String::new();
@@ -84,6 +84,21 @@ pub async fn first_time() -> std::io::Result<i32> {
         println!("error db sql query failed will exit with code 2021 ");
         exit(2021)
     }
+    // let name = "name".to_owned();
+    // let user_name = "user_name".to_owned();
+    // let pass = "string_pass".to_owned();
+    // let admin_uuid = Uuid::new_v4().to_string();
+    //
+    // let admin = User {
+    //     name,
+    //     user_name,
+    //     pass,
+    //     cpid: admin_uuid,
+    // };
+
+    // admin.sign_up_A().await.expect("could not get token");
+
+    println!("passed ");
 
     println!("process: creating config");
     println!("//NOTE cant be more than 17 char or less than 3 it cant contain spaces");
@@ -262,10 +277,25 @@ pub async fn first_time() -> std::io::Result<i32> {
 
     machine.create().await.expect("TODO: panic message");
 
+    let ip = local_ip().unwrap();
+    let db_ip = format!("{ip}");
+    openssl_cert(db_ip.as_str()).await;
+    let db_conn = DBC {
+        addr: None,
+        remote: false,
+        lm: true,
+    };
+    db_conn.connect().await;
+
+    let name = "name".to_owned();
+    let user_name = "user_name".to_owned();
+    let pass = "string_pass".to_owned();
+    let admin_uuid = Uuid::new_v4().to_string();
+
     let admin = User {
         name,
         user_name,
-        pass: user_password,
+        pass,
         cpid: admin_uuid,
     };
 

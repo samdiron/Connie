@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 use surrealdb::opt::auth::Scope;
 use uuid::Uuid;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 pub struct User {
     pub user_name: String,
     pub name: String,
-    pub cpid: Uuid,
+    pub cpid: String,
     pub pass: String,
 }
 
@@ -34,7 +34,7 @@ impl User {
 
     pub async fn sign_up_A(self) -> surrealdb::Result<String> {
         let jwt = DB
-            .signin(Scope {
+            .signup(Scope {
                 namespace: "private_infer",
                 database: "admin",
                 scope: "admin",
@@ -47,8 +47,6 @@ impl User {
             })
             .await
             .expect("Error could not get jwt for admin");
-
-        let jwt = dbg!(jwt);
 
         let jwt = jwt.into_insecure_token();
         Ok(jwt)
