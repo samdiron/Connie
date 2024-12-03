@@ -84,6 +84,7 @@ pub async fn first_time() -> std::io::Result<i32> {
         println!("error db sql query failed will exit with code 2021 ");
         exit(2021)
     }
+
     // let name = "name".to_owned();
     // let user_name = "user_name".to_owned();
     // let pass = "string_pass".to_owned();
