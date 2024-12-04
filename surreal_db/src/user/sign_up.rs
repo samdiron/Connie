@@ -1,9 +1,8 @@
 // use std::hash::Hash;
 // Deserialize && token  will be needed later
 use crate::db::DB;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use surrealdb::opt::auth::Scope;
-use uuid::Uuid;
 
 #[derive(Serialize)]
 pub struct User {

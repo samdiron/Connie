@@ -38,19 +38,22 @@ pub async fn first_time() -> std::io::Result<i32> {
     path_tmp.push(config_path);
     path_tmp.push("/tmp");
     let mut home_path = PathBuf::new();
-    let pstring = h_path();
-    let ring = format!("{pstring}/Connie");
-    home_path.push(ring.as_str());
+    let path_string = h_path();
+    let home = format!("{path_string}/Connie");
+    home_path.push(home.as_str());
     // home_path.push("/Connie");
     let check_home = home_path.exists();
     let check_tmp = exists(path_tmp.clone()).expect("could not check config/tmp");
+    let mut path_to_cpid_file: String = String::new();
     if !check_home {
         // println!("home : {}",pstring.as_str());
         println!("add {}", home_path.display());
-        let str_ring = ring.as_str();
-        let surreald = format!("{str_ring}/surreal");
-        let certd = format!("{str_ring}/cert");
-        let keyd = format!("{str_ring}/key");
+        let str_home = home.as_str();
+        let surreald = format!("{str_home}/surreal");
+        let certd = format!("{str_home}/cert");
+        let keyd = format!("{str_home}/key");
+        let path_to_cpid = format!("{str_home}/etc");
+
         println!("creating dir: {}", surreald.as_str());
 
         create_dir_all(surreald).unwrap();
@@ -58,6 +61,10 @@ pub async fn first_time() -> std::io::Result<i32> {
         create_dir(certd).unwrap();
         println!("creating dir: {}", keyd.as_str());
         create_dir(keyd).unwrap();
+        println!("creating dir: {}", path_to_cpid.as_str());
+        create_dir(path_to_cpid.as_str()).unwrap();
+        let path_cpid_file = format!("{path_to_cpid}/cpid");
+        *&mut path_to_cpid_file = path_cpid_file;
     };
     if !check {
         create_dir_all(path_tmp).expect("TODO: panic message");
@@ -245,7 +252,6 @@ pub async fn first_time() -> std::io::Result<i32> {
         };
     }
     let server_uuid = Uuid::new_v4();
-    let admin_uuid = Uuid::new_v4();
     let mut sys = System::new_all();
     sys.refresh_all();
     let host_name = System::host_name().expect("string convert failed");
@@ -299,6 +305,13 @@ pub async fn first_time() -> std::io::Result<i32> {
         pass,
         cpid: admin_uuid,
     };
+
+    let admin_cpid_copy = admin.cpid.clone();
+    let mut admin_binary_cpid = admin_cpid_copy.as_bytes();
+    let mut cpid_file = File::create(path_to_cpid_file).unwrap();
+    cpid_file
+        .write_all(&mut admin_binary_cpid)
+        .expect("error could not write to file");
 
     admin.sign_up_A().await.expect("could not get token");
 
