@@ -1,29 +1,52 @@
-use tokio;
+// use tokio;
 use std::net::{IpAddr, SocketAddr,TcpListener};
 use common_lib::cheat_sheet::{LOCAL_IP,TCP_MAIN_PORT};
 
 use std::io::Write;
 use std::sync::Arc;
 
-use rustls::pki_types::{self, CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
-use rustls::server::{self, Acceptor};
+use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
+use rustls::server::Acceptor;
 use rustls::ServerConfig;
 
 
 pub fn tcp_listener() {
     let ip: IpAddr = LOCAL_IP.clone();
     let port: u16 = TCP_MAIN_PORT.clone();
+    let pki = TestPki::new();
+    let config = pki.server_config();
     let socket_addr = SocketAddr::new(ip, port);
     let listener = TcpListener::bind(socket_addr)
         .expect("could not bind tcp socket on port 4443 ");
-    match listener.accept() {
-        Ok((_socket , addr)) => {
-            println!("a new client: {:?}",addr);
+    println!("tcp socket open on port 4443");
+    for stream in listener.accept() {
+        let stream_addr = stream.1;
+        let mut stream  = stream.0;
 
+        let mut acceptor = Acceptor::default();
+        
+        let accepted = loop {
+            acceptor.read_tls(&mut stream).unwrap();
+            if let Some(accepted) = acceptor.accept().unwrap(){
+                break accepted;
+            }
+        };
+        match accepted.into_connection(config.clone()) {
+            Ok(mut conn) => {
+                let info_msg = stream_addr.to_string();
+                let hello_msg = format!("hello {info_msg}");
+                //TODO: error msgs for tcp listener
+                conn.writer().write_all(hello_msg.as_bytes()).expect("todo error msg stream write");
+                conn.write_tls(&mut stream).expect("todo error msg s writetls");
+                conn.complete_io(&mut stream).expect("error complete io");
+                println!("ok");
+
+            }
+            Err((err, _)) => {
+                eprintln!("{err}");
+            }
         }
-        Err(e) =>{
-            eprintln!("{}",e)
-        }
+
 
     }
 }
