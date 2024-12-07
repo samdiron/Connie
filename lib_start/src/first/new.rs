@@ -294,15 +294,12 @@ pub async fn first_time() -> std::io::Result<i32> {
     };
     db_conn.connect().await;
 
-    let name = "name".to_owned();
-    let user_name = "user_name".to_owned();
-    let pass = "string_pass".to_owned();
     let admin_uuid = Uuid::new_v4().to_string();
 
     let admin = User {
         name,
         user_name,
-        pass,
+        pass: user_password,
         cpid: admin_uuid,
     };
 
