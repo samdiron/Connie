@@ -294,13 +294,13 @@ pub async fn first_time() -> std::io::Result<i32> {
     };
     db_conn.connect().await;
 
-    let admin_uuid = Uuid::new_v4().to_string();
+    let user_uuid = Uuid::new_v4().to_string();
 
     let admin = User {
         name,
         user_name,
         pass: user_password,
-        cpid: admin_uuid,
+        cpid: user_uuid,
     };
 
     let admin_cpid_copy = admin.cpid.clone();
