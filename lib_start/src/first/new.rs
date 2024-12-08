@@ -286,13 +286,6 @@ pub async fn first_time() -> std::io::Result<i32> {
 
     let ip = local_ip().unwrap();
     let db_ip = format!("{ip}");
-    openssl_cert(db_ip.as_str()).await;
-    let db_conn = DBC {
-        addr: None,
-        remote: false,
-        lm: true,
-    };
-    db_conn.connect().await;
 
     let user_uuid = Uuid::new_v4().to_string();
 
