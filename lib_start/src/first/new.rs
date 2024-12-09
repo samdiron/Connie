@@ -251,7 +251,7 @@ pub async fn first_time() -> std::io::Result<i32> {
             println!("enter a valid password ");
         };
     }
-    let server_uuid = Uuid::new_v4();
+    let server_uuid = Uuid::new_v4().to_string();
     let mut sys = System::new_all();
     sys.refresh_all();
     let host_name = System::host_name().expect("string convert failed");
@@ -283,9 +283,6 @@ pub async fn first_time() -> std::io::Result<i32> {
     };
 
     machine.create().await.expect("TODO: panic message");
-
-    let ip = local_ip().unwrap();
-    let db_ip = format!("{ip}");
 
     let user_uuid = Uuid::new_v4().to_string();
 

@@ -70,8 +70,8 @@ pub fn check_pid_lockfile() -> i32 {
 pub async fn start() -> Result<LocalMachine> {
     let cp = c_path();
     println!("{}", cp);
-    let hp = h_path();
-    let home_path = format!("{hp}/Connie");
+    // let hp = h_path();
+    // let home_path = format!("{hp}/Connie");
 
     let os = System::name();
     if os.unwrap().as_str() == "Microsoft Windows" {
@@ -80,16 +80,19 @@ pub async fn start() -> Result<LocalMachine> {
         exit(13); // it means the os is window and they out of luck
     };
     let cdp = format!("{cp}/connie_config.yaml");
-    let connie_config = File::open(cdp).is_ok();
+    //TODO:
+    let connie_config_file = File::open(cdp);
+    let connie_config = connie_config_file.is_ok();
+    drop(connie_config_file);
     if connie_config {
         // let first_time = false;
-        let dependencies_surreal = surreal_ld_check(home_path.as_str());
-        let dependencies_openssl = openssl_ld_check(home_path.as_str());
-        let dependencies_nix = nix_ld_check(home_path.as_str());
-        let dependencies_check = dependencies_surreal + dependencies_nix + dependencies_openssl;
-        if dependencies_check != 0 {
-            exit(6);
-        }
+        // let dependencies_surreal = surreal_ld_check(home_path.as_str());
+        // let dependencies_openssl = openssl_ld_check(home_path.as_str());
+        // let dependencies_nix = nix_ld_check(home_path.as_str());
+        // let dependencies_check = dependencies_surreal + dependencies_nix + dependencies_openssl;
+        // if dependencies_check != 0 {
+        // exit(6);
+        // }
         let ip = local_ip().expect("could no get ip");
         let ip = format!("{}", ip);
         let _os = openssl_cert(ip.as_str()).await;
@@ -118,7 +121,7 @@ pub async fn start() -> Result<LocalMachine> {
                 }
             }
         }
-
+        //TODO:
         let cast_ip = IpAddr::from_str(ip.as_str()).expect("TODO : ip str to addr msg");
 
         let _ = cast_and_buffer(cast_ip, 0).await;

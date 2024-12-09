@@ -62,6 +62,7 @@ impl DBC {
                         .expect("could not connect to wss");
                 }
             } else {
+                //TODO: update the error code
                 exit(8000)
             }
         }

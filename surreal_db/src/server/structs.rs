@@ -1,16 +1,15 @@
 use crate::db::DB;
 use serde::{Deserialize, Serialize};
 use surrealdb::opt::RecordId;
-use uuid::Uuid;
+// use uuid::Uuid;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LocalMachine {
-    pub cpid: Uuid,
+    pub cpid: String,
     pub passwd: String,
     pub host_name: String,
     pub hardware: Hardware,
     pub status: u8,
-    pub server_name: String
-    // pub max_client: u32,
+    pub server_name: String, // pub max_client: u32,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Hardware {
@@ -26,9 +25,8 @@ pub struct Record {
 pub async fn start_minfo() -> surrealdb::Result<LocalMachine> {
     let db = DB.clone();
     db.use_ns("local_unit").use_db("private_infer").await?;
-    let machine: Option<LocalMachine> = db.select(("unit", "localmachine")).await?;
-    let unwrapped = machine.unwrap();
-    let machine = unwrapped;
+    let machine: Option<LocalMachine> = db.select(("unit", "local_machine")).await?;
+    let machine = machine.expect("msg machine");
     Ok(machine)
 }
 
