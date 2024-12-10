@@ -41,7 +41,6 @@ pub async fn first_time() -> std::io::Result<i32> {
     let path_string = h_path();
     let home = format!("{path_string}/Connie");
     home_path.push(home.as_str());
-    // home_path.push("/Connie");
     let check_home = home_path.exists();
     let check_tmp = exists(path_tmp.clone()).expect("could not check config/tmp");
     let mut path_to_cpid_file: String = String::new();

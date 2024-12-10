@@ -1,7 +1,5 @@
-use crate::common::path::{c_path, h_path};
-use crate::dependencies::ld_nix::nix_ld_check;
-use crate::dependencies::ld_openssl::{openssl_cert, openssl_ld_check};
-use crate::dependencies::ld_surrealdb::surreal_ld_check;
+use crate::common::path::c_path;
+use crate::dependencies::ld_openssl::openssl_cert;
 use crate::first::new::first_time;
 use local_ip_address::local_ip;
 use multicast::cast::cast_and_buffer;
@@ -70,9 +68,6 @@ pub fn check_pid_lockfile() -> i32 {
 pub async fn start() -> Result<LocalMachine> {
     let cp = c_path();
     println!("{}", cp);
-    // let hp = h_path();
-    // let home_path = format!("{hp}/Connie");
-
     let os = System::name();
     if os.unwrap().as_str() == "Microsoft Windows" {
         println!("you are on Microsoft Windows she don't like that");
@@ -130,10 +125,6 @@ pub async fn start() -> Result<LocalMachine> {
     } else {
         let firs_time_state = first_time().await.expect("first_time process error");
         println!("now will exit if you want to start rerun connie");
-        // Err(e) -> {
-        //     eprintln!("{}",e);
-        // };
         exit(firs_time_state)
     }
-    //drop(connie_config)
 }
