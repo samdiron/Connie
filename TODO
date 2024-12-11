@@ -1,8 +1,8 @@
 multicast protocol UDP
 protocol at multicast.lib
+replace surrealdb with for the db unit mysql and sqlite for normal units
 
-
-learn surrealql
+learn surrealql apache cassandra db
 
 
 
