@@ -1,8 +1,6 @@
 #![allow(clippy::if_same_then_else)]
-use crate::{
-    common::path::{c_path, h_path},
-    dependencies::ld_openssl::openssl_cert,
-};
+use crate::dependencies::ld_openssl::openssl_cert;
+use common_lib::path::{config_path, get_home_path};
 use local_ip_address::local_ip;
 use rpassword::read_password;
 use std::fs::{create_dir, create_dir_all, exists, File};
@@ -31,22 +29,22 @@ pub async fn first_time() -> std::io::Result<i32> {
         exit(1);
     }
     println!("process: creating ~/.config/connie");
-    let c_dir = c_path();
+    let c_dir = config_path();
     let config_path = c_dir.as_str();
     let check = exists(config_path).expect("i have nothing");
     let mut path_tmp = PathBuf::new();
     path_tmp.push(config_path);
     path_tmp.push("/tmp");
-    let mut home_path = PathBuf::new();
-    let path_string = h_path();
-    let home = format!("{path_string}/Connie");
-    home_path.push(home.as_str());
-    let check_home = home_path.exists();
+    let mut home_path_buffer = PathBuf::new();
+    let path_string = get_home_path();
+    let home = path_string;
+    home_path_buffer.push(home.as_str());
+    let check_home = home_path_buffer.exists();
     let check_tmp = exists(path_tmp.clone()).expect("could not check config/tmp");
     let mut path_to_cpid_file: String = String::new();
     if !check_home {
         // println!("home : {}",pstring.as_str());
-        println!("add {}", home_path.display());
+        println!("add {}", home_path_buffer.display());
         let str_home = home.as_str();
         let surreald = format!("{str_home}/surreal");
         let certd = format!("{str_home}/cert");

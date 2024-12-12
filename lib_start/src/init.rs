@@ -1,6 +1,6 @@
-use crate::common::path::c_path;
 use crate::dependencies::ld_openssl::openssl_cert;
 use crate::first::new::first_time;
+use common_lib::path::config_path;
 use local_ip_address::local_ip;
 use multicast::cast::cast_and_buffer;
 use rpassword::read_password;
@@ -25,7 +25,7 @@ fn create_pid(mut f: File) {
 }
 
 pub fn check_pid_lockfile() -> i32 {
-    let cp = c_path();
+    let cp = config_path();
     let full_path = format!("{cp}/tmp/pid_file");
     println!("process: checking pid file lock");
     let mut e_bool: bool = File::open(full_path.as_str()).is_ok();
@@ -66,7 +66,7 @@ pub fn check_pid_lockfile() -> i32 {
 }
 
 pub async fn start() -> Result<LocalMachine> {
-    let cp = c_path();
+    let cp = config_path();
     println!("{}", cp);
     let os = System::name();
     if os.unwrap().as_str() == "Microsoft Windows" {

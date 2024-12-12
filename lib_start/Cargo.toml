@@ -5,11 +5,12 @@ edition = "2021"
 
 
 [dependencies]
+common_lib = { path = "../common_lib/" }
 sysinfo = "0.32.0"
 surreal_db = { path = "../surreal_db" }
 multicast = { path = "../protocol/multicast/" }
 #serde_yaml = "0.9.34"
-log = "0.4.22"
+# log = "0.4.22"
 rpassword = "7.3.1"
 num_cpus = "1.16.0"
 local-ip-address = "0.6.2"
