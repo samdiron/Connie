@@ -1,9 +1,12 @@
 use std::{
-    net::UdpSocket,
-    net::{IpAddr, SocketAddr},
+    fs::File,
+    io::{Read, Write},
+    net::{IpAddr, SocketAddr, UdpSocket},
+    os::unix::fs::FileExt,
 };
 
 use common_lib::cheat_sheet::MULTICAST_PORT;
+use common_lib::path::get_home_path;
 // use tokio::net::UdpSocket;
 
 // TODO : make athis function
@@ -31,6 +34,23 @@ use common_lib::cheat_sheet::MULTICAST_PORT;
 
 // msg form : 0 or 1// server or client name // cpid #
 // to save power we could replace the ip from the msg by using recv_from src ;
+//
+//for now we will use a file instead of a db so it's easy to replace the surrealdb
+//o
+// fn write_host_casted(message_info: Vec<str>) {
+//     let home_path = get_home_path();
+//     let file_path = format!("{home_path}/etc/casted");
+//     let mut file = File::open(file_path).expect("/etc/casted file does not exist");
+//     let mut buf = Vec::new();
+//     let data = file.read_to_end(&mut buf);
+//     let mut message_info = formatted.as_bytes();
+//     if buf.contains(&message_info) {
+//         drop(file);
+//     } else {
+//         file.write_all(&mut message_info);
+//     }
+// }
+
 pub async fn cast_and_buffer(ip: IpAddr, command: u8) {
     let addr = SocketAddr::new(ip, MULTICAST_PORT);
     let socket = UdpSocket::bind(addr).unwrap();
@@ -48,7 +68,7 @@ pub async fn cast_and_buffer(ip: IpAddr, command: u8) {
     }
     if command == 1 {
         loop {
-            let mut buffer = vec![0; 200];
+            let mut buffer = vec![];
             let (size, src) = socket.recv_from(&mut buffer).unwrap();
             if size > 0 {
                 let string_msg = String::from_utf8_lossy(&buffer[..size]);

@@ -1,9 +1,10 @@
 [package]
-name = "surreal_db"
+name = "data_base"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+sqlite = "0.36.1"
 serde = "1.0.204"
 surrealdb = { version = "1.5.5", features = ["kv-rocksdb", "kv-mem", "sql2"] }
 tokio = "1.39.2"
