@@ -10,6 +10,7 @@ use std::net::IpAddr;
 use std::process::exit;
 use std::sync::LazyLock;
 
+pub const SYSTEM_TCP: u16 = 4445;
 pub const MULTICAST_PORT: u16 = 4441;
 pub const TCP_MAIN_PORT: u16 = 4443;
 pub static LOCAL_IP: LazyLock<IpAddr> = LazyLock::new(|| lip_fn());

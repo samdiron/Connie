@@ -2,13 +2,13 @@ use crate::dependencies::ld_openssl::openssl_cert;
 use crate::first::new::first_time;
 use common_lib::path::config_path;
 use local_ip_address::local_ip;
-use multicast::cast::cast_and_buffer;
-use rpassword::read_password;
+// use multicast::cast::cast_and_buffer;
+// use rpassword::read_password;
 use std::fs::{remove_file, File};
-use std::io::{stdout, Error, ErrorKind, Read, Result, Write};
-use std::net::IpAddr;
+use std::io::{Error, ErrorKind, Read, Result, Write};
+// use std::net::IpAddr;
 use std::process::exit;
-use std::str::FromStr;
+// use std::str::FromStr;
 use surreal_db::db::DBC;
 use surreal_db::server::structs::{start_minfo, LocalMachine};
 use sysinfo::get_current_pid;
@@ -99,27 +99,27 @@ pub async fn start() -> Result<LocalMachine> {
         };
         let _ = db_conn.connect().await;
         let machine = start_minfo().await.expect("could not get machine info ");
-        let passwd = machine.passwd.clone();
-        let mut i = 0;
-        while i <= 2 {
-            print!("Enter Connie password");
-            stdout().flush().unwrap();
-            let check_passwd = read_password().unwrap();
-            if check_passwd.trim_ascii_end() == passwd {
-                println!("Okay: Start");
-                break;
-            } else {
-                println!("try again");
-                i += 1;
-                if i > 2 {
-                    exit(4);
-                }
-            }
-        }
+        // let passwd = machine.passwd.clone();
+        // let mut i = 0;
+        // while i <= 2 {
+        //     print!("Enter Connie password");
+        //     stdout().flush().unwrap();
+        //     let check_passwd = read_password().unwrap();
+        //     if check_passwd.trim_ascii_end() == passwd {
+        //         println!("Okay: Start");
+        //         break;
+        //     } else {
+        //         println!("try again");
+        //         i += 1;
+        //         if i > 2 {
+        //             exit(4);
+        //         }
+        //     }
+        // }
         //TODO:
-        let cast_ip = IpAddr::from_str(ip.as_str()).expect("TODO : ip str to addr msg");
-
-        let _ = cast_and_buffer(cast_ip, 0).await;
+        // let cast_ip = IpAddr::from_str(ip.as_str()).expect("TODO : ip str to addr msg");
+        //
+        // let _ = cast_and_buffer(cast_ip, 0).await;
 
         Ok(machine)
     } else {
