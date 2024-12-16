@@ -2,18 +2,13 @@ use crate::dependencies::ld_openssl::openssl_cert;
 use crate::first::new::first_time;
 use common_lib::path::config_path;
 use local_ip_address::local_ip;
-// use multicast::cast::cast_and_buffer;
-// use rpassword::read_password;
 use std::fs::{remove_file, File};
 use std::io::{Error, ErrorKind, Read, Result, Write};
-// use std::net::IpAddr;
 use std::process::exit;
-// use std::str::FromStr;
 use surreal_db::db::DBC;
 use surreal_db::server::structs::{start_minfo, LocalMachine};
 use sysinfo::get_current_pid;
 use sysinfo::System; //{Disks, System}; // we will need to check the disk usage here
-                     //use tokio::runtime::Builder;
 
 fn create_pid(mut f: File) {
     println!("process: finished checking pid file lock");
@@ -42,11 +37,9 @@ pub fn check_pid_lockfile() -> i32 {
         let mut is_it: i32 = 2;
         for pid in sys.processes() {
             if pid_lock_file.contains(pid.0.to_string().as_str()) {
-                is_it = 0;
-                println!("there is a connie process already running");
+                is_it = 1;
             } else {
                 is_it = 0;
-                println!("process: finished checking pid file lock");
                 remove_file(full_path.as_str()).expect("TODO: panic message");
                 let file = File::create_new(full_path.as_str())
                     .expect("error while creating a new pid_lock");
