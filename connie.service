@@ -1,0 +1,12 @@
+[Unit] 
+Description=CCS (Connie Control Server)
+
+
+[Service]
+Type=Net-Server
+ExecStart=/Connie/bin/connie.bin
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi

@@ -1,4 +1,3 @@
-use crate::system::common;
 use crate::system::common::*;
 use common_lib::cheat_sheet::LOCAL_IP;
 use common_lib::cheat_sheet::SYSTEM_TCP;
@@ -25,12 +24,11 @@ fn handle_conn(stream: (TcpStream, SocketAddr)) {
         BIND_COMMAND => {
             //TODO: bind the tcp socket;
         }
-        QUITE_COMMAND => exit(0),
         CONNECT_COMMAND => {
             //TODO: connect to a server
         }
         _ => {
-            warn!("unkown command ");
+            warn!("unknown command ");
         }
     }
 
@@ -39,13 +37,10 @@ fn handle_conn(stream: (TcpStream, SocketAddr)) {
 
 pub fn process() -> std::io::Result<()> {
     trace!("started the control socket");
-    let pid = check_pid_lockfile();
-    if 1 == pid {
-        warn!("connie process is already running");
-        exit(1)
-    }
+    check_pid_lockfile();
+
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let _machine = rt.block_on(start()).expect("could not get matchin info");
+    let _machine = rt.block_on(start()).expect("could not get machine info");
     let ip = LOCAL_IP.clone();
     let port = SYSTEM_TCP;
     let sock_addr = SocketAddr::new(ip, port);
