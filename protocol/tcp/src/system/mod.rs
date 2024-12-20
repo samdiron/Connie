@@ -1,3 +1,3 @@
 pub mod cli;
-pub mod common;
+mod common;
 pub mod process;

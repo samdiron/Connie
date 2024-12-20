@@ -7,7 +7,9 @@ use std::io::Read;
 use std::net::SocketAddr;
 use std::net::TcpListener;
 use std::net::TcpStream;
-use std::process::exit;
+// use std::process::exit;
+// use std::process;
+use std::thread::available_parallelism;
 
 fn handle_conn(stream: (TcpStream, SocketAddr)) {
     let addr = stream.1;
@@ -22,6 +24,7 @@ fn handle_conn(stream: (TcpStream, SocketAddr)) {
     let msg = String::from_utf8(buffer).unwrap();
     match msg.as_str() {
         BIND_COMMAND => {
+
             //TODO: bind the tcp socket;
         }
         CONNECT_COMMAND => {
@@ -38,9 +41,13 @@ fn handle_conn(stream: (TcpStream, SocketAddr)) {
 pub fn process() -> std::io::Result<()> {
     trace!("started the control socket");
     check_pid_lockfile();
+    let threads = available_parallelism().unwrap().get();
+    println!("{}", threads);
 
     let rt = tokio::runtime::Runtime::new().unwrap();
     let _machine = rt.block_on(start()).expect("could not get machine info");
+    let cpus = _machine.hardware.cpu_core_count;
+    println!("cpus {}", cpus);
     let ip = LOCAL_IP.clone();
     let port = SYSTEM_TCP;
     let sock_addr = SocketAddr::new(ip, port);

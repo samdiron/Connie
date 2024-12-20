@@ -1,13 +1,55 @@
 // use tokio;
 use common_lib::cheat_sheet::{LOCAL_IP, TCP_MAIN_PORT};
-use std::net::{IpAddr, SocketAddr, TcpListener};
+use std::net::{IpAddr, SocketAddr, TcpListener, TcpStream};
 
-use std::io::Write;
+use std::io::{Read, Write};
 use std::sync::Arc;
 
 use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use rustls::server::Acceptor;
-use rustls::ServerConfig;
+use rustls::{Connection, ServerConfig, ServerConnection};
+//
+// hansshake buffer example:
+// 0\1\2\3
+// 0 means a jwt after the next \n
+// 1 means no jwt but a known user struct after the next \n
+// 2 means no jwt but a unkown user struct after the next \n note will prompt a password
+// 3 means a server will o the logic latter for it
+//
+// then the request PUSH or GET:FILE:filename ;
+// or an edit request EDIT FILE:old_name,new_name
+// or a fetch request FETCH user files group all like recent
+
+const READ_ERROR: &str = "ERROR could not read a buffer IO/TLS/complete_io ";
+
+fn process_request(buffer: &Vec<&str>) {
+    match buffer[0] {
+        "0" => {
+            buffer[1];
+        }
+        _ => {
+            println!("a invalid request ")
+        }
+    }
+}
+
+fn handle(mut conn: ServerConnection, mut stream: TcpStream) {
+    let mut conn = conn;
+    let mut stream = stream;
+    let mut is_hanshake = conn.process_new_packets().unwrap();
+    let mut string_buff = String::new();
+    let mut buffer = vec![0; 150];
+
+    if conn.wants_read() {
+        let res = conn
+            .reader()
+            .read_to_string(&mut string_buff)
+            .expect(READ_ERROR);
+        conn.read_tls(&mut stream).expect(READ_ERROR);
+        conn.complete_io(&mut stream).expect(READ_ERROR);
+        let message_vec: Vec<&str> = string_buff.split("\n").collect();
+    }
+}
 
 pub fn tcp_listener() {
     let ip: IpAddr = LOCAL_IP.clone();
@@ -16,7 +58,7 @@ pub fn tcp_listener() {
     let config = pki.server_config();
     let socket_addr = SocketAddr::new(ip, port);
     let listener = TcpListener::bind(socket_addr).expect("could not bind tcp socket on port 4443 ");
-    println!("tcp socket open on port 4443");
+    println!("tcp socket open on port: {}", TCP_MAIN_PORT);
     for stream in listener.accept() {
         let stream_addr = stream.1;
         let mut stream = stream.0;
@@ -31,17 +73,18 @@ pub fn tcp_listener() {
         };
         match accepted.into_connection(config.clone()) {
             Ok(mut conn) => {
-                let info_msg = stream_addr.to_string();
-                let hello_msg = format!("hello {info_msg}");
-                //TODO: error msgs for tcp listener
-                conn.writer()
-                    .write_all(hello_msg.as_bytes())
-                    .expect("todo error msg stream write");
-                conn.write_tls(&mut stream)
-                    .expect("todo error msg s writetls");
-                conn.complete_io(&mut stream).expect("error complete io");
-                //TODO: auth , process the request , notify user for ending the conn
-                println!("ok");
+
+                // let info_msg = stream_addr.to_string();
+                // let hello_msg = format!("hello {info_msg}");
+                // //TODO: error msgs for tcp listener
+                // conn.writer()
+                //     .write_all(hello_msg.as_bytes())
+                //     .expect("todo error msg stream write");
+                // conn.write_tls(&mut stream)
+                //     .expect("todo error msg s writetls");
+                // conn.complete_io(&mut stream).expect("error complete io");
+                // //TODO: auth , process the request , notify user for ending the conn
+                // println!("ok");
             }
             Err((err, _)) => {
                 eprintln!("{err}");

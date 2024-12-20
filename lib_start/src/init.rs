@@ -21,25 +21,25 @@ fn create_pid(mut f: File) {
 
 pub fn check_pid_lockfile() {
     let cp = config_path();
-    let full_path = format!("{cp}/tmp/pid_file");
-    println!("process: checking pid file lock");
+    let full_path = format!("{cp}/tmp/lock_file");
     let mut e_bool: bool = File::open(full_path.as_str()).is_ok();
     if File::open(cp).is_err_and(|e| e.kind() == ErrorKind::NotFound) {
-        e_bool = true
+        e_bool = false
     };
 
     if e_bool {
-        let mut pid_lock_file = String::new();
+        let mut lock_file = String::new();
         let mut f = File::open(full_path.as_str()).unwrap();
-        f.read_to_string(&mut pid_lock_file).expect("exp");
+        f.read_to_string(&mut lock_file).expect("exp");
         let mut sys = System::new();
         sys.refresh_all();
         for pid in sys.processes() {
-            if pid_lock_file.contains(pid.0.to_string().as_str()) {
+            if lock_file.as_str() == (pid.0.to_string().as_str()) {
                 println!("another connie process is running .");
-                println!("pid: {} ; will exit now :( .", pid.0);
+                println!("the lockfile: {}",lock_file);
+                println!("pid: {}; will exit now :( .", pid.0);
                 exit(1)
-            } else {
+              } else {
                 remove_file(full_path.as_str()).expect("TODO: panic message");
                 let file = File::create_new(full_path.as_str())
                     .expect("error while creating a new pid_lock");
@@ -47,7 +47,7 @@ pub fn check_pid_lockfile() {
             }
         }
         drop(sys);
-        drop(pid_lock_file);
+        drop(lock_file);
     } else {
         let file =
             File::create_new(full_path.as_str()).expect("could not create new pid lock file");
