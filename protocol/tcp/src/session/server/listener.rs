@@ -36,13 +36,12 @@ fn process_request(buffer: &Vec<&str>) {
 fn handle(mut conn: ServerConnection, mut stream: TcpStream) {
     let mut conn = conn;
     let mut stream = stream;
-    let mut is_hanshake = conn.process_new_packets().unwrap();
+    let mut _is_handshake = conn.process_new_packets().unwrap();
     let mut string_buff = String::new();
     let mut buffer = vec![0; 150];
 
     if conn.wants_read() {
-        let res = conn
-            .reader()
+        conn.reader()
             .read_to_string(&mut string_buff)
             .expect(READ_ERROR);
         conn.read_tls(&mut stream).expect(READ_ERROR);
