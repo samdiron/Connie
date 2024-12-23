@@ -8,12 +8,13 @@ use std::sync::Arc;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use rustls::server::Acceptor;
 use rustls::{Connection, ServerConfig, ServerConnection};
+// will wait untile the new db is written
 //
 // hansshake buffer example:
 // 0\1\2\3
 // 0 means a jwt after the next \n
 // 1 means no jwt but a known user struct after the next \n
-// 2 means no jwt but a unkown user struct after the next \n note will prompt a password
+// 2 means no jwt but a unknown user struct after the next \n note will prompt a password
 // 3 means a server will o the logic latter for it
 //
 // then the request PUSH or GET:FILE:filename ;
@@ -21,24 +22,20 @@ use rustls::{Connection, ServerConfig, ServerConnection};
 // or a fetch request FETCH user files group all like recent
 
 const READ_ERROR: &str = "ERROR could not read a buffer IO/TLS/complete_io ";
-
-fn process_request(buffer: &Vec<&str>) {
-    match buffer[0] {
-        "0" => {
-            buffer[1];
-        }
-        _ => {
-            println!("a invalid request ")
-        }
-    }
-}
+//
+// fn process_request(buffer: &Vec<&str>) -> String {
+//     match buffer[0] {
+//         "0" => {}
+//         _ => {
+//             println!("a invalid request ");
+//         }
+//     }
+// }
 
 fn handle(mut conn: ServerConnection, mut stream: TcpStream) {
-    let mut conn = conn;
-    let mut stream = stream;
-    let mut _is_handshake = conn.process_new_packets().unwrap();
+    let _is_handshake = conn.process_new_packets().unwrap();
     let mut string_buff = String::new();
-    let mut buffer = vec![0; 150];
+    // let mut buffer = vec![0; 150];
 
     if conn.wants_read() {
         conn.reader()
@@ -71,8 +68,8 @@ pub fn tcp_listener() {
             }
         };
         match accepted.into_connection(config.clone()) {
-            Ok(mut conn) => {
-
+            Ok(conn) => {
+                handle(conn, stream);
                 // let info_msg = stream_addr.to_string();
                 // let hello_msg = format!("hello {info_msg}");
                 // //TODO: error msgs for tcp listener
