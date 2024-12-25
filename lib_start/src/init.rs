@@ -1,6 +1,6 @@
 use crate::dependencies::ld_openssl::openssl_cert;
 use crate::first::new::first_time;
-use common_lib::path::config_path;
+use common_lib::path::get_config_path;
 use local_ip_address::local_ip;
 use std::fs::{remove_file, File};
 use std::io::{Error, ErrorKind, Read, Result, Write};
@@ -20,7 +20,7 @@ fn create_pid(mut f: File) {
 }
 
 pub fn check_pid_lockfile() {
-    let cp = config_path();
+    let cp = get_config_path();
     let full_path = format!("{cp}/tmp/lock_file");
     let mut e_bool: bool = File::open(full_path.as_str()).is_ok();
     if File::open(cp).is_err_and(|e| e.kind() == ErrorKind::NotFound) {
@@ -36,10 +36,10 @@ pub fn check_pid_lockfile() {
         for pid in sys.processes() {
             if lock_file.as_str() == (pid.0.to_string().as_str()) {
                 println!("another connie process is running .");
-                println!("the lockfile: {}",lock_file);
+                println!("the lockfile: {}", lock_file);
                 println!("pid: {}; will exit now :( .", pid.0);
                 exit(1)
-              } else {
+            } else {
                 remove_file(full_path.as_str()).expect("TODO: panic message");
                 let file = File::create_new(full_path.as_str())
                     .expect("error while creating a new pid_lock");
@@ -56,7 +56,7 @@ pub fn check_pid_lockfile() {
 }
 
 pub async fn start() -> Result<LocalMachine> {
-    let cp = config_path();
+    let cp = get_config_path();
     println!("{}", cp);
     let os = System::name();
     if os.unwrap().as_str() == "Microsoft Windows" {

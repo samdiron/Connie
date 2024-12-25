@@ -1,4 +1,4 @@
-pub fn config_path() -> String {
+pub fn get_config_path() -> String {
     let path = "/Connie/.config/".to_string();
     return path;
 }
