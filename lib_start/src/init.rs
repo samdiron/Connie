@@ -21,15 +21,15 @@ fn create_pid(mut f: File) {
 
 pub fn check_pid_lockfile() {
     let cp = get_config_path();
-    let full_path = format!("{cp}/tmp/lock_file");
-    let mut e_bool: bool = File::open(full_path.as_str()).is_ok();
-    if File::open(cp).is_err_and(|e| e.kind() == ErrorKind::NotFound) {
+    let full_path = "/Connie/tmp/lockfile";
+    let mut e_bool: bool = File::open(full_path).is_ok();
+    if File::open(full_path).is_err_and(|e| e.kind() == ErrorKind::NotFound) {
         e_bool = false
     };
 
     if e_bool {
         let mut lock_file = String::new();
-        let mut f = File::open(full_path.as_str()).unwrap();
+        let mut f = File::open(full_path).unwrap();
         f.read_to_string(&mut lock_file).expect("exp");
         let mut sys = System::new();
         sys.refresh_all();
@@ -40,17 +40,16 @@ pub fn check_pid_lockfile() {
                 println!("pid: {}; will exit now :( .", pid.0);
                 exit(1)
             } else {
-                remove_file(full_path.as_str()).expect("TODO: panic message");
-                let file = File::create_new(full_path.as_str())
-                    .expect("error while creating a new pid_lock");
+                remove_file(full_path).expect("TODO: panic message");
+                let file =
+                    File::create_new(full_path).expect("error while creating a new pid_lock");
                 create_pid(file);
             }
         }
         drop(sys);
         drop(lock_file);
     } else {
-        let file =
-            File::create_new(full_path.as_str()).expect("could not create new pid lock file");
+        let file = File::create_new(full_path).expect("could not create new pid lock file");
         create_pid(file);
     };
 }
@@ -64,7 +63,7 @@ pub async fn start() -> Result<LocalMachine> {
         Error::new(ErrorKind::Unsupported, "no Microsoft Windows support");
         exit(13); // it means the os is window and they out of luck
     };
-    let cdp = format!("{cp}/connie_config.yaml");
+    let cdp = format!("{cp}connie_config.yaml");
     //TODO:
     let connie_config_file = File::open(cdp);
     let connie_config = connie_config_file.is_ok();
