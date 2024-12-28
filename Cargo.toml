@@ -6,11 +6,11 @@ edition = "2021"
 [workspace]
 resolver = "1"
 members = [
-  "surreal_db",
   "lib_start",
   "protocol/tcp",
   "common_lib",
   "protocol/multicast",
+  "lib-db",
 ]
 
 [dependencies]

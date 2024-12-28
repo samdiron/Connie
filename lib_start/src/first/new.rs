@@ -1,5 +1,4 @@
 #![allow(clippy::if_same_then_else)]
-use crate::dependencies::ld_openssl::openssl_cert;
 use common_lib::path::{get_config_path, get_home_path};
 use local_ip_address::local_ip;
 use rpassword::read_password;
@@ -7,8 +6,6 @@ use std::fs::{create_dir, create_dir_all, exists, File};
 use std::io::{stdin, stdout, Write};
 use std::path::PathBuf;
 use std::process::exit;
-use surreal_db::{db::first_time_db_def, server::structs::Hardware};
-use surreal_db::{db::DBC, server::structs::LocalMachine, user::sign_up::User};
 use sysinfo::{Disks, System};
 use uuid::Uuid;
 
@@ -67,23 +64,7 @@ pub async fn first_time() -> std::io::Result<i32> {
     // TODO : run define db functions here
     //
     // ;
-    let ip = local_ip().unwrap();
-    let db_ip = format!("{ip}");
-    openssl_cert(db_ip.as_str()).await;
-    let db_conn = DBC {
-        addr: None,
-        remote: false,
-        lm: true,
-    };
-    db_conn.connect().await;
-    let db_define = first_time_db_def().await.is_ok();
-    if db_define == true {
-        println!("db connection established");
-    } else {
-        println!("error db sql query failed will exit with code 2021 ");
-        exit(2021)
-    }
-
+    // let ip = local_ip().unwrap();
     // let name = "name".to_owned();
     // let user_name = "user_name".to_owned();
     // let pass = "string_pass".to_owned();
@@ -243,72 +224,55 @@ pub async fn first_time() -> std::io::Result<i32> {
             println!("enter a valid password ");
         };
     }
-    let server_uuid = Uuid::new_v4().to_string();
-    let mut sys = System::new_all();
-    sys.refresh_all();
-    let host_name = System::host_name().expect("string convert failed");
-    let machine_memory = sys.total_memory();
-    let machine_swap = sys.total_swap();
-    let disks = Disks::new_with_refreshed_list();
-    let mut available_storage: u64 = 0;
-    for disk in &disks {
-        let ds = disk.available_space();
-        let dps = ds + available_storage;
-        available_storage = dps;
-    }
-    let core_count = sys
-        .physical_core_count()
-        .expect("could not read core count");
-
-    let host2 = host_name.clone();
-    let machine = LocalMachine {
-        cpid: server_uuid,
-        passwd: server_password,
-        host_name: host2,
-        status: server_status,
-        server_name: server_name_string,
-        hardware: Hardware {
-            swap: machine_swap,
-            cpu_core_count: core_count,
-            memory: machine_memory,
-        },
-    };
-
-    machine.create().await.expect("TODO: panic message");
+    // let server_uuid = Uuid::new_v4().to_string();
+    // let mut sys = System::new_all();
+    // sys.refresh_all();
+    // let host_name = System::host_name().expect("string convert failed");
+    // let machine_memory = sys.total_memory();
+    // let machine_swap = sys.total_swap();
+    // let disks = Disks::new_with_refreshed_list();
+    // let mut available_storage: u64 = 0;
+    // for disk in &disks {
+    //     let ds = disk.available_space();
+    //     let dps = ds + available_storage;
+    //     available_storage = dps;
+    // }
+    // let core_count = sys
+    //     .physical_core_count()
+    //     .expect("could not read core count");
+    //
+    // let host2 = host_name.clone();
+    // let machine = LocalMachine {
+    //     cpid: server_uuid,
+    //     passwd: server_password,
+    //     host_name: host2,
+    //     status: server_status,
+    //     server_name: server_name_string,
+    //     hardware: Hardware {
+    //         swap: machine_swap,
+    //         cpu_core_count: core_count,
+    //         memory: machine_memory,
+    //     },
+    // };
+    //
 
     let user_uuid = Uuid::new_v4().to_string();
 
-    let admin = User {
-        name,
-        user_name,
-        pass: user_password,
-        cpid: user_uuid,
-    };
-
-    let admin_cpid_copy = admin.cpid.clone();
-    let mut admin_binary_cpid = admin_cpid_copy.as_bytes();
-    let mut cpid_file = File::create(path_to_cpid_file).unwrap();
-    cpid_file
-        .write_all(&mut admin_binary_cpid)
-        .expect("error could not write to file");
-
-    admin.sign_up_A().await.expect("could not get token");
-
-    let yaml_config = format!(
-        "
-        machine:
-          - Host_name: {host_name}
-          - Memory: {machine_memory}
-          - Swap: {machine_swap}
-          - Storage: {available_storage}
-          - Cores: {core_count}
-        "
-    );
-    println!("{}", yaml_config);
-    let config_yml = format!("{config_path}/connie_config.yaml");
-    let mut file = File::create(config_yml.as_str()).expect("could not create connie_config.yaml");
-    file.write_all(yaml_config.as_bytes())
-        .expect("could not write to connie_config.yaml");
+    // let yaml_config = format!(
+    //     "
+    //     machine:
+    //       - Host_name: {host_name}
+    //       - Memory: {machine_memory}
+    //       - Swap: {machine_swap}
+    //       - Storage: {available_storage}
+    //       - Cores: {core_count}
+    //     "
+    // );
+    // println!("{}", yaml_config);
+    // let config_yml = format!("{config_path}/connie_config.yaml");
+    // let mut file = File::create(config_yml.as_str()).expect("could not create connie_config.yaml");
+    // file.write_all(yaml_config.as_bytes())
+    //     .expect("could not write to connie_config.yaml");
     Ok(0)
 }
 

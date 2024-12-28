@@ -1,9 +1,10 @@
 [package]
-name = "data_base"
+name = "lib-db"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+jwt-simple = "0.12.11"
 tokio-postgres = "0.7.12"
 serde = "1.0.204"
 tokio = "1.39.2"

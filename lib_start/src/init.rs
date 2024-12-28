@@ -1,4 +1,3 @@
-use crate::dependencies::ld_openssl::openssl_cert;
 use crate::first::new::first_time;
 use common_lib::path::get_config_path;
 use local_ip_address::local_ip;
@@ -20,7 +19,7 @@ fn create_pid(mut f: File) {
 }
 
 pub fn check_pid_lockfile() {
-    let cp = get_config_path();
+    // let cp = get_config_path();
     let full_path = "/Connie/tmp/lockfile";
     let mut e_bool: bool = File::open(full_path).is_ok();
     if File::open(full_path).is_err_and(|e| e.kind() == ErrorKind::NotFound) {
@@ -54,7 +53,7 @@ pub fn check_pid_lockfile() {
     };
 }
 
-pub async fn start() -> Result<LocalMachine> {
+pub async fn start() -> Result<()> {
     let cp = get_config_path();
     println!("{}", cp);
     let os = System::name();
@@ -69,48 +68,9 @@ pub async fn start() -> Result<LocalMachine> {
     let connie_config = connie_config_file.is_ok();
     drop(connie_config_file);
     if connie_config {
-        // let first_time = false;
-        // let dependencies_surreal = surreal_ld_check(home_path.as_str());
-        // let dependencies_openssl = openssl_ld_check(home_path.as_str());
-        // let dependencies_nix = nix_ld_check(home_path.as_str());
-        // let dependencies_check = dependencies_surreal + dependencies_nix + dependencies_openssl;
-        // if dependencies_check != 0 {
-        // exit(6);
-        // }
         let ip = local_ip().expect("could no get ip");
         let ip = format!("{}", ip);
-        let _os = openssl_cert(ip.as_str()).await;
-        // let _ds = start_db_command(ip.as_str()).await;
-        let db_conn = DBC {
-            lm: true,
-            remote: false,
-            addr: None,
-        };
-        let _ = db_conn.connect().await;
-        let machine = start_minfo().await.expect("could not get machine info ");
-        // let passwd = machine.passwd.clone();
-        // let mut i = 0;
-        // while i <= 2 {
-        //     print!("Enter Connie password");
-        //     stdout().flush().unwrap();
-        //     let check_passwd = read_password().unwrap();
-        //     if check_passwd.trim_ascii_end() == passwd {
-        //         println!("Okay: Start");
-        //         break;
-        //     } else {
-        //         println!("try again");
-        //         i += 1;
-        //         if i > 2 {
-        //             exit(4);
-        //         }
-        //     }
-        // }
-        //TODO:
-        // let cast_ip = IpAddr::from_str(ip.as_str()).expect("TODO : ip str to addr msg");
-        //
-        // let _ = cast_and_buffer(cast_ip, 0).await;
-
-        Ok(machine)
+        Ok(())
     } else {
         let firs_time_state = first_time().await.expect("first_time process error");
         println!("now will exit if you want to start rerun connie");
