@@ -1,21 +1,24 @@
 use log::{error, info};
 use once_cell::sync::Lazy;
-use sqlx::PgPool;
+use sqlx::{PgPool, Result};
 use std::{io::Read, process::abort};
-use tokio::sync::Mutex;
 
-pub static POOL: Lazy<Mutex<PgPool>> = Lazy::new(|| {
+pub static POOL: Lazy<PgPool> = Lazy::new(|| {
     let pool = get_conn();
     if pool.is_ok() {
         info!("INFO: db pool obtained ");
         let pool = pool.unwrap();
-        let pool = Mutex::new(pool);
         pool
     } else {
         error!("ERROR: can't get db pool");
         abort();
     }
 });
+pub async fn migrate(pool: &PgPool) -> Result<(), sqlx::Error> {
+    sqlx::migrate!("../migrations/").run(pool).await?;
+    info!("INFO: db migration");
+    Ok(())
+}
 
 #[tokio::main]
 async fn get_conn() -> Result<PgPool, sqlx::Error> {
