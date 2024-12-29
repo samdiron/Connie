@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+sha256 = "1.5.0"
 jwt-simple = "0.12.11"
-tokio-postgres = "0.7.12"
-serde = "1.0.204"
-tokio = "1.39.2"
+sqlx = { version = "0.8.2", features = ["postgres", "runtime-tokio-rustls"] }
+tokio = { version = "1.39.2", features = ["full"] }
 log = "0.4.22"
-lazy_static = "1.5.0"
+once_cell = "1.20.2"

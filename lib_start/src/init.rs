@@ -4,8 +4,6 @@ use local_ip_address::local_ip;
 use std::fs::{remove_file, File};
 use std::io::{Error, ErrorKind, Read, Result, Write};
 use std::process::exit;
-use surreal_db::db::DBC;
-use surreal_db::server::structs::{start_minfo, LocalMachine};
 use sysinfo::get_current_pid;
 use sysinfo::System; //{Disks, System}; // we will need to check the disk usage here
 
@@ -69,7 +67,6 @@ pub async fn start() -> Result<()> {
     drop(connie_config_file);
     if connie_config {
         let ip = local_ip().expect("could no get ip");
-        let ip = format!("{}", ip);
         Ok(())
     } else {
         let firs_time_state = first_time().await.expect("first_time process error");
