@@ -1,6 +1,6 @@
 use crate::first::new::first_time;
+use common_lib::cheat_sheet::LOCAL_IP;
 use common_lib::path::get_config_path;
-use local_ip_address::local_ip;
 use std::fs::{remove_file, File};
 use std::io::{Error, ErrorKind, Read, Result, Write};
 use std::process::exit;
@@ -66,7 +66,7 @@ pub async fn start() -> Result<()> {
     let connie_config = connie_config_file.is_ok();
     drop(connie_config_file);
     if connie_config {
-        let ip = local_ip().expect("could no get ip");
+        let _ip = LOCAL_IP.clone();
         Ok(())
     } else {
         let firs_time_state = first_time().await.expect("first_time process error");

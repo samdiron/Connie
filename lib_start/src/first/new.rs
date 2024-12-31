@@ -1,12 +1,12 @@
 #![allow(clippy::if_same_then_else)]
+// use common_lib::cheat_sheet::LOCAL_IP;
 use common_lib::path::{get_config_path, get_home_path};
-use local_ip_address::local_ip;
 use rpassword::read_password;
-use std::fs::{create_dir, create_dir_all, exists, File};
+use std::fs::{create_dir, create_dir_all, exists};
 use std::io::{stdin, stdout, Write};
 use std::path::PathBuf;
 use std::process::exit;
-use sysinfo::{Disks, System};
+// use sysinfo::{Disks, System};
 use uuid::Uuid;
 
 pub async fn first_time() -> std::io::Result<i32> {

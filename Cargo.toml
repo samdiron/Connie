@@ -14,7 +14,6 @@ members = [
 ]
 
 [dependencies]
-# sdwd = "1.0.0"
 tcp = { path = "./protocol/tcp/" }
 rpassword = "7.3.1"
 lib_start = { path = "./lib_start" }
