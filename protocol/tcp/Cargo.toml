@@ -9,6 +9,7 @@ tokio = "1.41.0"
 multicast = { path = "../multicast/" }
 common_lib = { path = "../../common_lib/" }
 lib_start = { path = "../../lib_start/" }
+lib_db = { path = "../../lib_db/" }
 log = "0.4.22"
 rcgen = "=0.13.1"
 webpki-roots = "0.26.7"

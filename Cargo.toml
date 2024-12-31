@@ -10,7 +10,7 @@ members = [
   "protocol/tcp",
   "common_lib",
   "protocol/multicast",
-  "lib-db",
+  "lib_db",
 ]
 
 [dependencies]
