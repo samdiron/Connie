@@ -15,16 +15,27 @@ pub static POOL: Lazy<PgPool> = Lazy::new(|| {
     }
 });
 pub async fn migrate(pool: &PgPool) -> Result<(), sqlx::Error> {
-    sqlx::migrate!("../migrations/").run(pool).await?;
     info!("INFO: db migration");
+    {
+        let sql = crate::migrations::user_table::get_sql();
+        let _res = sqlx::query(sql.as_str()).execute(pool).await?;
+    };
+    {
+        let sql = crate::migrations::server_table::get_sql();
+        let _res = sqlx::query(sql.as_str()).execute(pool).await?;
+    }
+    {
+        let sql = crate::migrations::media_table::get_sql();
+        let _res = sqlx::query(sql.as_str()).execute(pool).await?;
+    }
     Ok(())
 }
 
 #[tokio::main]
 async fn get_conn() -> Result<PgPool, sqlx::Error> {
     let mut url = String::new();
-    let mut file = std::fs::File::open("/Connie/database.db/connection")
-        .expect("error opening connection file from /Connie/database.db/connection");
+    let mut file = std::fs::File::open("/Connie/etc/db_conn")
+        .expect("error opening connection file from /Connie/etc/db_conn");
     let _res = file
         .read_to_string(&mut url)
         .expect("could not get connection string from file /Connie/database.db/connection");

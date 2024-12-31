@@ -1,3 +1,5 @@
+pub fn get_sql() -> String {
+    let sql = r#"
 CREATE TABLE IF NOT EXISTS media(
   id SERIAL PRIMARY KEY,
   cpid TEXT, 
@@ -11,3 +13,8 @@ CREATE TABLE IF NOT EXISTS media(
   "path" TEXT
   
 );
+"#
+    .to_string();
+
+    return sql;
+}

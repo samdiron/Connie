@@ -1,3 +1,5 @@
+pub fn get_sql() -> String {
+    let sql = r#"
 CREATE TABLE IF NOT EXIST "user"(
   id SERIAL PRIMARY KEY,
   cpid TEXT PRIMARY KEY,
@@ -9,6 +11,8 @@ CREATE TABLE IF NOT EXIST "user"(
     REFERENCES server(cpid)
   password TEXT,
 );
+"#
+    .to_string();
 
-
-
+    return sql;
+}
