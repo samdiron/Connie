@@ -9,9 +9,8 @@ CREATE TABLE IF NOT EXISTS media(
   CONSTRAINT fk_cpid 
     FOREIGN KEY(
       cpid
-    ) REFERENCES "user"(cpid)
-  "path" TEXT
-  
+    ) REFERENCES "user"(cpid),
+  path TEXT
 );
 "#
     .to_string();

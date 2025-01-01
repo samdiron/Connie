@@ -1,4 +1,6 @@
-use sqlx::{Error, PgPool};
+use sha256::digest;
+use sqlx::{Error, PgPool, Row};
+use uuid::Uuid;
 
 pub struct Server {
     pub cpid: String,
@@ -9,21 +11,57 @@ pub struct Server {
     pub max_conn: i64,
     pub password: String,
 }
+pub async fn get_server(
+    cpid: String,
+    password: String,
+    pool: &PgPool,
+) -> sqlx::Result<Server, sqlx::Error> {
+    let sql = "SELECT * FROM server WHERE cpid = $1 AND password = $2;";
+    let row = sqlx::query(sql)
+        .bind(cpid)
+        .bind(password)
+        .fetch_one(pool)
+        .await?;
+    let server = Server {
+        cpid: row.get("cpid"),
+        name: row.get("name"),
+        host: row.get("host"),
+        memory: row.get("memory"),
+        storage: row.get("storage"),
+        max_conn: row.get("max_conn"),
+        password: row.get("password"),
+    };
+    Ok(server)
+}
 
 impl Server {
-    pub async fn create(&self, pool: &PgPool) -> sqlx::Result<(), Box<Error>> {
-        let sql = "INSERT INTO server(cpid, name, host, memory, storage, max_conn, password) VALUES ($1, $2, $3, $4, $5, $6, $7); ";
+    pub async fn create(self, pool: &PgPool) -> sqlx::Result<Server, Box<Error>> {
+        let sql = "INSERT INTO server(
+        cpid, name, host, memory, storage, max_conn, password) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7); ";
+        let password = digest(self.password.clone());
+        let cpid = Uuid::new_v4().to_string();
         sqlx::query(sql)
-            .bind(&self.cpid)
+            .bind(cpid.clone())
             .bind(&self.name)
             .bind(&self.host)
             .bind(&self.memory)
             .bind(&self.storage)
             .bind(&self.max_conn)
-            .bind(&self.password)
+            .bind(password.clone())
             .execute(pool)
             .await?;
-        Ok(())
+        let server = Server {
+            cpid,
+            name: self.name,
+            host: self.host,
+            memory: self.memory,
+            storage: self.storage,
+            max_conn: self.max_conn,
+            password,
+        };
+
+        Ok(server)
     }
 
     pub async fn update(&self, pool: &PgPool) -> sqlx::Result<(), Box<Error>> {

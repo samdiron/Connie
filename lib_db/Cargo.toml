@@ -10,9 +10,16 @@ sqlx = { version = "0.8.2", features = [
   "postgres",
   "runtime-tokio-rustls",
   "chrono",
-  "uuid",
   "macros",
 ] }
 tokio = { version = "1.40.0", features = ["full"] }
 log = "0.4.22"
+
+[dependencies.uuid]
+version = "1.11.0"
+features = [
+  "v4",                # Lets you generate random UUIDs
+  "fast-rng",          # Use a faster (but still sufficiently random) RNG
+  "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+]
 # once_cell = "1.20.2"
