@@ -4,43 +4,40 @@ use common_lib::path::{get_config_path, get_home_path};
 use lib_db::database::{get_conn, migrate};
 use lib_db::server::server_struct::Server;
 use lib_db::user::user_struct::User;
-use lib_db::user::{self, user_struct};
 use rpassword::read_password;
-use std::fmt::{Debug, Formatter};
 use std::fs::{create_dir, create_dir_all, exists, File};
 use std::i64;
 use std::io::{stdin, stdout, Write};
 use std::path::PathBuf;
-use std::process::{abort, exit};
-use std::thread::available_parallelism;
+use std::process::exit;
 use sysinfo::{Disks, System};
 
-async fn fake_db_cred() {
-    let pool = get_conn().await.unwrap();
-    let _migrate = migrate(&pool).await.unwrap();
-    let server = Server {
-        cpid: String::new(),
-        name: "name".to_string(),
-        host: "host".to_string(),
-        memory: 69,
-        storage: 66,
-        max_conn: 80,
-        password: "hashed".to_string(),
-    };
-    let server = server.create(&pool).await.unwrap();
-    assert_ne!(server.password, "hashed".to_string());
-    let user = User {
-        cpid: String::new(),
-        name: "name".to_string(),
-        host: server.cpid,
-        username: "username".to_string(),
-        email: "email".to_string(),
-        password: "test".to_string(),
-    };
-
-    let user2 = user.create(&pool).await.unwrap();
-    assert_ne!("test".to_string(), user2.password);
-}
+// async fn fake_db_cred() {
+//     let pool = get_conn().await.unwrap();
+//     let _migrate = migrate(&pool).await.unwrap();
+//     let server = Server {
+//         cpid: String::new(),
+//         name: "name".to_string(),
+//         host: "host".to_string(),
+//         memory: 69,
+//         storage: 66,
+//         max_conn: 80,
+//         password: "hashed".to_string(),
+//     };
+//     let server = server.create(&pool).await.unwrap();
+//     assert_ne!(server.password, "hashed".to_string());
+//     let user = User {
+//         cpid: String::new(),
+//         name: "name".to_string(),
+//         host: server.cpid,
+//         username: "username".to_string(),
+//         email: "email".to_string(),
+//         password: "test".to_string(),
+//     };
+//
+//     let user2 = user.create(&pool).await.unwrap();
+//     assert_ne!("test".to_string(), user2.password);
+// }
 
 pub async fn first_time() -> std::io::Result<i32> {
     // let _ = dependency_fn_check();
@@ -94,31 +91,7 @@ pub async fn first_time() -> std::io::Result<i32> {
         create_dir_all(path_tmp).expect("TODO: panic message");
     };
     let pool = get_conn().await.unwrap();
-    fake_db_cred().await;
-    // let _migrate = migrate(&pool).await.unwrap();
-    // let server = Server {
-    //     cpid: String::new(),
-    //     name: "name".to_string(),
-    //     host: "host".to_string(),
-    //     memory: 69,
-    //     storage: i64::MAX,
-    //     max_conn: 80,
-    //     password: "hashed".to_string(),
-    // };
-    // assert_ne!(server.password, "hashed".to_string());
-    // let user = User {
-    //     cpid: String::new(),
-    //     name: "name".to_string(),
-    //     host: "host".to_string(),
-    //     username: "username".to_string(),
-    //     email: "email".to_string(),
-    //     password: "test".to_string(),
-    // };
-    //
-    // let user2 = user.create(&pool).await.unwrap();
-    // assert_ne!("test".to_string(), user2.password);
-    abort();
-    println!("process: creating config");
+    let _res = migrate(&pool).await.unwrap();
     println!("//NOTE cant be more than 17 char or less than 3 it cant contain spaces");
     print!("server name: ");
     stdout().flush().unwrap();
@@ -152,7 +125,7 @@ pub async fn first_time() -> std::io::Result<i32> {
     //         }
     //     }
     // };
-
+    println!("{}", server_name.as_str());
     let server_password: String; // = String::new();
     loop {
         println!("password can be 3~20 characters and numbers punctuation ");
@@ -217,6 +190,14 @@ pub async fn first_time() -> std::io::Result<i32> {
             println!("enter a valid username ");
         };
     }
+    println!("email");
+    let email: String;
+    loop {
+        let mut string_buf = String::new();
+        stdin().read_line(&mut string_buf).unwrap();
+        email = string_buf;
+        break;
+    }
     let user_password: String;
     loop {
         println!("password can be 3~20 characters and numbers punctuation ");
@@ -266,6 +247,14 @@ pub async fn first_time() -> std::io::Result<i32> {
         password: server_password,
     };
     let server = server.create(&pool).await.unwrap();
+    let user = User {
+        cpid: String::new(),
+        name,
+        username: user_name,
+        host: host2,
+        email,
+        password: user_password,
+    };
     let yaml_config = format!(
         "
         machine:

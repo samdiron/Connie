@@ -3,6 +3,7 @@ use std::io::Write;
 use std::net::{IpAddr, SocketAddr, TcpStream};
 use std::str::FromStr;
 use std::sync::Arc;
+use tokio_rustls::rustls;
 
 pub fn tcp_connector() {
     let root_store =
