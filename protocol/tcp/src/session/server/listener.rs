@@ -4,13 +4,12 @@ use common_lib::cheat_sheet::{LOCAL_IP, TCP_MAIN_PORT};
 
 use lib_db::database::get_conn;
 use lib_db::jwt;
-use lib_db::types::{jwtE, PgPool, Result};
+use lib_db::types::{PgPool, Result};
 use lib_db::user::user_struct::vaildate_claim;
 
 use log::info;
-use tokio::io::AsyncReadExt;
 
-use std::io::{Read as reader, Result};
+use std::io::Read as reader;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 
@@ -20,6 +19,8 @@ use rustls;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use rustls::server::Acceptor;
 use rustls::{ServerConfig, ServerConnection};
+
+//NOTE: use mio instead of std::net
 
 // will wait untile the new db is written
 //
@@ -69,6 +70,8 @@ async fn handle(
         conn.reader()
             .read_to_string(&mut string_buff)
             .expect(READ_ERROR);
+        conn.read_tls(&mut stream)?;
+        conn.complete_io(&mut stream)?;
         let _ = process_request(string_buff.as_str(), &pool);
     }
     Ok(())
@@ -84,8 +87,7 @@ pub async fn tcp_listener() {
 
     let socket_addr = SocketAddr::new(ip, port);
 
-    let listener = TcpListener::bind(socket_addr)
-        .expect("could not bind tcp socket on port 4443 ");
+    let listener = TcpListener::bind(socket_addr).expect("could not bind tcp socket on port 4443 ");
 
     println!("tcp socket open on port: {}", TCP_MAIN_PORT);
 
