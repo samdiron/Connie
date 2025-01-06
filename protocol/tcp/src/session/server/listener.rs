@@ -1,16 +1,26 @@
-// use tokio;
-use common_lib::cheat_sheet::{LOCAL_IP, TCP_MAIN_PORT};
-use log::info;
-use std::net::{IpAddr, SocketAddr};
-use tokio::net::{TcpListener, TcpStream};
+use crate::common::request::{JWT_HEAD, SPLIT};
 
-use std::io::{Read, Write};
+use common_lib::cheat_sheet::{LOCAL_IP, TCP_MAIN_PORT};
+
+use lib_db::database::get_conn;
+use lib_db::jwt;
+use lib_db::types::{jwtE, PgPool, Result};
+use lib_db::user::user_struct::vaildate_claim;
+
+use log::info;
+use tokio::io::AsyncReadExt;
+
+use std::io::{Read as reader, Result};
+use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 
-use tokio_rustls::rustls;
-use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
-use tokio_rustls::rustls::server::Acceptor;
-use tokio_rustls::rustls::{Reader, ServerConfig, ServerConnection};
+use std::net::{TcpListener, TcpStream};
+
+use rustls;
+use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
+use rustls::server::Acceptor;
+use rustls::{ServerConfig, ServerConnection};
+
 // will wait untile the new db is written
 //
 // hansshake buffer example:
@@ -22,20 +32,35 @@ use tokio_rustls::rustls::{Reader, ServerConfig, ServerConnection};
 //
 // then the request PUSH or GET:FILE:filename ;
 // or an edit request EDIT FILE:old_name,new_name
-// or a fetch request FETCH user files group all like recent
+// or a fetch request FETCH user files group all like recenta
 
 const READ_ERROR: &str = "ERROR could not read a buffer IO/TLS/complete_io ";
 
-// fn process_request(buffer: &Vec<&str>) -> String {
-//     match buffer[0] {
-//         "0" => {}
-//         _ => {
-//             println!("a invalid request ");
-//         }
-//     }
-// }
+async fn process_request(raw_text: &str, pool: &PgPool) -> Result<()> {
+    let buffer: Vec<&str> = raw_text.split(SPLIT).collect();
+    let mut valid_auth: bool = false;
+    match buffer[0] {
+        "0" => {
+            let jwt = buffer[1].trim_start_matches(JWT_HEAD).to_string();
+            let claim = jwt::validate(&jwt).await?;
+            if vaildate_claim(claim.cpid, claim.paswd, &pool).await.is_ok() {
+                *&mut valid_auth = true;
+            }
+        }
 
-async fn handle(mut conn: ServerConnection, mut stream: TcpStream, sock_addr: SocketAddr) {
+        _ => {
+            println!("a invalid request ");
+        }
+    }
+    Ok(())
+}
+
+async fn handle(
+    mut conn: ServerConnection,
+    mut stream: TcpStream,
+    sock_addr: SocketAddr,
+    pool: &PgPool,
+) -> std::io::Result<()> {
     let _is_handshake = conn.process_new_packets().unwrap();
     let mut string_buff = String::new();
     // let mut buffer = vec![0; 150];
@@ -44,21 +69,27 @@ async fn handle(mut conn: ServerConnection, mut stream: TcpStream, sock_addr: So
         conn.reader()
             .read_to_string(&mut string_buff)
             .expect(READ_ERROR);
-        let message_vec: Vec<&str> = string_buff.split("\n").collect();
+        let _ = process_request(string_buff.as_str(), &pool);
     }
+    Ok(())
 }
 
 pub async fn tcp_listener() {
+    let pool = get_conn().await.unwrap();
     let ip: IpAddr = LOCAL_IP.clone();
     let port: u16 = TCP_MAIN_PORT.clone();
+
     let pki = TestPki::new();
     let config = pki.server_config();
+
     let socket_addr = SocketAddr::new(ip, port);
+
     let listener = TcpListener::bind(socket_addr)
-        .await
         .expect("could not bind tcp socket on port 4443 ");
+
     println!("tcp socket open on port: {}", TCP_MAIN_PORT);
-    for stream in listener.accept().await {
+
+    for stream in listener.accept() {
         let sock_addr = stream.1;
         let stream = stream.0;
 
@@ -69,10 +100,12 @@ pub async fn tcp_listener() {
                 break accepted;
             }
         };
+
         match accepted.into_connection(config.clone()) {
             Ok(conn) => {
                 info!("conn will be handled ip: {} ;", sock_addr.ip().clone());
-                handle(conn, stream, sock_addr).await;
+
+                handle(conn, stream, sock_addr, &pool).await;
             }
             Err((err, _)) => {
                 eprintln!("{err}");

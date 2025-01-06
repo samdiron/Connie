@@ -1,3 +1,4 @@
+use log::warn;
 use sha256::digest;
 use sqlx::{PgPool, Result, Row};
 use uuid::Uuid;
@@ -9,6 +10,15 @@ pub struct User {
     pub host: String,
     pub email: String,
     pub password: String,
+}
+pub async fn vaildate_claim(cpid: String, paswd: String, pool: &PgPool) -> sqlx::Result<bool> {
+    let user = fetch(cpid.clone(), paswd.clone(), pool).await?;
+    if user.cpid == cpid {
+        Ok(true)
+    } else {
+        warn!("invalid auth");
+        Ok(false)
+    }
 }
 
 pub async fn fetch(

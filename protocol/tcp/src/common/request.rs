@@ -10,3 +10,5 @@ pub const DELETE: &str = "!D";
 
 pub const SPLIT: &str = "\n";
 pub const END: &str = "\0";
+
+pub const JWT_HEAD: &str = "JWT: ";
