@@ -52,24 +52,30 @@ mod tests {
     // use super::*;
     use sqlx::{self, query, Row};
     use std::time;
-    #[tokio::test]
-    async fn db_conn_speed() {
-        let key = "POSTGRES_CLUSTER";
-        match std::env::var(key) {
-            Ok(ky) => {
-                let sql = "SELECT 4 + 6 AS SUM";
-                let t1 = time::Instant::now();
-                let _pool = sqlx::postgres::PgPool::connect(ky.as_str()).await.unwrap();
-                let res = query(sql).fetch_one(&_pool).await.unwrap();
-                let sum: i32 = res.get("SUM");
-                assert_eq!(sum, 10);
-                let t2 = time::Instant::now();
-                let time = t2 - t1;
-                println!("duration: {}µ", time.as_micros());
-            }
-            Err(e) => {
-                println!("{}", e)
-            }
-        }
+    #[test]
+    fn db_conn_speed() {
+        tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async {
+                let key = "POSTGRES_CLUSTER";
+                match std::env::var(key) {
+                    Ok(ky) => {
+                        let sql = "SELECT 4 + 6 AS SUM";
+                        let t1 = time::Instant::now();
+                        let _pool = sqlx::postgres::PgPool::connect(ky.as_str()).await.unwrap();
+                        let res = query(sql).fetch_one(&_pool).await.unwrap();
+                        let sum: i32 = res.get("SUM");
+                        assert_eq!(sum, 10);
+                        let t2 = time::Instant::now();
+                        let time = t2 - t1;
+                        println!("duration: {}µ", time.as_micros());
+                    }
+                    Err(e) => {
+                        println!("{}", e)
+                    }
+                }
+            });
     }
 }
