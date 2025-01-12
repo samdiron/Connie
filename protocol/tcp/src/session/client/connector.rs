@@ -1,17 +1,17 @@
-// use std::io::{Read, Stdout, Write};
 use rustls;
+use std::io;
 use std::io::Write;
 use std::net::{IpAddr, SocketAddr, TcpStream};
 use std::str::FromStr;
 use std::sync::Arc;
 
-pub fn tcp_connector() {
+pub fn tcp_connector(ip: &str) -> io::Result<()> {
     let root_store =
         rustls::RootCertStore::from_iter(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
     let config = rustls::ClientConfig::builder()
         .with_root_certificates(root_store)
         .with_no_client_auth();
-    let ip = IpAddr::from_str("ip_from the multicast search or a known server").unwrap();
+    let ip = IpAddr::from_str(ip).unwrap();
     let port = common_lib::cheat_sheet::TCP_MAIN_PORT;
     let socketaddr = SocketAddr::new(ip, port);
     let server_name = "connie".try_into().unwrap();
@@ -28,4 +28,5 @@ pub fn tcp_connector() {
         ciphersuite.suite()
     )
     .unwrap();
+    Ok(())
 }

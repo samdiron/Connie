@@ -1,5 +1,3 @@
-use std::io::{self, Error, ErrorKind, Split};
-
 use log::warn;
 
 // AUTH
