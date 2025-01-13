@@ -1,3 +1,3 @@
-pub mod chunk;
+mod media;
 pub mod handshake;
 pub mod request;

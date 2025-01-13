@@ -3,6 +3,17 @@ name = "Connie"
 version = "0.1.0"
 edition = "2021"
 
+[profile.dev]
+opt-level = 0
+
+[profile.release]
+opt-level = 3
+strip = "debuginfo"
+
+[profile.client]
+inherits = "release"
+opt-level = "s"
+
 [workspace]
 resolver = "1"
 members = [
