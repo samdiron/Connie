@@ -1,5 +1,6 @@
-use rustls::ServerConnection;
 use crate::common::request::{JWT_HEAD, SPLIT};
+use log::{info, log};
+use rustls::ServerConnection;
 
 use common_lib::cheat_sheet::{LOCAL_IP, TCP_MAIN_PORT};
 
@@ -8,14 +9,13 @@ use lib_db::jwt;
 use lib_db::types::{PgPool, Result};
 use lib_db::user::user_struct::vaildate_claim;
 
-use log::info;
 use std::io::Read;
 use std::net::{IpAddr, SocketAddr};
 
-use std::net::{TcpListener, TcpStream};
 use crate::session::server::server_cfg::*;
 use rustls;
 use rustls::server::Acceptor;
+use std::net::{TcpListener, TcpStream};
 
 //NOTE: use mio instead of std::net
 
@@ -59,6 +59,8 @@ async fn handle(
     sock_addr: SocketAddr,
     pool: &PgPool,
 ) -> std::io::Result<()> {
+    let ip = format!("{sock_addr}");
+    info!("handling {ip}");
     let _is_handshake = conn.process_new_packets().unwrap();
     let mut string_buff = String::new();
     // let mut buffer = vec![0; 150];
@@ -76,7 +78,7 @@ async fn handle(
 
 pub async fn tcp_listener() {
     let workers = std::thread::available_parallelism().unwrap();
-    
+
     let pool = get_conn().await.unwrap();
     let ip: IpAddr = LOCAL_IP.clone();
     let port: u16 = TCP_MAIN_PORT.clone();
@@ -89,27 +91,25 @@ pub async fn tcp_listener() {
     let listener = TcpListener::bind(socket_addr).expect("could not bind tcp socket on port 4443 ");
 
     println!("tcp socket open on port: {}", TCP_MAIN_PORT);
-        for stream in listener.accept() {
-            let sock_addr = stream.1;
-            let stream = stream.0;
+    for stream in listener.accept() {
+        let sock_addr = stream.1;
+        let stream = stream.0;
+        info!("{ip} connected");
+        let mut acceptor = Acceptor::default();
 
-            let mut acceptor = Acceptor::default();
+        let accepted = loop {
+            if let Some(accepted) = acceptor.accept().unwrap() {
+                break accepted;
+            }
+        };
 
-            let accepted = loop {
-                if let Some(accepted) = acceptor.accept().unwrap() {
-                    break accepted;
-                }
-            };
-
-            match accepted.into_connection(config.clone()) {
-                Ok(conn) => {
-                    info!("conn will be handled ip: {} ;", sock_addr.ip().clone());
-                        let _ = handle(conn, stream, sock_addr, &pool).await;
-                }
-                Err((err, _)) => {
-                    eprintln!("{err}");
-                }
+        match accepted.into_connection(config.clone()) {
+            Ok(conn) => {
+                let _ = handle(conn, stream, sock_addr, &pool).await;
+            }
+            Err((err, _)) => {
+                eprintln!("{err}");
             }
         }
+    }
 }
-
