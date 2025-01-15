@@ -9,12 +9,8 @@ use lib_db::jwt;
 use lib_db::types::{PgPool, Result};
 use lib_db::user::user_struct::vaildate_claim;
 
-use std::io::Read;
 use std::net::{IpAddr, SocketAddr};
 
-use crate::session::server::server_cfg::*;
-use rustls;
-use rustls::server::Acceptor;
 use std::net::{TcpListener, TcpStream};
 
 //NOTE: use mio instead of std::net
@@ -54,25 +50,13 @@ async fn process_request(raw_text: &str, pool: &PgPool) -> Result<()> {
 }
 
 async fn handle(
-    mut conn: ServerConnection,
     mut stream: TcpStream,
     sock_addr: SocketAddr,
     pool: &PgPool,
 ) -> std::io::Result<()> {
     let ip = format!("{sock_addr}");
     info!("handling {ip}");
-    let _is_handshake = conn.process_new_packets().unwrap();
-    let mut string_buff = String::new();
-    // let mut buffer = vec![0; 150];
 
-    if conn.wants_read() {
-        conn.reader()
-            .read_to_string(&mut string_buff)
-            .expect(READ_ERROR);
-        conn.read_tls(&mut stream)?;
-        conn.complete_io(&mut stream)?;
-        let _ = process_request(string_buff.as_str(), &pool);
-    }
     Ok(())
 }
 
@@ -83,9 +67,6 @@ pub async fn tcp_listener() {
     let ip: IpAddr = LOCAL_IP.clone();
     let port: u16 = TCP_MAIN_PORT.clone();
 
-    let pki = TestPki::new();
-    let config = pki.server_config();
-
     let socket_addr = SocketAddr::new(ip, port);
 
     let listener = TcpListener::bind(socket_addr).expect("could not bind tcp socket on port 4443 ");
@@ -95,21 +76,7 @@ pub async fn tcp_listener() {
         let sock_addr = stream.1;
         let stream = stream.0;
         info!("{ip} connected");
-        let mut acceptor = Acceptor::default();
 
-        let accepted = loop {
-            if let Some(accepted) = acceptor.accept().unwrap() {
-                break accepted;
-            }
-        };
-
-        match accepted.into_connection(config.clone()) {
-            Ok(conn) => {
-                let _ = handle(conn, stream, sock_addr, &pool).await;
-            }
-            Err((err, _)) => {
-                eprintln!("{err}");
-            }
-        }
+        handle(stream, sock_addr, &pool);
     }
 }
