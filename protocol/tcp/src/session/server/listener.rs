@@ -1,6 +1,5 @@
 use crate::common::request::{JWT_HEAD, SPLIT};
-use log::{info, log};
-use rustls::ServerConnection;
+use log::info;
 
 use common_lib::cheat_sheet::{LOCAL_IP, TCP_MAIN_PORT};
 
