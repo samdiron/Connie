@@ -1,7 +1,7 @@
 use crate::common::request::{JWT_HEAD, SPLIT};
 use log::info;
-
 use common_lib::cheat_sheet::{LOCAL_IP, TCP_MAIN_PORT};
+// use crate::common::threadpool;
 
 use lib_db::database::get_conn;
 use lib_db::jwt;
@@ -9,10 +9,10 @@ use lib_db::types::{PgPool, Result};
 use lib_db::user::user_struct::vaildate_claim;
 
 use std::net::{IpAddr, SocketAddr};
+use std::thread::available_parallelism;
+use std::usize;
 
-use std::net::{TcpListener, TcpStream};
-
-//NOTE: use mio instead of std::net
+use tokio::net::{TcpListener, TcpStream};
 
 // will wait untile the new db is written
 //
@@ -49,7 +49,7 @@ async fn process_request(raw_text: &str, pool: &PgPool) -> Result<()> {
 }
 
 async fn handle(
-    mut stream: TcpStream,
+    stream: &mut TcpStream,
     sock_addr: SocketAddr,
     pool: &PgPool,
 ) -> std::io::Result<()> {
@@ -61,21 +61,21 @@ async fn handle(
 
 pub async fn tcp_listener() {
     let workers = std::thread::available_parallelism().unwrap();
-
     let pool = get_conn().await.unwrap();
     let ip: IpAddr = LOCAL_IP.clone();
     let port: u16 = TCP_MAIN_PORT.clone();
 
     let socket_addr = SocketAddr::new(ip, port);
 
-    let listener = TcpListener::bind(socket_addr).expect("could not bind tcp socket on port 4443 ");
-
+    let listener = TcpListener::bind(socket_addr).await.expect("adf");
+    let worker = available_parallelism().unwrap();
+    let worker = usize::from(worker);
     println!("tcp socket open on port: {}", TCP_MAIN_PORT);
-    for stream in listener.accept() {
-        let sock_addr = stream.1;
-        let stream = stream.0;
+    for streamb in listener.accept().await {
+        let sock_addr = streamb.1;
+        let mut stream = streamb.0;
+    
         info!("{ip} connected");
-
-        handle(stream, sock_addr, &pool);
+        let _ = handle(&mut stream, sock_addr, &pool).await;
     }
 }
