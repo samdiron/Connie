@@ -16,6 +16,10 @@ pub const MULTICAST_PORT: u16 = 4441;
 pub const TCP_MAIN_PORT: u16 = 4443;
 pub static LOCAL_IP: LazyLock<IpAddr> = LazyLock::new(|| lip_fn());
 
+pub const DATA_DIR: &str = "/Connie/metadata";
+
+
+
 fn lip_fn() -> IpAddr {
     let ip = get_local_ip_address();
     let ok: bool = ip.is_ok();
