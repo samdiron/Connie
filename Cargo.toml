@@ -18,7 +18,7 @@ opt-level = "s"
 resolver = "1"
 members = [
   "common_lib",
-  "lib_db", "tcp",
+  "lib_db", "lib_start", "tcp",
 ]
 
 [dependencies]
