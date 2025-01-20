@@ -18,6 +18,7 @@ pub static LOCAL_IP: LazyLock<IpAddr> = LazyLock::new(|| lip_fn());
 
 pub const DATA_DIR: &str = "/Connie/metadata";
 
+pub const CRED: &str = "/Connie/etc/ident.conf";
 
 
 fn lip_fn() -> IpAddr {

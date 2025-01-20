@@ -1,4 +1,5 @@
-use crate::session::{client, server};
+use crate::session::client::connector::tcp_connector;
+use crate::session::server::listener::tcp_listener;
 use crate::system::common::*;
 use common_lib::cheat_sheet::LOCAL_IP;
 use common_lib::cheat_sheet::SYSTEM_TCP;
@@ -10,7 +11,7 @@ use std::net::SocketAddr;
 use std::net::TcpListener;
 use std::net::TcpStream;
 
-fn handle_conn(stream: (TcpStream, SocketAddr)) {
+async fn handle_conn(stream: (TcpStream, SocketAddr)) {
     let addr = stream.1;
     let ip = LOCAL_IP.clone();
     let mut stream = stream.0;
@@ -18,14 +19,17 @@ fn handle_conn(stream: (TcpStream, SocketAddr)) {
         let _ = stream.shutdown(std::net::Shutdown::Both);
     }
     let mut buffer = vec![0; 120];
-    let size = stream.read_to_end(&mut buffer).unwrap();
+    let size = stream.read(&mut buffer).unwrap();
     println!("bytes read : {:?}", &buffer[..size]);
     let msg = String::from_utf8(buffer).unwrap();
     match msg.as_str() {
         BIND_COMMAND => {
+            tcp_listener().await; 
             //TODO: bind the tcp socket;
         }
         CONNECT_COMMAND => {
+            let ip = "";
+            tcp_connector(ip).unwrap();
             //TODO: connect to a server
         }
         _ => {
@@ -36,7 +40,7 @@ fn handle_conn(stream: (TcpStream, SocketAddr)) {
     // should compare the message and exute the corosponenig command
 }
 
-pub fn process() {
+pub async fn process() {
     //-> std::io::Result<()> {
     trace!("started the control socket");
     check_pid_lockfile();
@@ -52,7 +56,7 @@ pub fn process() {
         match socket.accept() {
             Ok(stream) => {
                 info!("incoming control socket");
-                handle_conn(stream);
+                handle_conn(stream).await;
             }
             Err(err) => {
                 warn!("control socket: {}", err);

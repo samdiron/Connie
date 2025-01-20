@@ -7,7 +7,6 @@ pub struct Server {
     pub name: String,
     pub host: String,
     pub memory: i64,
-    pub storage: i64,
     pub max_conn: i64,
     pub password: String,
 }
@@ -27,7 +26,6 @@ pub async fn get_server(
         name: row.get("name"),
         host: row.get("host"),
         memory: row.get("memory"),
-        storage: row.get("storage"),
         max_conn: row.get("max_conn"),
         password: row.get("password"),
     };
@@ -37,8 +35,8 @@ pub async fn get_server(
 impl Server {
     pub async fn create(self, pool: &PgPool) -> sqlx::Result<Server, Box<Error>> {
         let sql = "INSERT INTO server(
-        cpid, name, host, memory, storage, max_conn, password) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7); ";
+        cpid, name, host, memory, max_conn, password) 
+        VALUES ($1, $2, $3, $4, $5, $6); ";
         let password = digest(self.password.clone());
         let cpid = Uuid::new_v4().to_string();
         sqlx::query(sql)
@@ -46,7 +44,6 @@ impl Server {
             .bind(&self.name)
             .bind(&self.host)
             .bind(&self.memory)
-            .bind(&self.storage)
             .bind(&self.max_conn)
             .bind(password.clone())
             .execute(pool)
@@ -56,7 +53,6 @@ impl Server {
             name: self.name,
             host: self.host,
             memory: self.memory,
-            storage: self.storage,
             max_conn: self.max_conn,
             password,
         };
@@ -69,7 +65,6 @@ impl Server {
         sqlx::query(sql)
             .bind(&self.name)
             .bind(&self.memory)
-            .bind(&self.storage)
             .bind(&self.max_conn)
             .bind(&self.cpid)
             .bind(&self.password)
