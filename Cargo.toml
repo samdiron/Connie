@@ -24,6 +24,8 @@ members = [
 [dependencies]
 rpassword = "7.3.1"
 tokio = "1.40.0"
-
+tcp = { path = "./tcp/" }
+lib_db = { path = "./lib_db/" }
+lib_start = { path = "./lib_start/" }
 #
 # #i know it's just for a commit not cuz i wanted it
