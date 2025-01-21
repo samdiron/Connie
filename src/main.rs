@@ -7,5 +7,8 @@ use std::fs::remove_file;
 
 fn main() {
     let lockfile = "/Connie/lockfile";
+    //start of the program 
+    
+    //end of the program
     let _ = remove_file(lockfile).unwrap();
 }
