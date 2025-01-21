@@ -1,4 +1,4 @@
-use std::io::Read;
+use std::io::{Read, Result};
 use std::thread;
 use std::sync::{mpsc, Arc, Mutex};
 use lib_db::types::PgPool;
@@ -17,7 +17,7 @@ pub struct ThreadPool {
 
 }
 
-static mut TH: u8 = 0;
+// static mut TH: u8 = 0;
 
 impl ThreadPool {
     pub fn new(size: usize, pool: PgPool) -> ThreadPool {
@@ -50,18 +50,19 @@ struct Worker {
 }
 
 
-async fn handle(st: (TcpStream, SocketAddr), pool: &PgPool) {
+async fn handle(st: (TcpStream, SocketAddr), pool: PgPool) -> Result<()> {
     let _p = pool;
     let mut buf = String::new();
     let mut stream = st.0;
     let addr = st.1;
     info!("client: {addr} is being served");
-    stream.read_to_string(&mut buf).await.unwrap();
-    let mut f = std::fs::File::open("../../../res.html").unwrap();
+    stream.read_to_string(&mut buf).await?;
+    let mut f = std::fs::File::open("../../../res.html")?;
     let mut buff = vec![0; 4000];
-    let file_size = f.read_to_end(&mut buff).unwrap();
-    stream.write_all(&buff).await.unwrap();
+    let file_size = f.read_to_end(&mut buff)?;
+    stream.write_all(&buff).await?;
     println!("file_size: {file_size}");
+    Ok(())
 
 }
 
@@ -71,21 +72,37 @@ impl Worker {
         receiver: Arc<Mutex<mpsc::Receiver<Job>>>,
         pool: PgPool
     ) -> Worker {
-       let thread = thread::spawn(move || {
+    let thread = thread::spawn(move || {
+        
+        while let Ok(job) = receiver.lock().unwrap().recv()  {
             tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap().block_on(async move { 
-                while let Ok(job) = receiver.lock().unwrap().recv()  {
-                    println!("thread {id}");
-                    handle(job, &pool).await
-                }       
-            })
-        }); 
-
-        Worker { id, thread }
-    }
+            .enable_all()
+            .build()
+            .unwrap().block_on(async { 
+                println!("thread {id}");
+                match handle(job, pool.clone()).await {
+                    Ok(()) => {
+                        println!("a client was handled");
+                    } 
+                    _ => {
+                            println!("an error ocured");
+                    }
+                }
+            }); 
+        }
+    });
+    Worker { id, thread }
 }
 
 
+
+
+
+
+
+
+
+
+
+}
 
