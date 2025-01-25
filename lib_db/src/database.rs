@@ -25,6 +25,11 @@ pub async fn migrate(pool: &PgPool) -> Result<(), sqlx::Error> {
         let sql = crate::migrations::media_table::get_sql();
         let _res = sqlx::query(sql.as_str()).execute(pool).await?;
     }
+    {
+        println!("migrate:5");
+        let sql = crate::migrations::user_av_jwt::get_sql();
+        let _res = sqlx::query(sql.as_str()).execute(pool).await?;
+    }
     Ok(())
 }
 
