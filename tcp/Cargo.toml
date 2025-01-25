@@ -5,3 +5,6 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1.43.0", features = ["macros", "net", "rt-multi-thread"] }
+common_lib = { path = "../common_lib/"}
+lib_db = {path = "../lib_db/"}
+log = "0.4.25"
