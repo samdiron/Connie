@@ -1,13 +1,14 @@
 #[allow(dead_code)]
-// AUTH
-#[allow(dead_code)]
 pub const JWT_AUTH: &str = "0";
 #[allow(dead_code)]
 pub const LOGIN_CRED: &str = "1";
 #[allow(dead_code)]
 pub const SIGNIN_CRED: &str = "2";
 
+pub const PACKET_SIZE: u16 = 65535;
+
 //request Head
+
 #[allow(dead_code)]
 pub const GET: &str = "!G: ";
 #[allow(dead_code)]

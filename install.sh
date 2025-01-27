@@ -1,10 +1,10 @@
 #!/bin/bash
-if ! [ $(id -u) = 0 ]; then
-  echo "The script need to be run as root." >&2
-  exit 1
-fi
+# if ! [ $(id -u) = 0 ]; then
+#   echo "The script need to be run as root." >&2
+#   exit 1
+# fi
 
-read -p "what type of connie \n client is smaller in size but slower \n server is larger in size but faster \n NOTE: both can act as a server and client \n ENTER S or C : " type
+read -p "what type of connie client is smaller in size but slower server is larger in size but faster NOTE: both can act as a server and client  ENTER S or C : " type
 if [ $type == "S" ] || [ $type == "s" ] ; then 
   cargo build --release
  
@@ -16,28 +16,25 @@ else
 
 fi
 
-
-mkdir /Connie
+mkdir /opt/Connie
 echo "created /Connie/"
-mkdir /Connie/metadata
+mkdir /opt/Connie/metadata
 echo "created: /Connie/metadata"
-mkdir /Connie/tmp
+mkdir /opt/Connie/tmp
 echo "created: /Connie/tmp/"
-mkdir /Connie/.config
-echo "created: /Connie/.config/"
-mkdir /Connie/logs
+mkdir /opt/Connie/logs
 echo "created: /Connie/logs"
-mkdir /Connie/bin
+mkdir /opt/Connie/bin
 echo "created: /Connie/bin"
-mkdir /Connie/etc
-echo "created: /Connie/etc"
+mkdir /opt/Connie/conf
+echo "created: /Connie/conf"
 
 
 # cp ./connie.service /lib/systemd/system/connie.service
 # echo "created /lib/systemd/system/connie.service"
-cp ./target/debug/Connie /Connie/bin/connie
+cp PATH /opt/Connie/bin/cie
 
-echo "now you can export /Connie/bin/ into your PATH :) "
+echo "now you can export /opt/Connie/bin/ into your PATH :) "
 
 
 

@@ -3,9 +3,9 @@ use std::{fs::{exists, File}, io::Result};
 fn check_first_time() -> Result<u8> {
     let state: u8;
     let path: Vec<&str> = vec![
-        "/Connie/etc/db_conn.yaml",
-        "/Connie/etc/cie_ident.yaml",
-        "/Connie/etc/cie_config.yaml",
+        "/opt/Connie/conf/db_conn.yaml",
+        "/opt/Connie/conf/cie_ident.yaml",
+        "/opt/Connie/conf/cie_config.yaml",
 
     ];
     let mut tmp: Vec<bool> = Vec::with_capacity(4);

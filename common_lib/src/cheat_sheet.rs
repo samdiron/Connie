@@ -16,9 +16,9 @@ pub const MULTICAST_PORT: u16 = 4441;
 pub const TCP_MAIN_PORT: u16 = 4443;
 pub static LOCAL_IP: LazyLock<IpAddr> = LazyLock::new(|| lip_fn());
 
-pub const DATA_DIR: &str = "/Connie/metadata";
+pub const DATA_DIR: &str = "/opt/Connie/metadata";
 
-pub const CRED: &str = "/Connie/etc/ident.conf";
+pub const CRED: &str = "/opt/Connie/etc/ident.conf";
 
 
 fn lip_fn() -> IpAddr {
