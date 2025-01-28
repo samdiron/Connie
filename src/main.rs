@@ -1,7 +1,6 @@
 // use std::fs::remove_file;
 use lib_db::database::get_conn;
 use tcp::server::listener;
-use std::fs::remove_file;
 
 
 //NOTE: for this progrm to start you have to write your postgres connection url
@@ -12,10 +11,8 @@ use std::fs::remove_file;
 
 #[tokio::main]
 async fn main() {
-    let lockfile = "/Connie/lockfile";
     //start of the program 
     let pool =  get_conn().await.unwrap();
     listener::bind(pool).await;
     //end of the program
-    let _ = remove_file(lockfile).unwrap();
 }

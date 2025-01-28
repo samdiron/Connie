@@ -4,3 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+common_lib = { path = "../common_lib/"}
+lib_db = { path = "../lib_db/" }

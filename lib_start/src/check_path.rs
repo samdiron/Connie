@@ -1,9 +1,9 @@
 use std::{fs::{exists, File}, io::Result};
 
-fn check_first_time() -> Result<u8> {
+pub fn check_first_time() -> Result<u8> {
     let state: u8;
     let path: Vec<&str> = vec![
-        "/opt/Connie/conf/db_conn.yaml",
+        "/opt/Connie/conf/db_conn",
         "/opt/Connie/conf/cie_ident.yaml",
         "/opt/Connie/conf/cie_config.yaml",
 
@@ -24,9 +24,9 @@ fn check_first_time() -> Result<u8> {
         }
     }
     if tmp.contains(&false) {
-        state = 0;
-    }else {
         state = 1;
+    }else {
+        state = 0;
     }
 
 

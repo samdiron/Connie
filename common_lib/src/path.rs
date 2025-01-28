@@ -1,9 +1,15 @@
-pub fn get_config_path() -> String {
-    let path = "/opt/Connie/.config/".to_string();
-    return path;
-}
-pub fn get_home_path() -> String {
-    let path = "/opt/Connie/".to_string();
+pub const HOME: &str = "/opt/Connie";
 
-    return path;
-}
+pub const DB_CONN: &str = "/opt/Connie/conf/db_conn";
+pub const DATA_DIR: &str = "/opt/Connie/metadata";
+
+pub const CRED: &str = "/opt/Connie/conf/ident.conf";
+
+
+
+
+
+
+
+
+
