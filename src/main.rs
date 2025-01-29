@@ -9,7 +9,7 @@ use tcp::server::listener;
 //in the /Connie/etc/db_conn; file
 
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() {
     //start of the program 
     let pool =  get_conn().await.unwrap();
