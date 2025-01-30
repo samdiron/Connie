@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS server(
   cpid TEXT UNIQUE NOT NULL,
   name VARCHAR(50),
   host TEXT,
+  ip TEXT,
   memory BIGINT,
   max_conn SMALLINT,
   password TEXT
