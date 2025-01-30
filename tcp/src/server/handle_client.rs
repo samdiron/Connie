@@ -1,11 +1,12 @@
 use lib_db::types::PgPool;
 use log::info;
-use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::{TcpSocket, TcpStream}};
-use std::{io::{Read, Result}, net::SocketAddr};
+use tokio::{io::AsyncReadExt, net::TcpStream};
+use std::{io::Result, net::SocketAddr};
 use tokio::time::timeout;
 
-use crate::common::request::split_request;
-
+use crate::common::request::{
+    jwt_login, login_send_jwt, split_request, JWT_AUTH, LOGIN_CRED
+};
 
 
 async fn process_request(stream: &mut TcpStream) -> Result<Vec<String>> {
@@ -17,29 +18,63 @@ async fn process_request(stream: &mut TcpStream) -> Result<Vec<String>> {
     Ok(_prequest)
 }
 
+pub async fn auth_request(
+    request: &mut Vec<String>,
+    pool: &PgPool,
+    stream: &mut TcpStream
+) -> Result<bool> {
+    let state_of_connection:bool;
+    match request[0].as_str() {
+        LOGIN_CRED => {
+            match login_send_jwt(request, pool, stream).await{
+                Ok(..) => {
+                    info!("a jwt was sent");
+                },
+                Err(e) => {
+                    eprintln!("error while log in protocol: {e}");
+                },
+            }
+            state_of_connection = false;
+        },
+        JWT_AUTH => {
+             
+            state_of_connection = jwt_login(request, pool).await
+        },
+        _ => {
+            state_of_connection = false;
+        }
+    }
+    
 
+    Ok(state_of_connection)
+}
 
 pub async fn handle(
     st: (TcpStream, SocketAddr),
     pool: PgPool
 ) -> Result<()> {
     
-    let _p = pool;
     let mut buf = String::new();
     let mut stream = st.0;
     let addr = st.1;
     println!("client: {addr} is being served");
     let duration = tokio::time::Duration::from_millis(700); 
     let len = timeout(duration,stream.read_to_string(&mut buf)).await?;
-    if len.unwrap() == 0usize {
+    if 0usize == len.unwrap() {
         info!("client was droped for not responding fast");
         return Ok(());
     }
-    let request_vec = process_request(&mut stream).await?;
+
+    let mut request_vec = process_request(&mut stream).await?;
+    let state_of_connection = auth_request(
+        &mut request_vec,
+        &pool,
+        &mut stream
+    ).await.unwrap();
+    if false == state_of_connection {
+        drop(stream);
+        return Ok(());
+    }
     
-
     Ok(())
-
-
-
 }

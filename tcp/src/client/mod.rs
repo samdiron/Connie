@@ -1,1 +1,2 @@
-pub mod connector;
+pub(crate) mod connector;
+pub mod client;
