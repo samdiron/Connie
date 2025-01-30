@@ -1,9 +1,10 @@
 pub fn get_sql() -> String {
     let sql = r#"
-CREATE TABLE IF NOT EXISTS user_jwts(
+CREATE TABLE IF NOT EXISTS user_jwt(
   id SERIAL PRIMARY KEY,
   host TEXT,
-  date timestamp [ (p) ] [ without time zone ]	
+  jwt TEXT,
+  date BIGINT	
 );
 "#
     .to_string();

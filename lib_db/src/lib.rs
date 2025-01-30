@@ -14,19 +14,28 @@ pub mod types {
 }
 
 pub mod jwt {
+    
+    pub const DURATION: u64 = 864000;
 
     use jsonwebtoken::{
-        decode, encode, errors::Result, DecodingKey, EncodingKey, Header, Validation,
+        decode, encode, errors::Result, get_current_timestamp, DecodingKey, EncodingKey, Header, Validation
     };
+    pub fn exp_gen() -> u64 {
+        let now = get_current_timestamp();
+        let exp = now + DURATION;
+        exp
+    }
+    use sqlx::PgPool;
+    use crate::user::user_struct::vaildate_claim;
     use serde::{Deserialize, Serialize};
-
-    static SECRET_WORD: &str = r#"word"#;
-
+    // the user may chose the word 
+    static SECRET_WORD: &str = r#""#;
+    
     #[derive(Serialize, Deserialize, Debug)]
     pub struct Claim {
         pub cpid: String,
         pub paswd: String,
-        pub exp: usize,
+        pub exp: u64,
     }
     pub async fn create(clam: &Claim) -> Result<String> {
         let token = encode(
@@ -36,7 +45,7 @@ pub mod jwt {
         )?;
         Ok(token)
     }
-    pub async fn validate(token: &String) -> Result<Claim> {
+    fn decode_jwt(token: &String) -> Result<Claim> {
         let token = decode::<Claim>(
             token,
             &DecodingKey::from_secret(SECRET_WORD.as_ref()),
@@ -44,6 +53,18 @@ pub mod jwt {
         )?;
 
         Ok(token.claims)
+    }
+    pub async fn validate_jwt_claim(token: &String, pool: &PgPool) -> bool {
+        let c = decode_jwt(token).unwrap();
+        let now = get_current_timestamp();
+        let is_who = vaildate_claim(c.cpid, c.paswd, pool).await.unwrap();
+        let exp = c.exp;
+        if is_who && (now < exp) == true {
+            return true
+        }else {
+            return false
+        }
+        
     }
 }
 
