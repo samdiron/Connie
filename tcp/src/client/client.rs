@@ -1,19 +1,25 @@
 use std::{io::{ErrorKind, Result}, net::IpAddr, str::FromStr};
 
-use lib_db::{server::host::get_host_ip, types::PgPool, user::user_jwts::get_jwt};
+use lib_db::{
+    server::host::get_host_ip,
+    types::PgPool,
+    user::user_jwts::get_jwt
+};
 
 use super::connector::connect_tcp;
+
 #[allow(dead_code)]
-struct Connection {
-    host: String,
-    ip: IpAddr,
-    jwt: Option<String>,
-    cred: Option<Cred>
+pub(crate) struct Connection {
+    pub host: String,
+    pub ip: IpAddr,
+    pub jwt: Option<String>,
+    pub cred: Option<Cred>
 }
+
 #[allow(dead_code)]
 pub(crate) struct Cred {
-    cpid: String,
-    paswd: String,
+    pub cpid: String,
+    pub paswd: String,
 }
 
 async fn check_host(host: String, pool: &PgPool, cred: Cred ) -> Result<Connection> {
@@ -54,32 +60,24 @@ pub async fn client_process(
     pool: PgPool,
     cpid: String,
     paswd: String,
+    request: String,
 ) -> Result<u8> {
     let _cred = Cred{
         cpid,
         paswd
     };
     if _ip.is_some() {
-        connect_tcp(_ip.unwrap(), &pool, Some(_cred), None).await.unwrap();
+
+        let conn = check_host(host, &pool, _cred).await.unwrap();
+        connect_tcp(&pool, conn, request).await.unwrap();
     } else {
         let conn = check_host(host, &pool, _cred).await.unwrap();
-        connect_tcp(conn.ip, &pool, conn.cred, None).await.unwrap();
+        connect_tcp(&pool, conn, request).await.unwrap();
     };
 
     
 
 
-
-    // let jwt = get_jwt(host.clone(), &pool).await.unwrap();
-    // if let Some(inner_ip) = ip {
-    //     let _ok = connect_tcp(inner_ip, jwt.clone(), &pool).await.is_ok();
-    // }
-    // else {
-    //     let _ip = get_host_ip(host, &pool).await.unwrap();
-    //     let ip = IpAddr::from_str(_ip.as_str()).unwrap();
-    //     let _ok = connect_tcp(ip, jwt, &pool).await?;
-    // }
-    // 
     Ok(1)
 
 } 
