@@ -1,17 +1,12 @@
 use lib_db::types::PgPool;
 use log::info;
 use tokio::{io::AsyncReadExt, net::TcpStream};
-use std::{io::Result, net::SocketAddr};
+use std::{io::Result, net::SocketAddr, process::exit};
 use tokio::time::timeout;
 
-use crate::common::request::{
-    jwt_login,
-    login_send_jwt,
-    split_request,
-    JWT_AUTH,
-    LOGIN_CRED,
-    get_raw_request
-};
+use crate::{common::request::{
+    get_raw_request, jwt_login, login_send_jwt, split_request, JWT_AUTH, LOGIN_CRED
+}, server::serving_request::{self, handle_server_request}};
 
 
 async fn process_request(stream: &mut TcpStream) -> Result<Vec<String>> {
@@ -80,7 +75,24 @@ pub async fn handle(
         return Ok(());
     } else {
         let raw = get_raw_request(&mut request_vec).unwrap();
-        
+
+        match handle_server_request(
+            raw,
+            &mut stream,
+            pool
+        ).await {
+            Ok(state) => {
+                if state == 0 {
+                    println!("a request was handled");
+                }
+                else {
+                    println!("error a request returned an error ")
+                }
+            }
+            Err(e) => {
+                eprintln!("an error while serving a request: {:?} ", e)
+            }
+        }
     }
     
     Ok(())
