@@ -5,7 +5,12 @@ use std::{io::Result, net::SocketAddr};
 use tokio::time::timeout;
 
 use crate::common::request::{
-    jwt_login, login_send_jwt, split_request, JWT_AUTH, LOGIN_CRED
+    jwt_login,
+    login_send_jwt,
+    split_request,
+    JWT_AUTH,
+    LOGIN_CRED,
+    get_raw_request
 };
 
 
@@ -37,7 +42,6 @@ pub async fn auth_request(
             state_of_connection = false;
         },
         JWT_AUTH => {
-             
             state_of_connection = jwt_login(request, pool).await
         },
         _ => {
@@ -74,6 +78,9 @@ pub async fn handle(
     if false == state_of_connection {
         drop(stream);
         return Ok(());
+    } else {
+        let raw = get_raw_request(&mut request_vec).unwrap();
+        
     }
     
     Ok(())

@@ -4,12 +4,18 @@ CREATE TABLE IF NOT EXISTS media(
   id SERIAL PRIMARY KEY,
   cpid TEXT, 
   name TEXT,
+  in_host TEXT,
   "type" VARCHAR(10),
-  "size" INT,
+  checksum TEXT,
+  "size" BIGINT,
   CONSTRAINT fk_cpid 
     FOREIGN KEY(
       cpid
     ) REFERENCES "user"(cpid),
+  CONSTRAINT fk_host
+    FOREIGN KEY(
+      is_host
+    ) REFERNCES server(host)
   path TEXT
 );
 "#

@@ -1,6 +1,6 @@
 use std::io::{Error, ErrorKind, Result};
 
-use lib_db::{jwt::{self, exp_gen, validate_jwt_claim, Claim}, types::PgPool, user::user_struct::vaildate_claim};
+use lib_db::{jwt::{self, exp_gen, validate_jwt_claim, Claim}, media::{checksum, media::Media}, types::PgPool, user::user_struct::vaildate_claim};
 use tokio::{io::AsyncWriteExt, net::TcpStream};
 
 #[allow(dead_code)]
@@ -51,6 +51,32 @@ pub const CPID_HEADER: &str = "CpId: ";
 pub fn format_jwt_request(jwt: String, request: String) -> String {
     let string = format!("{JWT_AUTH}{SPLIT}{JWT_HEAD}{jwt}{SPLIT}{REQUEST_HEADER}{request}{END}");
     string
+}
+
+// pub(crate) const M_NAME: &str = "!mdN: ";
+// pub(crate) const M_SIZE: &str = "!mdS: ";
+// pub(crate) const M_TYPE: &str = "!mdT: ";
+// pub(crate) const M_CPID: &str = "!mdCpID: ";
+// pub(crate) const M_HOST: &str = "!mdCpID: ";
+// pub(crate) const M_CHECKSUM: &str = "!mdCS: ";
+//
+// pub fn format_raw_request (s: Media, header: &str) -> String {
+//     let cpid = s.cpid;
+//     let host = s.host;
+//     let sum = s.checksum;
+
+pub fn get_raw_request(request: &mut Vec<String> ) -> Result<String> {
+    let mut raw: String = String::from(" ");
+    for seg in request {
+        if seg.contains(REQUEST_HEADER){
+            let seg_string = seg.split_off(REQUEST_HEADER.char_indices().count());
+            raw =  seg_string;
+        }
+        else {
+            
+        }
+    }
+    Ok(raw)
 }
 
 #[allow(dead_code)]

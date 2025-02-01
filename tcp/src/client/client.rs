@@ -54,6 +54,10 @@ async fn check_host(host: String, pool: &PgPool, cred: Cred ) -> Result<Connecti
     
 }
 
+
+
+/// spins up a client process that could be use inside a task
+/// you have to supply a full raw request request
 pub async fn client_process(
     host: String,
     _ip: Option<IpAddr>,
@@ -62,6 +66,7 @@ pub async fn client_process(
     paswd: String,
     request: String,
 ) -> Result<u8> {
+    let state: u8 ;
     let _cred = Cred{
         cpid,
         paswd
@@ -69,15 +74,16 @@ pub async fn client_process(
     if _ip.is_some() {
 
         let conn = check_host(host, &pool, _cred).await.unwrap();
-        connect_tcp(&pool, conn, request).await.unwrap();
+        state = connect_tcp(&pool, conn, request).await.unwrap();
+
     } else {
         let conn = check_host(host, &pool, _cred).await.unwrap();
-        connect_tcp(&pool, conn, request).await.unwrap();
+        state = connect_tcp(&pool, conn, request).await.unwrap();
     };
 
     
 
 
-    Ok(1)
+    Ok(state)
 
 } 
