@@ -22,13 +22,14 @@ pub async fn vaildate_claim(cpid: String, paswd: String, pool: &PgPool) -> sqlx:
 }
 
 pub async fn fetch(
-    cpid: String,
-    password: String,
+    name: String,
+    _password: String,
     pool: &PgPool,
 ) -> sqlx::Result<User, sqlx::Error> {
-    let sql = r#"SELECT * FROM "user" WHERE cpid = $1 AND password = $2;"#;
+    let sql = r#"SELECT * FROM "user" WHERE name = $1 AND password = $2;"#;
+    let password = sha256::digest(_password);
     let row = sqlx::query(sql)
-        .bind(cpid)
+        .bind(name)
         .bind(password)
         .fetch_one(pool)
         .await?;

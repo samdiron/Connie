@@ -1,12 +1,12 @@
 use lib_db::types::PgPool;
 use log::info;
 use tokio::{io::AsyncReadExt, net::TcpStream};
-use std::{io::Result, net::SocketAddr, process::exit};
+use std::{io::Result, net::SocketAddr};
 use tokio::time::timeout;
 
 use crate::{common::request::{
     get_raw_request, jwt_login, login_send_jwt, split_request, JWT_AUTH, LOGIN_CRED
-}, server::serving_request::{self, handle_server_request}};
+}, server::serving_request::handle_server_request};
 
 
 async fn process_request(stream: &mut TcpStream) -> Result<Vec<String>> {

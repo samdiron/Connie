@@ -4,9 +4,9 @@ Description=CCS (Connie Control Server)
 
 [Service]
 Type=Net-Server
-ExecStart=/Connie/bin/connie.bin
+ExecStart=/opt/Connie/bin/cie
 Restart=on-failure
 RestartSec=10
 
 [Install]
-WantedBy=multi
+WantedBy=multi-user.target

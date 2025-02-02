@@ -18,14 +18,18 @@ opt-level = "s"
 resolver = "1"
 members = [
   "common_lib",
-  "lib_db", "lib_start", "tcp",
+  "lib_db",
+  "lib_start",
+  "tcp",
 ]
 
 [dependencies]
-rpassword = "7.3.1"
 tokio = "1.40.0"
 tcp = { path = "./tcp/" }
 lib_db = { path = "./lib_db/" }
 lib_start = { path = "./lib_start/" }
-#
-# #i know it's just for a commit not cuz i wanted it
+
+clap = { version = "4.5.27", features = ["derive"] }
+serde = { version = "1.0.217", features = ["derive"] }
+toml = "0.8.19"
+rpassword = "7.3.1"
