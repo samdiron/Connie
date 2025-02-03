@@ -65,6 +65,9 @@ enum Config {
         update: bool,
 
         #[arg(long, short)]
+        ip: Option<String>,
+
+        #[arg(long, short)]
         name: String,
 
     },
