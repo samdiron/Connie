@@ -1,13 +1,19 @@
+#![allow(unused_assignments)]
+
 use std::{io::{stdout, Write}, net::IpAddr, process::exit, str::FromStr};
 
-// use std::fs::remove_file;
-use lib_db::{database::get_conn, server::server_struct::get_server};
-use rpassword::{prompt_password, read_password};
-use tcp::{client::client::client_process, server::listener};
+use gethostname::gethostname;
+use lib_db::{
+    database::get_conn,
+    server::server_struct::Server,
+    types::PgPool,
+    user::user_struct::User
+};
+use rpassword::read_password;
+use tcp::{consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use clap::{Parser, Subcommand};
-
 
 
 
@@ -20,49 +26,66 @@ use clap::{Parser, Subcommand};
 #[derive(Debug, Deserialize, Serialize, Parser)]
 #[command(version = "0.1beta", about = "a web server in rust for more info visit https://github.com/samdiron/Connie")]
 struct Cli {
-    #[arg(long, short)]
-    bind: Option<String>,
-
-    #[arg(long, short)]
-    connect: Option<String>,
     
     #[arg(long, short)]
-    name: Option<String>,
+    name: String,
 
-    #[arg(long, short)]
-    file: Option<String>,
-
-    #[arg(long, short)]
-    get: Option<String>,
-
-    #[arg(long, short)]
-    post:Option<String>,
-
+    
     #[arg(long)]
     db: Option<String>,
 
-    #[arg(long, short)]
-    host: Option<String>,
 
-
-    #[arg(long, short)]
-    port: Option<u16>,
 
 
     #[command(subcommand)]
-    config: Option<Config>
+    config: Option<Commands>
 
 }
 
+
+
+
 #[derive(Debug, Deserialize, Serialize,Subcommand)]
-enum Config {
+enum Commands {
      
+    BIND {
+
+        #[arg(long, short)]
+        ip: Option<String>,
+        
+        #[arg(long, short)]
+        secret: Option<String>,
+
+        #[arg(long, short)]
+        port: Option<u16>,
+
+    },
+
+
+    CONNECT {
+        
+        #[arg(long, short)]
+        ip: Option<String>,
+        
+        #[arg(long, short)]
+        port: Option<u16>,
+    },
+    
+
+    MULTICAST {
+                
+        #[arg(long, short)]
+        ip: Option<String>,
+    },
+
+
+
     SERVER {
         #[arg(long)]
-        new: bool,
+        new: Option<bool>,
 
         #[arg(long)]
-        update: bool,
+        update: Option<bool>,
 
         #[arg(long, short)]
         ip: Option<String>,
@@ -70,16 +93,25 @@ enum Config {
         #[arg(long, short)]
         name: String,
 
+        #[arg(long, short)]
+        max_conn: Option<u16>,
+        
+        #[arg(long, short)]
+        host: Option<String>,
+
     },
 
 
     User {
         #[arg(long)]
-        new: bool,
+        new: Option<bool>,
 
         #[arg(long)]
-        update: bool,
+        update: Option<bool>,
         
+        #[arg(long, short)]
+        host: Option<String>,
+
         #[arg(long)]
         admin: Option<bool>,
 
@@ -93,7 +125,111 @@ enum Config {
         email: String,
     }
 }
+fn get_pass(password: &mut String, name: &str) {
+    for i in 0..2 {
+        print!("enter password for {} : ", name);
+        stdout().flush().expect("could not flush");
+        let password1 = read_password().unwrap();
+        print!("confirm password");
+        stdout().flush().expect("could not flush");
+        let password2 = read_password().unwrap();
+        if password2 == password1 && (password1.is_empty() == false) {
+            *password = password1;
+            break;
+        }
+        if password1 != password2 {
+            println!("password do not match");
+            if i == 2 {
+                println!("3 times, will exit now");
+                exit(1);
+            }
+        }
+    };
 
+}
+
+async fn config_handle(command: Commands, pool: &PgPool) {
+    match command {
+        Commands::User { new, update, host, admin, name, username, email } => {
+            if new.is_some() && new.unwrap()  {
+                let mut password = String::new(); 
+                let string_host: String;
+                get_pass(&mut password, name.as_str());
+                if host.is_none() {
+                    let h = gethostname();
+                    let str_binding = h.to_str().unwrap();
+                    string_host = str_binding.to_string();
+                }else {
+                    let h = host.unwrap();
+                    string_host = h;
+                }
+                let _user_ = User {
+                    cpid: String::new(),
+                    name,
+                    username,
+                    email,
+                    password,
+                    host: string_host
+                };
+                let _user = _user_.create(pool).await.unwrap();
+
+                if admin.is_some() && admin.unwrap() {
+                    // empty for now
+                }
+
+            }
+        } 
+        Commands::SERVER { new, update, ip, name, host, max_conn } => {
+            if new.is_some() && new.unwrap() {
+                let sys = sysinfo::System::new();
+                let memory = sys.total_memory() as i64;
+                let max_conn = 80;
+                let mut password = String::new();
+                get_pass(&mut password, name.as_str());
+                let string_host = gethostname().to_str().unwrap().to_string();
+                if host.is_none() {
+                    let server = Server {
+                        cpid: String::new(),
+                        name,
+                        host: string_host,
+                        memory,
+                        max_conn,
+                        password
+
+                    };
+
+                    let _server = server.create(pool).await.unwrap();
+                }  
+            }
+        }
+        Commands::BIND { ip, secret, port } => {
+            if let Some(ip) = ip {
+                let mut _ip_mutex = *IP.lock().expect("could not lock port");
+                _ip_mutex = ip.as_str();
+
+                let mut _use_it = *USE_IP.lock().expect("could nto lock port");
+                _use_it = 1
+                
+            }
+            if let Some(port) = port {
+                let mut _port_mutex = *PORT.lock().expect("could not lock port");
+                _port_mutex = port;
+
+                let mut _use_it = *USE_PORT.lock().expect("could nto lock port");
+                _use_it = 1
+                
+            }
+            if let Some(secret) = secret {
+                let mut _word_mutex = *lib_db::jwt::MUTEX_SECRET_WORD.lock().unwrap();
+                _word_mutex = secret.as_str()
+            }
+
+
+            bind(pool.clone()).await;
+        }
+        _ => {}
+    }
+}
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -101,8 +237,14 @@ async fn main() {
 
     let _cli = Cli::parse();
 
-
     let pool =  get_conn().await.unwrap();
-    listener::bind(pool).await;
+    if let Some(command) = _cli.config {
+        config_handle(command, &pool).await;
+    }else {
+        println!("not now");
+    }
+    
+    
+
     //end of the program
 }

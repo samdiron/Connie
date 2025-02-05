@@ -1,6 +1,7 @@
 #[allow(clippy::upper_case_acronyms)]
 pub mod database;
 pub mod media;
+pub mod fncs;
 mod migrations;
 pub mod server;
 pub mod user;
@@ -17,6 +18,8 @@ pub mod jwt {
     
     pub const DURATION: u64 = 864000;
 
+    use std::sync::{LazyLock, Mutex};
+
     use jsonwebtoken::{
         decode, encode, errors::Result, get_current_timestamp, DecodingKey, EncodingKey, Header, Validation
     };
@@ -29,8 +32,36 @@ pub mod jwt {
     use crate::user::user_struct::vaildate_claim;
     use serde::{Deserialize, Serialize};
     // the user may chose the word 
-    static SECRET_WORD: &str = r#""#;
-    
+    pub static MUTEX_SECRET_WORD: Mutex<&str> = Mutex::new("
+    Lorem ipsum dolor sit amet,
+    consectetur adipiscing elit.
+    Fusce aliquam non tortor in bibendum.
+    Vestibulum quis rhoncus mi.
+    Interdum et malesuada fames ac ante
+    ipsum primis in faucibus. Suspendisse
+    congue euismod quam, eget varius ipsum
+    porta et. Donec vel ligula orci. 
+    Aliquam auctor erat ac venenatis dapibus
+    . Maecenas hendrerit erat et purus 
+    ullamcorper volutpat. Praesent non 
+    risus ante. Sed sit amet diam dolor.
+    Morbi faucibus, urna ac ornare ornare,
+    neque tortor commodo lectus, sit amet 
+    tempus lorem est ut ex. 
+    Duis vitae rutrum nulla.
+");
+
+    fn get_secret() -> String {
+        let mutex_word = *MUTEX_SECRET_WORD.lock().unwrap();
+        let str = mutex_word.to_string();
+        str
+    }
+
+    pub const SECRET_WORD: LazyLock<String> = LazyLock::new(
+        || {get_secret()}
+    );
+
+
     #[derive(Serialize, Deserialize, Debug)]
     pub struct Claim {
         pub cpid: String,
