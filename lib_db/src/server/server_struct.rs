@@ -3,6 +3,7 @@ use sqlx::{Error, PgPool, Row};
 use uuid::Uuid;
 
 pub struct Server {
+    pub ip: String,
     pub cpid: String,
     pub name: String,
     pub host: String,
@@ -22,6 +23,7 @@ pub async fn get_server(
         .fetch_one(pool)
         .await?;
     let server = Server {
+        ip: row.get("ip"),
         cpid: row.get("cpid"),
         name: row.get("name"),
         host: row.get("host"),
@@ -35,8 +37,8 @@ pub async fn get_server(
 impl Server {
     pub async fn create(self, pool: &PgPool) -> sqlx::Result<Server, Box<Error>> {
         let sql = "INSERT INTO server(
-        cpid, name, host, memory, max_conn, password) 
-        VALUES ($1, $2, $3, $4, $5, $6); ";
+        cpid, name, host, memory, max_conn,ip , password) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7); ";
         let password = digest(self.password.clone());
         let cpid = Uuid::new_v4().to_string();
         sqlx::query(sql)
@@ -45,10 +47,12 @@ impl Server {
             .bind(&self.host)
             .bind(&self.memory)
             .bind(&self.max_conn)
+            .bind(&self.ip)
             .bind(password.clone())
             .execute(pool)
             .await?;
         let server = Server {
+            ip: self.ip,
             cpid,
             name: self.name,
             host: self.host,

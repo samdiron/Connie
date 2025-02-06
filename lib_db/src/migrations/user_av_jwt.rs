@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS user_jwt(
   id SERIAL PRIMARY KEY,
   host TEXT,
   jwt TEXT,
-  date BIGINT	
+  date BIGINT
 );
 "#
     .to_string();

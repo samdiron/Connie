@@ -1,10 +1,10 @@
 #![allow(unused_assignments)]
 
-use std::{io::{stdout, Write}, net::IpAddr, process::exit, str::FromStr};
+use std::{io::{stdout, Empty, Write}, net::IpAddr, process::exit, str::FromStr};
 
 use gethostname::gethostname;
 use lib_db::{
-    database::get_conn,
+    database::{get_conn, DB_CONN},
     server::server_struct::Server,
     types::PgPool,
     user::user_struct::User
@@ -14,6 +14,7 @@ use tcp::{consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind};
 
 use serde::{Deserialize, Serialize};
 use clap::{Parser, Subcommand};
+use tokio::{fs::File, io::AsyncWriteExt};
 
 
 
@@ -27,15 +28,8 @@ use clap::{Parser, Subcommand};
 #[command(version = "0.1beta", about = "a web server in rust for more info visit https://github.com/samdiron/Connie")]
 struct Cli {
     
-    #[arg(long, short)]
-    name: String,
-
-    
     #[arg(long)]
     db: Option<String>,
-
-
-
 
     #[command(subcommand)]
     config: Option<Commands>
@@ -94,10 +88,19 @@ enum Commands {
         name: String,
 
         #[arg(long, short)]
-        max_conn: Option<u16>,
+        max_conn: Option<i64>,
         
-        #[arg(long, short)]
+        #[arg(long)]
         host: Option<String>,
+
+    },
+
+    DB {
+        #[arg(long, short)]
+        migrations: Option<bool>,
+
+        #[arg(long, short)]
+        connection: Option<String>,
 
     },
 
@@ -180,15 +183,36 @@ async fn config_handle(command: Commands, pool: &PgPool) {
             }
         } 
         Commands::SERVER { new, update, ip, name, host, max_conn } => {
-            if new.is_some() && new.unwrap() {
+            if new.is_some() && update.is_some() {
+                println!("don't be crazy");
+            }
+                if new.is_some() && new.unwrap() {
                 let sys = sysinfo::System::new();
                 let memory = sys.total_memory() as i64;
-                let max_conn = 80;
                 let mut password = String::new();
                 get_pass(&mut password, name.as_str());
-                let string_host = gethostname().to_str().unwrap().to_string();
                 if host.is_none() {
+                    let string_host = gethostname().to_str().unwrap().to_string();
+                    let max_conn = if max_conn.is_some() {
+                        let int = max_conn.unwrap();
+                        int
+                        
+                    }else {
+                        80
+                    };
+                    let ip = if ip.is_some() {
+                        let ip_ = ip.unwrap();
+                        let check = IpAddr::from_str(ip_.as_str());
+                        if check.is_err() {
+                            println!("enter a valid ip");
+                            exit(1)
+                        }
+                        ip_
+                    } else {
+                        common_lib::cheat_sheet::LOCAL_IP.to_string()
+                    };
                     let server = Server {
+                        ip,
                         cpid: String::new(),
                         name,
                         host: string_host,
@@ -226,6 +250,17 @@ async fn config_handle(command: Commands, pool: &PgPool) {
 
 
             bind(pool.clone()).await;
+        }
+        Commands::DB { migrations, connection } => {
+            if let Some(conn) = connection {
+                let mut f = File::create_new(DB_CONN).await.unwrap();
+                f.write_all(conn.as_bytes()).await.unwrap();
+            }
+            if let Some(migrations) = migrations {
+                if migrations == true {
+                    lib_db::database::migrate(&pool).await.unwrap();
+                }
+            } 
         }
         _ => {}
     }
