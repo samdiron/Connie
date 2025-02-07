@@ -12,13 +12,13 @@ pub struct Server {
     pub password: String,
 }
 pub async fn get_server(
-    cpid: String,
+    name: String,
     password: String,
     pool: &PgPool,
 ) -> sqlx::Result<Server, sqlx::Error> {
-    let sql = "SELECT * FROM server WHERE cpid = $1 AND password = $2;";
+    let sql = "SELECT * FROM server WHERE name = $1 AND password = $2;";
     let row = sqlx::query(sql)
-        .bind(cpid)
+        .bind(name)
         .bind(password)
         .fetch_one(pool)
         .await?;

@@ -1,11 +1,11 @@
 #![allow(unused_assignments)]
 
-use std::{io::{stdout, Empty, Write}, net::IpAddr, process::exit, str::FromStr};
+use std::{alloc::System, io::{stdout, Empty, Write}, net::IpAddr, process::exit, str::FromStr};
 
 use gethostname::gethostname;
 use lib_db::{
     database::{get_conn, DB_CONN},
-    server::server_struct::Server,
+    server::{host::get_host_info, server_struct::{get_server, Server}},
     types::PgPool,
     user::user_struct::User
 };
@@ -48,6 +48,9 @@ enum Commands {
         ip: Option<String>,
         
         #[arg(long, short)]
+        server: String,
+        
+        #[arg(long)]
         secret: Option<String>,
 
         #[arg(long, short)]
@@ -128,7 +131,9 @@ enum Commands {
         email: String,
     }
 }
-fn get_pass(password: &mut String, name: &str) {
+
+
+fn get_new_pass(password: &mut String, name: &str) {
     for i in 0..2 {
         print!("enter password for {} : ", name);
         stdout().flush().expect("could not flush");
@@ -157,7 +162,7 @@ async fn config_handle(command: Commands, pool: &PgPool) {
             if new.is_some() && new.unwrap()  {
                 let mut password = String::new(); 
                 let string_host: String;
-                get_pass(&mut password, name.as_str());
+                get_new_pass(&mut password, name.as_str());
                 if host.is_none() {
                     let h = gethostname();
                     let str_binding = h.to_str().unwrap();
@@ -187,11 +192,17 @@ async fn config_handle(command: Commands, pool: &PgPool) {
                 println!("don't be crazy");
             }
                 if new.is_some() && new.unwrap() {
-                let sys = sysinfo::System::new();
-                let memory = sys.total_memory() as i64;
-                let mut password = String::new();
-                get_pass(&mut password, name.as_str());
                 if host.is_none() {
+                    
+                    let mut sys = sysinfo::System::new();
+                    sys.refresh_all();
+                    let memory = sys.total_memory();
+                    
+                    println!("memory: {}", memory);
+                    let mut password = String::new();
+                    get_new_pass(&mut password, name.as_str());
+                    
+
                     let string_host = gethostname().to_str().unwrap().to_string();
                     let max_conn = if max_conn.is_some() {
                         let int = max_conn.unwrap();
@@ -216,17 +227,33 @@ async fn config_handle(command: Commands, pool: &PgPool) {
                         cpid: String::new(),
                         name,
                         host: string_host,
-                        memory,
+                        memory: memory as i64,
                         max_conn,
                         password
 
                     };
 
+
                     let _server = server.create(pool).await.unwrap();
+                    
+                    println!("server has been create\n will exit now ");
+                    exit(0)
+                    
                 }  
             }
         }
-        Commands::BIND { ip, secret, port } => {
+        Commands::BIND { ip, secret, port, server } => {
+            let mut passwd = String::new();
+            get_new_pass(&mut passwd, server.as_str());
+
+            let _res = get_host_info(server, passwd, pool).await;
+            if _res.is_err() {
+                println!("not a valid server");
+            }else {
+                println!("valid server");
+                exit(1)
+            }
+
             if let Some(ip) = ip {
                 let mut _ip_mutex = *IP.lock().expect("could not lock port");
                 _ip_mutex = ip.as_str();
@@ -248,7 +275,7 @@ async fn config_handle(command: Commands, pool: &PgPool) {
                 _word_mutex = secret.as_str()
             }
 
-
+            
             bind(pool.clone()).await;
         }
         Commands::DB { migrations, connection } => {
@@ -271,6 +298,11 @@ async fn main() {
     //start of the program 
 
     let _cli = Cli::parse();
+    
+
+
+
+
 
     let pool =  get_conn().await.unwrap();
     if let Some(command) = _cli.config {

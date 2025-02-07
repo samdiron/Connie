@@ -11,7 +11,8 @@ use crate::server::handle_client::handle;
 pub async fn bind(pool: PgPool) {
     let ip = LOCAL_IP.clone();
     let addr = SocketAddr::new(ip, TCP_MAIN_PORT.clone());
-    let socket = TcpListener::bind(addr).await.unwrap();
+    let socket = TcpListener::bind(addr.clone()).await.unwrap();
+    println!("listener on {:?}", addr);
     loop {
         match socket.accept().await {
             Ok(stream) => {

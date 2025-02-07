@@ -18,7 +18,7 @@ if [ $type == "a" ] ; then
   echo "building debug now"
   cargo build 
   echo "debug"
-  ls -lh ./target/client/Connie
+  ls -lh ./target/debug/Connie
 
 elif [ $type == "r" ] ; then 
   echo "building release"
@@ -31,7 +31,7 @@ elif [ $type == "c" ] ; then
 elif [ $type == "d" ] ; then 
   echo "building debug now"
   cargo builad -q
-  ls -lh ./target/client/Connie
+  ls -lh ./target/debug/Connie
 else 
   echo "enter a valid arg bitch"
   exit 1
