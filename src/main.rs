@@ -99,8 +99,10 @@ enum Commands {
     },
 
     DB {
-        
-        
+         
+        #[arg(long)]
+        test: Option<bool>,
+
         #[arg(long)]
         delete_conn: Option<bool>,
 
@@ -161,9 +163,11 @@ fn get_new_pass(password: &mut String, name: &str) {
 
 }
 
-async fn config_handle(command: Commands, pool: &PgPool) {
+async fn config_handle(command: Commands ) {
     match command {
         Commands::User { new, update, host, admin, name, username, email } => {
+            let pool =  get_conn().await.unwrap();
+            let pool = &pool;
             if new.is_some() && new.unwrap()  {
                 let mut password = String::new(); 
                 let string_host: String;
@@ -193,6 +197,8 @@ async fn config_handle(command: Commands, pool: &PgPool) {
             }
         } 
         Commands::SERVER { new, update, ip, name, host, max_conn } => {
+            let pool =  get_conn().await.unwrap();
+            let pool = &pool;
             if new.is_some() && update.is_some() {
                 println!("don't be crazy");
             }
@@ -248,6 +254,9 @@ async fn config_handle(command: Commands, pool: &PgPool) {
             }
         }
         Commands::BIND { ip, secret, port, server } => {
+
+            let pool =  get_conn().await.unwrap();
+            let pool = &pool;
             let mut passwd = String::new();
             get_new_pass(&mut passwd, server.as_str());
 
@@ -283,7 +292,7 @@ async fn config_handle(command: Commands, pool: &PgPool) {
             
             bind(pool.clone()).await;
         }
-        Commands::DB { migrations, connection, delete_conn } => {
+        Commands::DB { migrations, connection, delete_conn, test } => {
             if let Some(conn) = connection {
                 let mut f = File::create_new(DB_CONN)
                     .await
@@ -300,10 +309,20 @@ async fn config_handle(command: Commands, pool: &PgPool) {
                 }
             }
             if let Some(migrations) = migrations {
+                let pool =  get_conn().await.unwrap();
+                let pool = &pool;
                 if migrations == true {
-                    lib_db::database::migrate(&pool).await.unwrap();
+                    lib_db::database::migrate(pool).await.unwrap();
+                }
+            }
+            if let Some(test) = test {
+                if test == true {
+                    let _pool = get_conn().await.expect("can't connect to db");
+                    println!("db connection valid");
+                    exit(0)
                 }
             } 
+ 
         }
         _ => {}
     }
@@ -320,9 +339,9 @@ async fn main() {
 
 
 
-    let pool =  get_conn().await.unwrap();
+    
     if let Some(command) = _cli.config {
-        config_handle(command, &pool).await;
+        config_handle(command).await;
     }else {
         println!("not now");
     }

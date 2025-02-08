@@ -53,7 +53,7 @@ pub async fn get_conn() -> Result<PgPool, sqlx::Error> {
     let _res = file
         .read_to_string(&mut url)
         .expect("could not get connection string from file /Connie/database.db/connection");
-    println!("PGPOOL conn: {}", url);
+    println!("db connection");
     let pool = sqlx::postgres::PgPool::connect(url.as_str()).await?;
 
     Ok(pool)
