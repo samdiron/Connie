@@ -7,19 +7,20 @@ if [ $type == "a" ] ; then
 
   echo "building release"
   cargo build  --release
-  echo "release"
-  ls -lh ./target/release/Connie
+  echo "done"
 
   echo "building client"
   cargo build  --profile client
-  echo "client"
-  ls -lh ./target/client/Connie
+  echo "done"
   
   echo "building debug now"
   cargo build 
-  echo "debug"
+  echo "done"
+  
+  echo "size"
   ls -lh ./target/debug/Connie
-
+  ls -lh ./target/client/Connie
+  ls -lh ./target/release/Connie
 elif [ $type == "r" ] ; then 
   echo "building release"
   cargo build -q --release

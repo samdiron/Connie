@@ -115,7 +115,7 @@ enum Commands {
         #[arg(long)]
         update: Option<bool>,
         
-        #[arg(long, short)]
+        #[arg(long)]
         host: Option<String>,
 
         #[arg(long)]
@@ -280,8 +280,12 @@ async fn config_handle(command: Commands, pool: &PgPool) {
         }
         Commands::DB { migrations, connection } => {
             if let Some(conn) = connection {
-                let mut f = File::create_new(DB_CONN).await.unwrap();
-                f.write_all(conn.as_bytes()).await.unwrap();
+                let mut f = File::create_new(DB_CONN)
+                    .await
+                    .expect("this command creates a new file in /opt/Connie/conf it needs to be executed by root ");
+                f.write_all(conn.as_bytes())
+                    .await
+                    .unwrap();
             }
             if let Some(migrations) = migrations {
                 if migrations == true {
