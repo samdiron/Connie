@@ -11,6 +11,9 @@ if [ $type == "S" ] || [ $type == "s" ] ; then
 elif [ $type = "C" ] || [ $type == "c" ]; then 
   cargo build --profile client
   set PATH = ./target/client/Connie
+elif [ $type = "dev" ] || [ $type == "DEV" ]; then 
+  cargo build -vv 
+  set PATH = ./target/debug/Connie
 else 
   echo "chose S / C" 
   exit 1
