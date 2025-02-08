@@ -1,6 +1,6 @@
 #![allow(unused_assignments)]
 
-use std::{alloc::System, io::{stdout, Empty, Write}, net::IpAddr, process::exit, str::FromStr};
+use std::{alloc::System, fs::remove_file, io::{stdout, Empty, Write}, net::IpAddr, process::exit, str::FromStr};
 
 use gethostname::gethostname;
 use lib_db::{
@@ -99,6 +99,11 @@ enum Commands {
     },
 
     DB {
+        
+        
+        #[arg(long)]
+        delete_conn: Option<bool>,
+
         #[arg(long, short)]
         migrations: Option<bool>,
 
@@ -278,7 +283,7 @@ async fn config_handle(command: Commands, pool: &PgPool) {
             
             bind(pool.clone()).await;
         }
-        Commands::DB { migrations, connection } => {
+        Commands::DB { migrations, connection, delete_conn } => {
             if let Some(conn) = connection {
                 let mut f = File::create_new(DB_CONN)
                     .await
@@ -286,6 +291,13 @@ async fn config_handle(command: Commands, pool: &PgPool) {
                 f.write_all(conn.as_bytes())
                     .await
                     .unwrap();
+            }
+            if let Some(delete_conn) = delete_conn {
+                if delete_conn == true {
+                    remove_file(DB_CONN).expect("this command deletes a file this will need root");
+                    println!("deleted {DB_CONN} file");
+                    exit(0)
+                }
             }
             if let Some(migrations) = migrations {
                 if migrations == true {
