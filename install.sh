@@ -48,6 +48,9 @@ echo "created: /opt/Connie/conf"
 
 if [ $type == "S" ] || [ $type == "s" ] ; then 
   sudo cp ./target/client/Connie /opt/Connie/bin/cie
+elif [ $type = "dev" ] || [ $type == "DEV" ]; then 
+  sudo rm /opt/Connie/bin/cie
+  sudo cp ./target/debug/Connie /opt/Connie/bin/cie
 else
   sudo cp ./target/client/Connie /opt/Connie/bin/cie  
 fi
