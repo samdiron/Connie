@@ -7,7 +7,7 @@ use lib_db::{
     database::{get_conn, DB_CONN},
     server::{host::get_host_info, server_struct::{get_server, Server}},
     types::PgPool,
-    user::user_struct::User
+    user::user_struct::{fetch, User}
 };
 use rpassword::read_password;
 use tcp::{consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind};
@@ -60,12 +60,27 @@ enum Commands {
 
 
     CONNECT {
+
+        
+        #[arg(long, short)]
+        user: String,
         
         #[arg(long, short)]
         ip: Option<String>,
         
         #[arg(long, short)]
         port: Option<u16>,
+
+        #[arg(long, short)]
+        host: Option<String>,
+
+        #[arg(long, short)]
+        get: Option<String>,
+        
+        #[arg(long, short)]
+        post: Option<String>,
+
+
     },
     
 
@@ -137,6 +152,13 @@ enum Commands {
         #[arg(long, short)]
         email: String,
     }
+}
+
+fn get_pass(password: &mut String, name: &str) {
+        print!("enter password for {} : ", name);
+        stdout().flush().expect("could not flush");
+        let password1 = read_password().unwrap();
+        *password = password1;
 }
 
 
@@ -322,7 +344,15 @@ async fn config_handle(command: Commands ) {
                     exit(0)
                 }
             } 
- 
+        }
+        Commands::CONNECT { ip, port, host, get, post, user } => {
+            let pool = get_conn().await.unwrap();
+            let pool = &pool;
+            let mut passwd = String::new();
+            get_pass(&mut passwd, user.as_str());
+            let usr = fetch(user, passwd, pool).await.expect("could not fetch that user");
+            println!("user cpid: {} , passwd: {}", usr.cpid, usr.password);
+            
         }
         _ => {}
     }
