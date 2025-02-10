@@ -10,10 +10,10 @@ use lib_db::{
     user::user_struct::{fetch, User}
 };
 use rpassword::read_password;
-use tcp::{consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind};
+use tcp::{client::client::client_process, consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind};
 
 use serde::{Deserialize, Serialize};
-use clap::{Parser, Subcommand};
+use clap::{command, Parser, Subcommand};
 use tokio::{fs::File, io::AsyncWriteExt};
 
 
@@ -26,6 +26,7 @@ use tokio::{fs::File, io::AsyncWriteExt};
 
 #[derive(Debug, Deserialize, Serialize, Parser)]
 #[command(version = "0.1beta", about = "a web server in rust for more info visit https://github.com/samdiron/Connie")]
+#[command(disable_help_flag = true)]
 struct Cli {
     
     #[arg(long)]
@@ -68,7 +69,7 @@ enum Commands {
         #[arg(long, short)]
         ip: Option<String>,
         
-        #[arg(long, short)]
+        #[arg(long)]
         port: Option<u16>,
 
         #[arg(long, short)]
@@ -79,7 +80,6 @@ enum Commands {
         
         #[arg(long, short)]
         post: Option<String>,
-
 
     },
     
@@ -345,14 +345,20 @@ async fn config_handle(command: Commands ) {
                 }
             } 
         }
-        Commands::CONNECT { ip, port, host, get, post, user } => {
-            let pool = get_conn().await.unwrap();
-            let pool = &pool;
+        Commands::CONNECT { ip, port, host, get, post, user} => {
+            let _pool = get_conn().await.unwrap();
+            let pool = &_pool;
             let mut passwd = String::new();
             get_pass(&mut passwd, user.as_str());
             let usr = fetch(user, passwd, pool).await.expect("could not fetch that user");
             println!("user cpid: {} , passwd: {}", usr.cpid, usr.password);
-            
+            if host.is_some() && ip.is_some() { 
+                let host = host.unwrap();
+                let ip_warp = ip.unwrap();
+                let ip = IpAddr::from_str(&ip_warp).unwrap();
+                let request = "get shit".to_owned();
+                client_process(host, Some(ip), _pool, usr.cpid, usr.password, request).await.unwrap();
+            }
         }
         _ => {}
     }

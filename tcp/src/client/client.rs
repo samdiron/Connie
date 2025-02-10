@@ -71,18 +71,9 @@ pub async fn client_process(
         cpid,
         paswd
     };
-    if _ip.is_some() {
 
-        let conn = check_host(host, &pool, _cred).await.unwrap();
-        state = connect_tcp(&pool, conn, request).await.unwrap();
-
-    } else {
-        let conn = check_host(host, &pool, _cred).await.unwrap();
-        state = connect_tcp(&pool, conn, request).await.unwrap();
-    };
-
-    
-
+    let conn = check_host(host, &pool, _cred).await.unwrap();
+    state = connect_tcp(&pool, conn, request).await.unwrap();
 
     Ok(state)
 
