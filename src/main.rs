@@ -352,12 +352,10 @@ async fn config_handle(command: Commands ) {
             get_pass(&mut passwd, user.as_str());
             let usr = fetch(user, passwd, pool).await.expect("could not fetch that user");
             println!("user cpid: {} , passwd: {}", usr.cpid, usr.password);
-            if host.is_some() && ip.is_some() { 
+            if host.is_some() { 
                 let host = host.unwrap();
-                let ip_warp = ip.unwrap();
-                let ip = IpAddr::from_str(&ip_warp).unwrap();
                 let request = "get shit".to_owned();
-                client_process(host, Some(ip), _pool, usr.cpid, usr.password, request).await.unwrap();
+                client_process(host, None, _pool, usr.cpid, usr.password, request).await.unwrap();
             }
         }
         _ => {}
