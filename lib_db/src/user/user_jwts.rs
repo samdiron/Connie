@@ -7,7 +7,7 @@ use sqlx::Row;
 
 pub async fn get_jwt(host: String, pool: &PgPool) -> Result<String> {
     let sql = r#"
-       SELECT (jwt) FROM user_jwts WHERE $1 = host AND $2 < date;
+       SELECT (jwt) FROM user_jwt WHERE $1 = host AND $2 < date;
     "#;
     let now = get_current_timestamp();
     

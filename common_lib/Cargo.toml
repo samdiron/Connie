@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 local-ip-addr = "0.1.1"
+public-ip = "0.2.2"

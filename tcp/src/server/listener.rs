@@ -16,7 +16,7 @@ pub async fn bind(pool: PgPool) {
     loop {
         match socket.accept().await {
             Ok(stream) => {
-                println!("stream ");
+                println!("client: {}", stream.1.clone());
                 let inner_p = pool.clone();
                 match task::spawn(async{
                             match handle(stream, inner_p).await {
