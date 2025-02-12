@@ -11,9 +11,9 @@ pub struct User {
     pub email: String,
     pub password: String,
 }
-pub async fn vaildate_claim(cpid: String, paswd: String, pool: &PgPool) -> sqlx::Result<bool> {
-    let user = fetch(cpid.clone(), paswd.clone(), pool).await?;
-    if user.cpid == cpid {
+pub async fn validate_claim(name: String, paswd: String, pool: &PgPool) -> sqlx::Result<bool> {
+    let user = fetch(name.clone(), paswd.clone(), pool).await?;
+    if user.cpid == name{
         Ok(true)
     } else {
         warn!("invalid auth");

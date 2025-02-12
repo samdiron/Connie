@@ -2,6 +2,22 @@ pub mod server;
 pub mod client;
 pub(crate) mod common;
 
+pub mod types {
+    use crate::common::request;
+    #[allow(unused_imports)]
+    pub use request::RQM;
+    #[allow(unused_imports)]
+    pub use request::{
+        JWT_AUTH,
+        LOGIN_CRED,
+        GET,
+        POST,
+        DELETE,
+        
+    };
+}
+
+
 pub mod consts {
     use std::{net::IpAddr, sync::Mutex};
 
