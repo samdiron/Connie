@@ -14,7 +14,7 @@ use super::handle_request::handle_client_request;
 
 
 
-pub async fn connect_tcp(pool: &PgPool, conn: Connection, type_:  , request: RQM) -> io::Result<u8> {
+pub async fn connect_tcp(pool: &PgPool, conn: Connection, type_: String , request: RQM) -> io::Result<u8> {
     if conn.jwt.is_none() && conn.cred.is_some() {
         let mut jwt: String = String::new();
         let port = TCP_MAIN_PORT;

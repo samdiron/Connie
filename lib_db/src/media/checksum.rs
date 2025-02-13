@@ -1,4 +1,4 @@
-use std::{ffi::OsStr, io::Result, os::unix::fs::MetadataExt, path::Path};
+use std::{io::Result, os::unix::fs::MetadataExt, path::Path};
 
 use sha256::try_digest;
 use tokio::fs::File;

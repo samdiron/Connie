@@ -4,15 +4,22 @@ version = "0.1.0"
 edition = "2021"
 
 [profile.dev]
-opt-level = 0
+opt-level = 2
 
 [profile.release]
 opt-level = 3
 strip = "debuginfo"
+codegen-units = 1
+lto = "fat"
+panic = "abort"
 
 [profile.client]
 inherits = "release"
 opt-level = "s"
+strip = "debuginfo"
+codegen-units = 1
+lto = "fat"
+
 
 [workspace]
 resolver = "1"

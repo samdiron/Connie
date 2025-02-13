@@ -39,12 +39,13 @@ pub struct RQM {
     size: i64,
     name: String,
     type_: String,
+    header: String,
     chcksum: String,
     in_host: String,
 }
 
 impl RQM {
-    pub async fn create(path: PathBuf, in_host: String) -> std::io::Result<Self> {
+    pub async fn create(path: PathBuf, header: String, in_host: String) -> std::io::Result<Self> {
         let f = File::open(path.clone()).await?;
         let data = f.metadata().await?;
         let size = data.size() as i64;
@@ -62,8 +63,9 @@ impl RQM {
             size,
             name,
             type_,
+            header,
+            in_host,
             chcksum,
-            in_host
         })
     }
 }
@@ -71,7 +73,7 @@ impl RQM {
 #[derive(Deserialize, Serialize)]
 pub struct JwtReq {
     pub jwt: String,
-    pub request_type: u8,
+    pub request_type: String,
     pub request: RQM
 }
 
