@@ -3,9 +3,10 @@ pub fn get_sql() -> String {
 CREATE TABLE IF NOT EXISTS user_jwt(
   id SERIAL PRIMARY KEY,
   host TEXT,
-  host_name TEXT,
+  cpid TEXT REFERENCES user(cpid),
   jwt TEXT,
   date BIGINT
+  
 );
 "#
     .to_string();
