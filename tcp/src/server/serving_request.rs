@@ -1,7 +1,5 @@
 use std::io::Result;
-use std::os::unix::fs::MetadataExt;
 use std::path::PathBuf;
-use std::str::pattern::Pattern;
 use common_lib::cheat_sheet::gethostname;
 use lib_db::media::checksum::{get_fsum, get_size};
 use lib_db::media::media::Media;
@@ -9,7 +7,6 @@ use lib_db::types::PgPool;
 use tokio::io::AsyncWriteExt;
 use tokio::{io::BufWriter, net::TcpStream};
 use tokio::fs::File;
-// use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader};
 use crate::common::request::{DATA_NOT_MATCH, GET};
 use crate::common::util::wifb;
 use crate::types::{POST, RQM};
