@@ -8,9 +8,9 @@ use bincode::{self};
 
 pub const READY_STATUS: u8 = 01;
 
-pub const UNAUTHORIZED: u8 = 401;
+pub const UNAUTHORIZED: u16 = 401;
 
-pub const DATA_NOT_MATCH: u8 = 666;
+pub const DATA_NOT_MATCH: u16 = 666;
 
 pub const SUCCESFUL: u8 = 0;
 
