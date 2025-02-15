@@ -1,11 +1,11 @@
 use std::{io::Result, os::unix::fs::MetadataExt, path::Path};
 
-use sha256::try_digest;
+use sha256::try_async_digest;
 use tokio::fs::File;
 
-pub async fn get(path: &str) -> Result<String> {
+pub async fn get_fsum(path: &str) -> Result<String> {
     let input = Path::new(path);
-    let sum = try_digest(input)?;
+    let sum = try_async_digest(input).await?;
     return Ok(sum);
     
 }

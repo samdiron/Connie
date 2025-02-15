@@ -8,6 +8,10 @@ use bincode::{self};
 
 pub const READY_STATUS: u8 = 01;
 
+pub const UNAUTHORIZED: u8 = 401;
+
+pub const DATA_NOT_MATCH: u8 = 666;
+
 pub const SUCCESFUL: u8 = 0;
 
 pub const RECONNECT_STATUS: u8 = 8;
@@ -35,16 +39,16 @@ pub const DELETE: &str = "!D";
 #[derive(Clone)]
 pub struct RQM {
     pub size: i64,
+    pub cpid: String,
     pub name: String,
     pub type_: String,
     pub header: String,
     pub chcksum: String,
-    pub in_host: String,
     pub path: Option<String>
 }
 
 impl RQM {
-    pub async fn create(path: PathBuf, header: String, in_host: String) -> std::io::Result<Self> {
+    pub async fn create(path: PathBuf, header: String, cpid: String) -> std::io::Result<Self> {
         let f = File::open(path.clone()).await?;
         let data = f.metadata().await?;
         let size = data.size() as i64;
@@ -56,14 +60,14 @@ impl RQM {
         let name = String::from_str(str_name).unwrap();
         
         let path = path.to_str().unwrap();
-        let chcksum = checksum::get(path).await?;
+        let chcksum = checksum::get_fsum(path).await?;
 
         Ok(RQM {
             size,
             name,
+            cpid,
             type_,
             header,
-            in_host,
             chcksum,
             path: Some(path.to_owned())
         })

@@ -11,15 +11,51 @@ pub struct User {
     pub email: String,
     pub password: String,
 }
-pub async fn validate_claim(name: String, paswd: String, pool: &PgPool) -> sqlx::Result<bool> {
-    let user = fetch(name.clone(), paswd.clone(), pool).await?;
-    if user.cpid == name{
+pub async fn validate_claim_wcpid(cpid: String, paswd: String, pool: &PgPool) -> sqlx::Result<bool> {
+    let user = fetch_wcpid(cpid.clone(), paswd.clone(), pool).await?;
+    if user.cpid == cpid{
         Ok(true)
     } else {
         warn!("invalid auth");
         Ok(false)
     }
 }
+
+pub async fn validate_claim(name: String, paswd: String, pool: &PgPool) -> sqlx::Result<bool> {
+    let user = fetch_wcpid(name.clone(), paswd.clone(), pool).await?;
+    if user.name == name {
+        drop(user);
+        Ok(true)
+    } else {
+        warn!("invalid auth");
+        Ok(false)
+    }
+}
+
+pub async fn fetch_wcpid(
+    cpid: String,
+    _password: String,
+    pool: &PgPool,
+) -> sqlx::Result<User, sqlx::Error> {
+    let sql = r#"SELECT * FROM "user" WHERE cpid = $1 AND password = $2;"#;
+    let password = sha256::digest(_password);
+    let row = sqlx::query(sql)
+        .bind(cpid)
+        .bind(password)
+        .fetch_one(pool)
+        .await?;
+    let user = User {
+        cpid: row.get("cpid"),
+        name: row.get("name"),
+        username: row.get("username"),
+        host: row.get("host"),
+        email: row.get("email"),
+        password: row.get("password"),
+    };
+    Ok(user)
+}
+
+
 
 pub async fn fetch(
     name: String,

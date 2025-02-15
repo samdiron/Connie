@@ -17,6 +17,8 @@ pub const TCP_MAIN_PORT: u16 = 4443;
 pub static LOCAL_IP: LazyLock<IpAddr> = LazyLock::new(|| lip_fn());
 
 
+pub use gethostname::gethostname;
+
 fn lip_fn() -> IpAddr {
     let ip = get_local_ip_address();
     let ok: bool = ip.is_ok();

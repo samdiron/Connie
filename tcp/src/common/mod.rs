@@ -59,7 +59,7 @@ pub(crate) mod util {
     
     /// reads a standard (PACKET_SIZE) from stream and 
     /// writes the buffer into file
-    pub async fn read_into_file_buf(
+    pub async fn wifb(
         s: &mut TcpStream,
         writer: &mut BufWriter<File>
     ) -> Result<(u8, usize)> {

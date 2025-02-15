@@ -20,18 +20,17 @@ pub struct Media {
 
 
 impl Media {
-    pub async fn add(self, pool: &PgPool) -> Result<u8> {
+    pub async fn post(self, pool: &PgPool) -> Result<u8> {
         let sql = r#"
             INSERT INTO media(name, cpid, path, checksum, host, type_, size)
             VALUES ($1, $2, $3, $4, $5, $6, $7);
         "#;
-        let sum = checksum::get(self.path.as_str()).await?;
         let size = get_size(self.path.as_str()).await?;
         let _res = sqlx::query(sql)
             .bind(self.name)
             .bind(self.cpid)
             .bind(self.path)
-            .bind(sum)
+            .bind(self.checksum)
             .bind(self.host)
             .bind(self.type_)
             .bind(size)
