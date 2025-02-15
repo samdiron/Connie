@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-read -p "what to build (All/debug/client/release):(a/b/c/r): " type
+read -p "what to build (All/debug/client/release):(a/d/c/r): " type
 if [ $type == "a" ] ; then
   echo "building all now"
 
