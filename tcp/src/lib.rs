@@ -2,11 +2,10 @@ pub mod server;
 pub mod client;
 pub(crate) mod common;
 
+#[allow(unused_imports)]
 pub mod types {
     use crate::common::request;
-    #[allow(unused_imports)]
     pub use request::RQM;
-    #[allow(unused_imports)]
     pub use request::{
         JWT_AUTH,
         LOGIN_CRED,
@@ -19,7 +18,7 @@ pub mod types {
 
 
 pub mod consts {
-    use std::{net::IpAddr, sync::Mutex};
+    use std::sync::Mutex;
 
     pub static IP: Mutex<&str> = Mutex::new("");
 

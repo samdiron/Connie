@@ -14,18 +14,18 @@ use super::handle_request::handle_client_request;
 
 
 
-pub async fn connect_tcp(pool: &PgPool, conn: Connection, type_: String , request: RQM) -> io::Result<u8> {
-    if conn.jwt.is_none() && conn.cred.is_some() {
+pub async fn connect_tcp(pool: &PgPool, conn: Connection, request: RQM) -> io::Result<u8> {
+    if conn.jwt.is_none()  {
         let mut jwt: String = String::new();
         let port = TCP_MAIN_PORT;
         let addr = SocketAddr::new(conn.ip, port);
         let mut stream = TcpStream::connect(addr).await?;
-        let cred = conn.cred.unwrap();
+        let cred = conn.cred;
         let name = cred.name;
         let cpid = cred.cpid;
         let paswd = cred.paswd;
         let req = LoginReq {
-            cpid,
+            cpid: cpid.clone(),
             name,
             paswd
         };
@@ -34,7 +34,7 @@ pub async fn connect_tcp(pool: &PgPool, conn: Connection, type_: String , reques
         stream.flush().await?;
         
         stream.read_to_string(&mut jwt).await?;
-        add_jwt(jwt, conn.host, pool).await.unwrap();
+        add_jwt(jwt, conn.host, cpid, pool).await.unwrap();
         drop(stream);
         return Ok(8)
     }
@@ -42,7 +42,6 @@ pub async fn connect_tcp(pool: &PgPool, conn: Connection, type_: String , reques
     let jwt = conn.jwt.unwrap();
     let req = JwtReq {
         jwt,
-        request_type:  type_,
         request
     };
     let request = req.sz().unwrap();
@@ -66,7 +65,7 @@ pub async fn connect_tcp(pool: &PgPool, conn: Connection, type_: String , reques
         return Ok(1);
     }
     
-
+    
     
     Ok(0)
 }

@@ -3,7 +3,6 @@ use std::{io::{ErrorKind, Result}, net::IpAddr, os::unix::fs::MetadataExt, path:
 use lib_db::{
     media::checksum, server::host::get_host_ip, types::PgPool, user::{user_jwts::get_jwt, user_struct}
 };
-use tokio::fs::File;
 
 use crate::common::request::RQM;
 
@@ -14,10 +13,10 @@ pub(crate) struct Connection {
     pub host: String,
     pub ip: IpAddr,
     pub jwt: Option<String>,
-    pub cred: Option<Cred>,
+    pub cred: Cred,
 }
 
-#[allow(dead_code)]
+#[derive(Clone)]
 pub(crate) struct Cred {
     pub cpid: String,
     pub name: String,
@@ -36,7 +35,7 @@ async fn check_host(host: String, pool: &PgPool, cred: Cred ) -> Result<Connecti
                 host,
                 ip,
                 jwt,
-                cred: None,
+                cred
             };
             return Ok(conn)
 
@@ -46,7 +45,7 @@ async fn check_host(host: String, pool: &PgPool, cred: Cred ) -> Result<Connecti
                 host,
                 ip,
                 jwt: None,
-                cred: Some(cred)
+                cred
             };
             return Ok(conn);
         }
@@ -68,10 +67,9 @@ pub async fn client_process(
     name: String,
     paswd: String,
     request: RQM,
-    request_type: String,
 
 ) -> Result<u8> {
-    let state: u8;
+    let mut state: u8;
     let usr = user_struct::fetch(name, paswd, &pool).await.unwrap();
     
     let _cred = Cred{
@@ -79,9 +77,13 @@ pub async fn client_process(
         name: usr.name,
         paswd: usr.password,
     };
-    let conn = check_host(host, &pool, _cred).await.unwrap();
-    state = connect_tcp(&pool, conn, request_type, request).await.unwrap();
 
+    let conn = check_host(host.clone(), &pool, _cred.clone()).await.unwrap();
+    state = connect_tcp(&pool, conn, request.clone()).await.unwrap();
+    if state == 8 {
+        let conn = check_host(host, &pool, _cred).await.unwrap();
+        state = connect_tcp(&pool, conn, request).await.unwrap();
+    }
     Ok(state)
 
 } 

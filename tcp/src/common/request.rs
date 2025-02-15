@@ -1,33 +1,30 @@
 use lib_db::{
-    jwt::{self, create, exp_gen, validate_jwt_claim, Claim}, media::checksum, types::{jwtE, sqlE, PgPool}, user::user_struct::validate_claim
+    jwt::{create, exp_gen, validate_jwt_claim, Claim}, media::checksum, types::{jwtE, sqlE, PgPool}, user::user_struct::validate_claim
 };
-use tokio::{fs::File, io::AsyncWriteExt, net::TcpStream};
-use std::{fs::FileType, io::{Error, ErrorKind}, mem::ManuallyDrop, os::unix::fs::MetadataExt, path::PathBuf, str::FromStr};
+use tokio::fs::File;
+use std::{os::unix::fs::MetadataExt, path::PathBuf, str::FromStr};
 use serde::{Deserialize, Serialize};
 use bincode::{self};
 
+pub const READY_STATUS: u8 = 01;
 
+pub const SUCCESFUL: u8 = 0;
 
-#[allow(dead_code)]
+pub const RECONNECT_STATUS: u8 = 8;
+
 pub const JWT_AUTH: u8 = 0;
 
-#[allow(dead_code)]
 pub const LOGIN_CRED: u8 = 1;
 
-#[allow(dead_code)]
 pub const SIGNIN_CRED: u8 = 2;
 
-#[allow(dead_code)]
-pub const PACKET_SIZE: u16 = 65535;
+pub const PACKET_SIZE: usize = 65533usize;
 
 
-#[allow(dead_code)]
 pub const GET: &str = "!G";
 
-#[allow(dead_code)]
 pub const POST: &str = "!P";
 
-#[allow(dead_code)]
 pub const DELETE: &str = "!D";
 
 
@@ -35,13 +32,15 @@ pub const DELETE: &str = "!D";
 
 
 #[derive(Deserialize, Serialize)]
+#[derive(Clone)]
 pub struct RQM {
-    size: i64,
-    name: String,
-    type_: String,
-    header: String,
-    chcksum: String,
-    in_host: String,
+    pub size: i64,
+    pub name: String,
+    pub type_: String,
+    pub header: String,
+    pub chcksum: String,
+    pub in_host: String,
+    pub path: Option<String>
 }
 
 impl RQM {
@@ -56,8 +55,8 @@ impl RQM {
         let str_name = path.file_name().unwrap().to_str().unwrap();
         let name = String::from_str(str_name).unwrap();
         
-        let _path = path.to_str().unwrap();
-        let chcksum = checksum::get(_path).await?;
+        let path = path.to_str().unwrap();
+        let chcksum = checksum::get(path).await?;
 
         Ok(RQM {
             size,
@@ -66,6 +65,7 @@ impl RQM {
             header,
             in_host,
             chcksum,
+            path: Some(path.to_owned())
         })
     }
 }
@@ -73,7 +73,6 @@ impl RQM {
 #[derive(Deserialize, Serialize)]
 pub struct JwtReq {
     pub jwt: String,
-    pub request_type: String,
     pub request: RQM
 }
 
@@ -118,7 +117,7 @@ impl LoginReq {
         let res: Vec<u8> = bincode::serialize(&self)?;
         Ok(res)
     }
-
+    
     pub fn dz(m: Vec<u8>) -> Result<Self, bincode::Error> {
         let res: Self = bincode::deserialize(&m)?;
         Ok(res) 
