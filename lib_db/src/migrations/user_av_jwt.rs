@@ -3,9 +3,12 @@ pub fn get_sql() -> String {
 CREATE TABLE IF NOT EXISTS user_jwt(
   id SERIAL PRIMARY KEY,
   host TEXT,
-  cpid TEXT REFERENCES user(cpid),
+  cpid TEXT ,
   jwt TEXT,
-  date BIGINT
+  date BIGINT,
+  CONSTRAINT fk_jwt 
+    FOREIGN KEY(cpid)
+      REFERENCES "user"(cpid)
   
 );
 "#

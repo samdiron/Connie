@@ -28,9 +28,9 @@ async fn check_host(host: String, pool: &PgPool, cred: Cred ) -> Result<Connecti
     let ip = get_host_ip(host.clone(), pool).await.unwrap();
     if 0usize < ip.len() {
         let ip = IpAddr::from_str(ip.as_str()).unwrap();
-        let jwt = get_jwt(host.clone(), cred.cpid.clone(), pool).await.unwrap();
-        if 0usize < jwt.len() {
-            let jwt = Some(jwt);
+        let  res = get_jwt(host.clone(), cred.cpid.clone(), pool).await;
+        if  res.is_ok() {
+            let jwt = Some(res.unwrap());
             let conn = Connection {
                 host,
                 ip,

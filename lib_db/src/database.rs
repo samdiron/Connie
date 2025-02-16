@@ -7,29 +7,29 @@ use std::io::Read;
 pub async fn migrate(pool: &PgPool) -> Result<(), sqlx::Error> {
     info!("INFO: db migration");
     {
-        println!("migrate:1");
         let sql = crate::migrations::server_table::get_sql();
+        println!("1:migrate:{sql}");
         let _res = sqlx::query(sql.as_str()).execute(pool).await?;
     }
     {
-        println!("migrate:2");
         let sql = crate::migrations::user_table::get_sql();
+        println!("2:migrate:{sql}");
         let _res = sqlx::query(sql.as_str()).execute(pool).await?;
     };
 
     {
-        println!("migrate:3");
         let sql = crate::migrations::admin_table::get_sql();
+        println!("3:migrate:{sql}");
         let _res = sqlx::query(sql.as_str()).execute(pool).await?;
     }
     {
-        println!("migrate:4");
         let sql = crate::migrations::media_table::get_sql();
+        println!("4:migrate:{sql}");
         let _res = sqlx::query(sql.as_str()).execute(pool).await?;
     }
     {
-        println!("migrate:5");
         let sql = crate::migrations::user_av_jwt::get_sql();
+        println!("5:migrate:{sql}");
         let _res = sqlx::query(sql.as_str()).execute(pool).await?;
     }
     Ok(())

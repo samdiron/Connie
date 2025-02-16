@@ -237,7 +237,7 @@ async fn config_handle(command: Commands ) {
                     
                     println!("memory: {}", memory);
                     let mut password = String::new();
-                    get_new_pass(&mut password, name.as_str());
+                    get_pass(&mut password, name.as_str());
                     
 
                     let string_host = gethostname().to_str().unwrap().to_string();
