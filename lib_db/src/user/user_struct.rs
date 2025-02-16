@@ -11,7 +11,11 @@ pub struct User {
     pub email: String,
     pub password: String,
 }
-pub async fn validate_claim_wcpid(cpid: String, paswd: String, pool: &PgPool) -> sqlx::Result<bool> {
+pub async fn validate_claim_wcpid(
+    cpid: String,
+    paswd: String,
+    pool: &PgPool
+) -> sqlx::Result<bool> {
     let user = fetch_wcpid(cpid.clone(), paswd.clone(), pool).await?;
     if user.cpid == cpid{
         Ok(true)
@@ -22,7 +26,7 @@ pub async fn validate_claim_wcpid(cpid: String, paswd: String, pool: &PgPool) ->
 }
 
 pub async fn validate_claim(name: String, paswd: String, pool: &PgPool) -> sqlx::Result<bool> {
-    let user = fetch_wcpid(name.clone(), paswd.clone(), pool).await?;
+    let user = fetch(name.clone(), paswd.clone(), pool).await?;
     if user.name == name {
         drop(user);
         Ok(true)

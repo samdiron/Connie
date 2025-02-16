@@ -35,8 +35,9 @@ pub async fn connect_tcp(pool: &PgPool, conn: Connection, rqm: RQM) -> io::Resul
         let request = req.sz().unwrap();
         stream.write_all(&request).await?;
         stream.flush().await?;
-        let jwt_buf = read_stream(&mut stream, 400).await?;
+        let jwt_buf = read_stream(&mut stream, 300).await?;
         let jwt = String::from_utf8(jwt_buf).unwrap();
+        println!("jwt: {}", &jwt);
         stream.write_u8(0).await?;
         add_jwt(jwt, conn.host, cpid, pool).await.unwrap();
         drop(stream);

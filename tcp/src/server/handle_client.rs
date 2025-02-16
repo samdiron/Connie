@@ -41,9 +41,12 @@ async fn login_create_jwt(pool: &PgPool, request: LoginReq) -> Result<String> {
         let jwt = jwt::create(&claim).await.unwrap();
         println!("jwt was created: {jwt}");
         return Ok(jwt)
+    }else {
+        
+        println!("invalid login request");
+        let e = Error::new(ErrorKind::NotFound, "user not found");
+        return Err(e)
     }
-    let e = Error::new(ErrorKind::NotFound, "user not found");
-    Err(e)
 }
 
 pub async fn handle(
