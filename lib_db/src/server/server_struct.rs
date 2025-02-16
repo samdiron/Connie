@@ -8,7 +8,7 @@ pub struct Server {
     pub name: String,
     pub host: String,
     pub memory: i64,
-    pub max_conn: i64,
+    pub max_conn: i16,
     pub password: String,
 }
 pub async fn get_server(

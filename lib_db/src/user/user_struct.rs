@@ -18,10 +18,10 @@ pub async fn validate_claim_wcpid(
 ) -> sqlx::Result<bool> {
     let user = fetch_wcpid(cpid.clone(), paswd.clone(), pool).await?;
     if user.cpid == cpid{
-        Ok(true)
+        return Ok(true)
     } else {
         warn!("invalid auth");
-        Ok(false)
+        return Ok(false)
     }
 }
 
@@ -29,10 +29,10 @@ pub async fn validate_claim(name: String, paswd: String, pool: &PgPool) -> sqlx:
     let user = fetch(name.clone(), paswd.clone(), pool).await?;
     if user.name == name {
         drop(user);
-        Ok(true)
+        return Ok(true)
     } else {
         warn!("invalid auth");
-        Ok(false)
+        return Ok(false)
     }
 }
 

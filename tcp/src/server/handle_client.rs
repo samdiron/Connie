@@ -37,6 +37,7 @@ async fn login_create_jwt(pool: &PgPool, request: LoginReq) -> Result<String> {
 
     };
     let is_val = validate_claim_wcpid(claim.cpid.clone(), claim.paswd.clone(), pool).await.unwrap();
+    println!("client log in status {is_val}");
     if is_val {
         let jwt = jwt::create(&claim).await.unwrap();
         println!("jwt was created: {jwt}");

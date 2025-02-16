@@ -27,7 +27,7 @@ use toml::to_string;
 //in the /Connie/etc/db_conn; file
 
 #[derive(Debug, Deserialize, Serialize, Parser)]
-#[command(version = "0.1beta", about = "a web server in rust for more info visit https://github.com/samdiron/Connie")]
+#[command(version = "0.2beta", about = "a web server in rust for more info visit https://github.com/samdiron/Connie")]
 #[command(disable_help_flag = true)]
 struct Cli {
     
@@ -110,7 +110,7 @@ enum Commands {
         name: String,
 
         #[arg(long, short)]
-        max_conn: Option<i64>,
+        max_conn: Option<i16>,
         
         #[arg(long)]
         host: Option<String>,
@@ -283,10 +283,7 @@ async fn config_handle(command: Commands ) {
 
             let _res = get_host_info(server, passwd, pool).await;
             if _res.is_err() {
-                println!("not a valid server");
-            }else {
-                println!("valid server");
-                exit(1)
+                panic!("not a valid server");
             }
 
             if let Some(ip) = ip {

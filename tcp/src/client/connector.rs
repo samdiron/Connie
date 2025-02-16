@@ -33,7 +33,7 @@ pub async fn connect_tcp(pool: &PgPool, conn: Connection, rqm: RQM) -> io::Resul
             paswd
         };
         let request = req.sz().unwrap();
-        stream.write_all(&request).await?;
+        stream.write(&request).await?;
         stream.flush().await?;
         let jwt_buf = read_stream(&mut stream, 300).await?;
         let jwt = String::from_utf8(jwt_buf).unwrap();
@@ -58,7 +58,7 @@ pub async fn connect_tcp(pool: &PgPool, conn: Connection, rqm: RQM) -> io::Resul
     stream.write_u8(JWT_AUTH).await?;
     stream.flush().await?;
 
-    stream.write_all(&request).await?;
+    stream.write(&request).await?;
     stream.flush().await?;
     let state = handle_client_request(&mut stream, rqm).await.unwrap();
     if state == 0 {
