@@ -80,7 +80,7 @@ pub async fn handle(
                 stream.write_u8(8).await?;
                 drop(stream);
             } else {
-                stream.write_u16(UNAUTHORIZED);
+                stream.write_u8(UNAUTHORIZED).await?;
                 stream.flush().await?;
 
 

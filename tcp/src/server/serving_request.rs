@@ -32,7 +32,7 @@ pub async  fn handle_server_request(
             let local_sum = get_fsum(spath).await?;
             let local_size = get_size(spath).await?;
             if (request.size != local_size) || (request.chcksum != local_sum) {
-                stream.write_u16(DATA_NOT_MATCH).await?;
+                stream.write_u8(DATA_NOT_MATCH).await?;
                 stream.flush().await?;
             };
             let media = Media {

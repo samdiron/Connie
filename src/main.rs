@@ -1,7 +1,7 @@
 
 #![allow(unused_assignments)]
 
-use std::{alloc::System, fs::remove_file, io::{stdout, Empty, Write}, net::IpAddr, process::exit, str::FromStr};
+use std::{fs::remove_file, io::{stdout, Write}, net::IpAddr, path::PathBuf, process::exit, str::FromStr};
 
 use gethostname::gethostname;
 use lib_db::{
@@ -11,11 +11,12 @@ use lib_db::{
     user::user_struct::{fetch, User}
 };
 use rpassword::read_password;
-use tcp::{client::client::client_process, consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind};
+use tcp::{client::client::client_process, consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind, types::{GET, POST, RQM}};
 
 use serde::{Deserialize, Serialize};
 use clap::{command, Parser, Subcommand};
 use tokio::{fs::File, io::AsyncWriteExt};
+use toml::to_string;
 
 
 
@@ -61,14 +62,14 @@ enum Commands {
     },
 
 
-    CONNECT {
+    REQUEST {
 
         
         #[arg(long, short)]
         user: String,
         
         #[arg(long, short)]
-        ip: Option<String>,
+        ip: Option<IpAddr>,
         
         #[arg(long)]
         port: Option<u16>,
@@ -77,10 +78,12 @@ enum Commands {
         host: Option<String>,
 
         #[arg(long, short)]
-        get: Option<String>,
+        get: Option<PathBuf>,
         
         #[arg(long, short)]
-        post: Option<String>,
+        post: Option<PathBuf>,
+
+
 
     },
     
@@ -101,7 +104,7 @@ enum Commands {
         update: Option<bool>,
 
         #[arg(long, short)]
-        ip: Option<String>,
+        ip: Option<IpAddr>,
 
         #[arg(long, short)]
         name: String,
@@ -245,14 +248,9 @@ async fn config_handle(command: Commands ) {
                     }else {
                         80
                     };
-                    let ip = if ip.is_some() {
-                        let ip_ = ip.unwrap();
-                        let check = IpAddr::from_str(ip_.as_str());
-                        if check.is_err() {
-                            println!("enter a valid ip");
-                            exit(1)
-                        }
-                        ip_
+                    let ip = if ip.is_none() {
+                        let ip = ip.unwrap();
+                        ip.to_string()
                     } else {
                         common_lib::cheat_sheet::LOCAL_IP.to_string()
                     };
@@ -346,16 +344,49 @@ async fn config_handle(command: Commands ) {
                 }
             } 
         }
-        Commands::CONNECT { ip, port, host, get, post, user} => {
+        Commands::REQUEST { ip, port, host, get, post, user} => {
             let _pool = get_conn().await.unwrap();
             let pool = &_pool;
             let mut passwd = String::new();
             get_pass(&mut passwd, user.as_str());
             let usr = fetch(user, passwd, pool).await.expect("could not fetch that user");
-            println!("user cpid: {} , passwd: {}", usr.cpid, usr.password);
+            println!("user cpid: {} , passwd: {}", usr.cpid, usr.username);
             if host.is_some() { 
                 let host = host.unwrap();
-                let request = "get shit".to_owned();
+                let request: RQM = 
+                    if get.is_some() {
+                        let get = get.unwrap();
+                        let _is_type = get.extension();
+                        let type_ = if _is_type.is_none() {
+                            "".to_string()
+                        } else {
+                            let bind = _is_type.unwrap();
+                            let str = bind.to_str().unwrap();
+                            let string = str.to_string();
+                            string
+                        };
+                        let name = get.file_name().unwrap().to_str().unwrap().to_string();
+                        let header = GET.to_string();
+                        let r = RQM {
+                            size: 0,
+                            cpid: usr.cpid.clone(),
+                            name,
+                            type_,
+                            header,
+                            chcksum: "None".to_owned(),
+                            path: None
+                        };
+                        r
+                    }else if post.is_some() {
+                        let r = RQM::create(
+                            post.unwrap(),
+                            POST.to_string(),
+                            usr.cpid.clone()
+                        ).await.unwrap();
+                        r
+                    } else {println!("you did not enter a request to exec"); exit(0)};
+                let res = client_process(host, ip, _pool, usr, request).await.unwrap();
+                println!("done {}", res);
             }
         }
         _ => {}

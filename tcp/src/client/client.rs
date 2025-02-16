@@ -1,7 +1,7 @@
 use std::{io::{ErrorKind, Result}, net::IpAddr, os::unix::fs::MetadataExt, path::PathBuf, str::FromStr};
 
 use lib_db::{
-    media::checksum, server::host::get_host_ip, types::PgPool, user::{user_jwts::get_jwt, user_struct}
+    media::checksum, server::host::get_host_ip, types::PgPool, user::{user_jwts::get_jwt, user_struct::{self, User}}
 };
 
 use crate::common::request::RQM;
@@ -23,7 +23,7 @@ pub(crate) struct Cred {
     pub paswd: String,
 }
 
-
+/// it tries to get a jwt and if the jwt is not valid it will instead load the user cred 
 async fn check_host(host: String, pool: &PgPool, cred: Cred ) -> Result<Connection> {
     let ip = get_host_ip(host.clone(), pool).await.unwrap();
     if 0usize < ip.len() {
@@ -59,18 +59,15 @@ async fn check_host(host: String, pool: &PgPool, cred: Cred ) -> Result<Connecti
 
 
 /// spins up a client process that could be use inside a task
-/// you have to supply a full raw request request
 pub async fn client_process(
     host: String,
     _ip: Option<IpAddr>,
     pool: PgPool,
-    name: String,
-    paswd: String,
+    usr: User,
     request: RQM,
 
 ) -> Result<u8> {
     let mut state: u8;
-    let usr = user_struct::fetch(name, paswd, &pool).await.unwrap();
     
     let _cred = Cred{
         cpid: usr.cpid,
