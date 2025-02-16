@@ -4,11 +4,11 @@ use common_lib::cheat_sheet::TCP_MAIN_PORT;
 use lib_db::types::PgPool;
 use lib_db::user::user_jwts::add_jwt;
 use log::warn;
-use serde::Serialize;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use crate::client::client::Connection;
 use crate::common::request::{JwtReq, LoginReq, JWT_AUTH, RQM};
+use crate::common::util::read_stream;
 use crate::types::LOGIN_CRED;
 use super::handle_request::handle_client_request;
 
@@ -35,7 +35,9 @@ pub async fn connect_tcp(pool: &PgPool, conn: Connection, rqm: RQM) -> io::Resul
         let request = req.sz().unwrap();
         stream.write_all(&request).await?;
         stream.flush().await?;
-        stream.read_to_string(&mut jwt).await?;
+        let jwt_buf = read_stream(&mut stream, 400).await?;
+        let jwt = String::from_utf8(jwt_buf).unwrap();
+        stream.write_u8(0).await?;
         add_jwt(jwt, conn.host, cpid, pool).await.unwrap();
         drop(stream);
         return Ok(8)

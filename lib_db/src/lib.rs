@@ -32,24 +32,7 @@ pub mod jwt {
     use crate::user::user_struct::validate_claim;
     use serde::{Deserialize, Serialize};
     // the user may chose the word 
-    pub static MUTEX_SECRET_WORD: Mutex<&str> = Mutex::new("
-    Lorem ipsum dolor sit amet,
-    consectetur adipiscing elit.
-    Fusce aliquam non tortor in bibendum.
-    Vestibulum quis rhoncus mi.
-    Interdum et malesuada fames ac ante
-    ipsum primis in faucibus. Suspendisse
-    congue euismod quam, eget varius ipsum
-    porta et. Donec vel ligula orci. 
-    Aliquam auctor erat ac venenatis dapibus
-    . Maecenas hendrerit erat et purus 
-    ullamcorper volutpat. Praesent non 
-    risus ante. Sed sit amet diam dolor.
-    Morbi faucibus, urna ac ornare ornare,
-    neque tortor commodo lectus, sit amet 
-    tempus lorem est ut ex. 
-    Duis vitae rutrum nulla.
-");
+    pub static MUTEX_SECRET_WORD: Mutex<&str> = Mutex::new("Lorem ipsum dolor sit amet quis");
 
     fn get_secret() -> String {
         let mutex_word = *MUTEX_SECRET_WORD.lock().unwrap();

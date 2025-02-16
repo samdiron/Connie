@@ -20,12 +20,11 @@ pub async fn bind(pool: PgPool) {
                 let inner_p = pool.clone();
                 match task::spawn(async{
                             match handle(stream, inner_p).await {
-                                Ok(..) => {},
+                                Ok(..) => {println!("a client was handled")},
                                 Err(..) => {},
                             }
                             }).await {
                     Ok(_) => {
-                        println!("a client was server");
                     },
                     Err(_) => {},
                 };

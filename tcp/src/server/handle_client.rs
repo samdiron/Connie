@@ -1,12 +1,13 @@
-use lib_db::{jwt::{self, exp_gen, validate_jwt_claim, Claim}, types::{sqlE, PgPool}, user::user_struct::{validate_claim, validate_claim_wcpid}};
+use lib_db::{jwt::{self, exp_gen, validate_jwt_claim}, types::PgPool, user::user_struct::validate_claim_wcpid};
+use lib_db::jwt::Claim;
 use log::info;
 use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream};
-use std::{ffi::FromBytesWithNulError, io::{Error, ErrorKind, Result}, net::SocketAddr, u16};
+use std::{io::{Error, ErrorKind, Result}, net::SocketAddr};
 use tokio::time::timeout;
 
-use crate::{client::handle_request::handle_client_request, common::{request::{
-    JwtReq, LoginReq, JWT_AUTH, LOGIN_CRED, PACKET_SIZE, UNAUTHORIZED
-}, util::read_stream}, server::{handle_client, serving_request::handle_server_request}, types::RQM};
+use crate::{common::{request::{
+    JwtReq, LoginReq, JWT_AUTH, LOGIN_CRED, UNAUTHORIZED
+}, util::read_stream}, server::serving_request::handle_server_request};
 
 
 
@@ -38,6 +39,7 @@ async fn login_create_jwt(pool: &PgPool, request: LoginReq) -> Result<String> {
     let is_val = validate_claim_wcpid(claim.cpid.clone(), claim.paswd.clone(), pool).await.unwrap();
     if is_val {
         let jwt = jwt::create(&claim).await.unwrap();
+        println!("jwt was created: {jwt}");
         return Ok(jwt)
     }
     let e = Error::new(ErrorKind::NotFound, "user not found");
@@ -77,7 +79,8 @@ pub async fn handle(
                 let jwt = is_jwt?;
                 stream.write_all(jwt.as_bytes()).await?;
                 stream.flush().await?;
-                stream.write_u8(8).await?;
+                let confirm = stream.read_u8().await?;
+                if confirm  == 0 {println!("client login")};
                 drop(stream);
             } else {
                 stream.write_u8(UNAUTHORIZED).await?;
