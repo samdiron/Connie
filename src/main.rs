@@ -347,7 +347,7 @@ async fn config_handle(command: Commands ) {
             let mut passwd = String::new();
             get_pass(&mut passwd, user.as_str());
             let usr = fetch(user, passwd, pool).await.expect("could not fetch that user");
-            println!("user cpid: {} , passwd: {}", usr.cpid, usr.username);
+            println!("user cpid: {} , name: {}", usr.cpid, usr.username);
             if host.is_some() { 
                 let host = host.unwrap();
                 let request: RQM = 

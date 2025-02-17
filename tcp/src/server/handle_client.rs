@@ -1,9 +1,8 @@
 use lib_db::{jwt::{self, exp_gen, validate_jwt_claim}, types::PgPool, user::user_struct::validate_claim_wcpid};
 use lib_db::jwt::Claim;
-use log::info;
+use log::{debug, info};
 use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream};
 use std::{io::{Error, ErrorKind, Result}, net::SocketAddr};
-use tokio::time::timeout;
 
 use crate::{common::{request::{
     JwtReq, LoginReq, JWT_AUTH, LOGIN_CRED, UNAUTHORIZED
@@ -29,16 +28,16 @@ async fn c_jwtreq(
 }
 
 async fn login_create_jwt(pool: &PgPool, request: LoginReq) -> Result<String> {
+    println!("SERVER: trying to login client now");
     let exp = exp_gen(); 
     let claim = Claim {
-        cpid: request.cpid,
-        paswd: request.paswd,
+        cpid: request.cpid.clone(),
+        paswd: request.paswd.clone(),
         exp
 
     };
-    let is_val = validate_claim_wcpid(claim.cpid.clone(), claim.paswd.clone(), pool).await.unwrap();
-    println!("client log in status {is_val}");
-    if is_val {
+    let is_val = validate_claim_wcpid(request.name, request.paswd, pool).await;
+    if is_val.is_ok() {
         let jwt = jwt::create(&claim).await.unwrap();
         println!("jwt was created: {jwt}");
         return Ok(jwt)
@@ -59,13 +58,16 @@ pub async fn handle(
     let addr = st.1;
     
     println!("client: {addr} is being served");
-    let duration = tokio::time::Duration::from_secs(10);
-    let _auth_type = timeout(duration,stream.read_u8()).await?;
-    let auth_type = _auth_type?;
-
+    let auth_type = stream.read_u8().await?;
+    println!("SERVER: C{addr} will auth with {auth_type}");
     match auth_type {
         JWT_AUTH => {
+            debug!("SERVER: jwt auth request");
             let buf = read_stream(&mut stream, 400).await?;
+            if buf.is_empty() {
+                println!("an empty request was sent");
+                debug!("an empty request was sent");
+            }
             let request = JwtReq::dz(buf).expect("could not unwrap struct");
             let status  = c_jwtreq(&mut stream, &pool, request).await?;
             if status == 0 {
@@ -76,28 +78,40 @@ pub async fn handle(
         }
         
         LOGIN_CRED => {
-            let buf = read_stream(&mut stream, 400).await?;
+            debug!("SERVER: login request");
+            println!("SERVER: login request");
+            let mut buf = vec![0; 300];
+            let size = stream.read(&mut buf).await?;
+            debug!("request size: {}",size);
             let request = LoginReq::dz(buf).expect("could not deserialze");
             let is_jwt = login_create_jwt(&pool, request).await;
+            println!("SERVER: jwt? created");
             if is_jwt.is_ok() {
                 let jwt = is_jwt?;
+                debug!("SERVER: login about to compleate");
+                println!("SERVER: login about to compleate");
+                stream.write_u8(0).await?;
                 stream.write_all(jwt.as_bytes()).await?;
+                println!("sent: {} bytes", jwt.len());
                 stream.flush().await?;
                 let confirm = stream.read_u8().await?;
-                if confirm  == 0 {println!("client login")};
+                if confirm  == 0 { debug!("SERVER: client login succsefully")};
                 drop(stream);
+                
+                debug!("SERVER: client logged in succsefully ");
+                println!("SERVER: client logged in succsefully ");
+
             } else {
+                debug!("a login with res code {UNAUTHORIZED}");
+                debug!("SERVER: login faild");
+                println!("SERVER: login faild");
                 stream.write_u8(UNAUTHORIZED).await?;
                 stream.flush().await?;
 
-
             }
 
-
-
-
         }
-        _=> {}
+        _=> {debug!("client sent a invalid auth header: {auth_type}")}
     }
 
     

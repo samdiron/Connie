@@ -3,13 +3,16 @@ use jsonwebtoken::get_current_timestamp;
 use sqlx::PgPool;
 use sqlx::Row;
 
+use crate::jwt::exp_gen;
+use crate::jwt::DURATION;
+
 
 pub async fn get_jwt(host: String, cpid: String, pool: &PgPool) -> Result<String> {
     let sql = r#"
        SELECT (jwt) FROM user_jwt WHERE $1 = host AND $2 < date AND $3 = cpid;
     "#;
     let now = get_current_timestamp();
-    
+    println!("current time: {}", now);
     let row = sqlx::query(sql)
         .bind(host)
         .bind(now as i64 )
@@ -43,7 +46,7 @@ pub async fn add_jwt(
     let sql = r#"
         INSERT INTO user_jwt(host, jwt, date, cpid) VALUES($1, $2, $3, $4);
     "#;
-    let now = get_current_timestamp();
+    let now = (exp_gen() + DURATION) as i64;
 
     let _res = sqlx::query(sql)
         .bind(host)

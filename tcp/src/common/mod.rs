@@ -8,7 +8,6 @@ pub(crate) mod handshake;
 pub(crate) mod util {
     use std::io::Result;
     use tokio::{fs::File, io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter}, net::TcpStream};
-
     use super::request::PACKET_SIZE;
     // reads the amount of b from a stream and returns the data read in a Vec<u8>
     // this function is made only for small reads it will not work as expected with larg buffers
@@ -22,9 +21,27 @@ pub(crate) mod util {
             if size == 0usize {
                 break;
             }
+            println!("on read stream read: {:?}", size);
         }
         Ok(buf)
     } 
+
+    pub async fn wvts(
+        s: &mut TcpStream,
+        mut fbuf: Vec<u8>
+    ) -> Result<usize> {
+        let all = fbuf.len();
+        let mut sent = 0usize;
+        loop {
+            fbuf.remove(sent);
+            let size = s.write(&fbuf).await?;
+            sent+=size;
+            if sent == all {break;};
+        }
+        assert_eq!(sent, all);
+        Ok(sent)
+        
+    }
     /// stands for write from file buffer 
     /// it reads from the file a standard size buffer (PACKET_SIZE)
     /// then i writes it to a stream

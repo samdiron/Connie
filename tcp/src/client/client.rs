@@ -1,8 +1,9 @@
-use std::{io::{ErrorKind, Result}, net::IpAddr, os::unix::fs::MetadataExt, path::PathBuf, str::FromStr};
+use std::{io::{ErrorKind, Result}, net::IpAddr, str::FromStr};
 
 use lib_db::{
-    media::checksum, server::host::get_host_ip, types::PgPool, user::{user_jwts::get_jwt, user_struct::{self, User}}
+    server::host::get_host_ip, types::PgPool, user::{user_jwts::get_jwt, user_struct::User}
 };
+use log::debug;
 
 use crate::common::request::RQM;
 
@@ -30,7 +31,9 @@ async fn check_host(host: String, pool: &PgPool, cred: Cred ) -> Result<Connecti
         let ip = IpAddr::from_str(ip.as_str()).unwrap();
         let  res = get_jwt(host.clone(), cred.cpid.clone(), pool).await;
         if  res.is_ok() {
-            let jwt = Some(res.unwrap());
+            let res = res.unwrap();
+            debug!("CLIENT: found jwt for Host: {}",&res);
+            let jwt = Some(res);
             let conn = Connection {
                 host,
                 ip,
@@ -41,6 +44,8 @@ async fn check_host(host: String, pool: &PgPool, cred: Cred ) -> Result<Connecti
 
         }
         else {
+            let e = res.unwrap_err();
+            eprintln!("error while trying to get jwt: {:#?}", e);
             let conn = Connection {
                 host,
                 ip,
@@ -67,7 +72,7 @@ pub async fn client_process(
     request: RQM,
 
 ) -> Result<u8> {
-    let mut state: u8;
+    let state: u8;
     
     let _cred = Cred{
         cpid: usr.cpid,
@@ -77,10 +82,7 @@ pub async fn client_process(
 
     let conn = check_host(host.clone(), &pool, _cred.clone()).await.unwrap();
     state = connect_tcp(&pool, conn, request.clone()).await.unwrap();
-    if state == 8 {
-        let conn = check_host(host, &pool, _cred).await.unwrap();
-        state = connect_tcp(&pool, conn, request).await.unwrap();
-    }
+    println!("logged in now you can retry to make the request");
     Ok(state)
 
 } 

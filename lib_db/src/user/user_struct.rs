@@ -12,12 +12,12 @@ pub struct User {
     pub password: String,
 }
 pub async fn validate_claim_wcpid(
-    cpid: String,
+    name: String,
     paswd: String,
     pool: &PgPool
 ) -> sqlx::Result<bool> {
-    let user = fetch_wcpid(cpid.clone(), paswd.clone(), pool).await?;
-    if user.cpid == cpid{
+    let res = fetch(name.clone(), paswd.clone(), pool).await;
+    if res.is_ok() && res.unwrap().name == name {
         return Ok(true)
     } else {
         warn!("invalid auth");
@@ -29,10 +29,10 @@ pub async fn validate_claim(name: String, paswd: String, pool: &PgPool) -> sqlx:
     let user = fetch(name.clone(), paswd.clone(), pool).await?;
     if user.name == name {
         drop(user);
-        return Ok(true)
+        Ok(true)
     } else {
         warn!("invalid auth");
-        return Ok(false)
+        Ok(false)
     }
 }
 

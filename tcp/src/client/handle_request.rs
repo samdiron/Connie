@@ -1,10 +1,9 @@
-use std::{env, io::Result};
+use std::io::Result;
 
-use common_lib::path::DATA_DIR;
-use lib_db::types::PgPool;
-use tokio::{fs::File, io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter}, net::TcpStream};
+use log::debug;
+use tokio::{fs::File, io::{AsyncReadExt, BufReader}, net::TcpStream};
 
-use crate::{common::{request::{DELETE, GET, PACKET_SIZE, POST, READY_STATUS, SUCCESFUL}, util::wffb}, types::RQM};
+use crate::{common::{request::{POST, READY_STATUS}, util::wffb}, types::RQM};
 
 
 /// this function take only the raw request and does not send it you have to send the full request
@@ -17,6 +16,7 @@ pub async fn handle_client_request(
     let mut status: u8 = 0; 
     if request.header == POST.to_owned() {
         let f = File::open(request.path.unwrap()).await?;
+        debug!("post file is open");
         let mut reader = BufReader::new(f);
         let ready = stream.read_u8().await?;
         if ready == READY_STATUS {
