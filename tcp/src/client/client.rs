@@ -1,7 +1,15 @@
-use std::{io::{ErrorKind, Result}, net::IpAddr, str::FromStr};
+use std::{
+    io::{ErrorKind, Result},
+    net::IpAddr, str::FromStr
+};
 
 use lib_db::{
-    server::host::get_host_ip, types::PgPool, user::{user_jwts::get_jwt, user_struct::User}
+    server::host::get_host_ip,
+    types::PgPool,
+    user::{
+        user_jwts::get_jwt,
+        user_struct::User
+    }
 };
 use log::debug;
 

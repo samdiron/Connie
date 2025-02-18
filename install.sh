@@ -7,17 +7,13 @@
 read -p "what type of connie client is smaller in size but slower server is larger in size but faster NOTE: both can act as a server and client  ENTER S or C : " type
 if [ $type == "S" ] || [ $type == "s" ] ; then 
   cargo build --release
-  set PATH = ./target/release/Connie 
 elif [ $type = "C" ] || [ $type == "c" ]; then 
   cargo build --profile client
-  set PATH = ./target/client/Connie
 elif [ $type = "dev" ] || [ $type == "DEV" ]; then 
   cargo build -vv 
-  set PATH = ./target/debug/Connie
 else 
   echo "chose S / C" 
   exit 1
-
 fi
 
 read -p "Hey, can i use sudo to create my home(y/n): " confirm
@@ -53,7 +49,7 @@ if [ $type == "S" ] || [ $type == "s" ] ; then
   sudo cp ./target/client/Connie /opt/Connie/bin/cie
 elif [ $type = "dev" ] || [ $type == "DEV" ]; then 
   sudo rm /opt/Connie/bin/cie
-  sudo cp ./target/debug/Connie /opt/Connie/bin/cie
+  sudo cp ./target/debug/Connie /opt/Connie/bin/cie-debug
 else
   sudo cp ./target/client/Connie /opt/Connie/bin/cie  
 fi

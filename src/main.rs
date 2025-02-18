@@ -1,13 +1,13 @@
 
 #![allow(unused_assignments)]
+#![allow(unused_variables)]
 
-use std::{fs::remove_file, io::{stdout, Write}, net::IpAddr, path::PathBuf, process::exit, str::FromStr};
+use std::{fs::remove_file, io::{stdout, Write}, net::IpAddr, path::PathBuf, process::exit};
 
 use gethostname::gethostname;
 use lib_db::{
     database::{get_conn, DB_CONN},
-    server::{host::get_host_info, server_struct::{get_server, Server}},
-    types::PgPool,
+    server::{host::get_host_info, server_struct::Server},
     user::user_struct::{fetch, User}
 };
 use rpassword::read_password;
@@ -16,7 +16,6 @@ use tcp::{client::client::client_process, consts::{IP, PORT, USE_IP, USE_PORT}, 
 use serde::{Deserialize, Serialize};
 use clap::{command, Parser, Subcommand};
 use tokio::{fs::File, io::AsyncWriteExt};
-use toml::to_string;
 
 
 

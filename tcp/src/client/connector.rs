@@ -4,11 +4,19 @@ use std::process::exit;
 use common_lib::cheat_sheet::TCP_MAIN_PORT;
 use lib_db::types::PgPool;
 use lib_db::user::user_jwts::add_jwt;
-use log::{debug, warn};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use log::{debug, info, warn};
+use tokio::io::{
+    AsyncReadExt,
+    AsyncWriteExt
+};
 use tokio::net::TcpStream;
 use crate::client::client::Connection;
-use crate::common::request::{JwtReq, LoginReq, JWT_AUTH, RQM, UNAUTHORIZED};
+use crate::common::request::{
+    JWT_AUTH,
+    RQM,
+    UNAUTHORIZED
+};
+use crate::common::request::req_format::{JwtReq, LoginReq};
 use crate::types::LOGIN_CRED;
 use super::handle_request::handle_client_request;
 
@@ -68,7 +76,7 @@ pub async fn connect_tcp(pool: &PgPool, conn: Connection, rqm: RQM) -> io::Resul
             }
         }
     } else  {
-        
+        println!("CLIENT: Will use jwt auth");
         let jwt = conn.jwt.unwrap();
         let req = JwtReq {
             jwt,
@@ -78,13 +86,19 @@ pub async fn connect_tcp(pool: &PgPool, conn: Connection, rqm: RQM) -> io::Resul
 
         let port = TCP_MAIN_PORT;
         let addr = SocketAddr::new(conn.ip, port);
-        let mut stream = TcpStream::connect(addr).await?;
-
+        let mut stream = TcpStream::connect(&addr).await?;
+        println!("CLIENT: connected to {}",&addr);
+        debug!("CLIENT: connected to {}",&addr);
+        info!("CLIENT: connected to {}",&addr);
         stream.write_u8(JWT_AUTH).await?;
         stream.flush().await?;
+        debug!("CLIENT: sent auth state {}",JWT_AUTH);
+        println!("CLIENT: sent auth state {}",JWT_AUTH);
+        
 
-        stream.write(&request).await?;
+        let size = stream.write(&request).await?;
         stream.flush().await?;
+        println!("CLIENT: sent full request with size: {:?}",size);
         let state = handle_client_request(&mut stream, rqm).await.unwrap();
         if state == 0 {
             println!("request request was succesful");

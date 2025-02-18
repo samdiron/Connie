@@ -6,8 +6,17 @@ pub(crate) mod handshake;
 
 #[allow(dead_code)]
 pub(crate) mod util {
-    use std::io::Result;
-    use tokio::{fs::File, io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter}, net::TcpStream};
+    use tokio::{
+        fs::File,
+        io::{
+            AsyncReadExt,
+            AsyncWriteExt,
+            BufReader,
+            BufWriter,
+            Result
+        },
+        net::TcpStream
+    };
     use super::request::PACKET_SIZE;
     // reads the amount of b from a stream and returns the data read in a Vec<u8>
     // this function is made only for small reads it will not work as expected with larg buffers
@@ -16,13 +25,18 @@ pub(crate) mod util {
         b: u16
     ) -> Result<Vec<u8>> {
         let mut buf = vec![0; b as usize];
-        loop {
+        let mut rcve = 0usize;
+        for _i in 0..1 {
             let size = s.read(&mut buf).await?;
             if size == 0usize {
                 break;
             }
-            println!("on read stream read: {:?}", size);
+            rcve+=size;
         }
+        if buf.len() > rcve {
+            buf.resize_with(rcve, Default::default);
+        }
+        println!("STREAMREAD: bytes read {:?}", rcve);
         Ok(buf)
     } 
 

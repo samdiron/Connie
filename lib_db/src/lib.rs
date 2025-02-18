@@ -29,7 +29,7 @@ pub mod jwt {
         exp
     }
     use sqlx::PgPool;
-    use crate::user::user_struct::validate_claim;
+    use crate::user::user_struct::validate_claim_wcpid;
     use serde::{Deserialize, Serialize};
     // the user may chose the word 
     pub static MUTEX_SECRET_WORD: Mutex<&str> = Mutex::new("Lorem ipsum dolor sit amet quis");
@@ -71,9 +71,9 @@ pub mod jwt {
     pub async fn validate_jwt_claim(token: &String, pool: &PgPool) -> bool {
         let c = decode_jwt(token).unwrap();
         let now = get_current_timestamp();
-        let is_who = validate_claim(c.cpid, c.paswd, pool).await.unwrap();
+        let is_who = validate_claim_wcpid(c.cpid, c.paswd, pool).await.unwrap();
         let exp = c.exp;
-        if is_who && (now < exp) == true {
+        if is_who && (now < exp) {
             return true
         }else {
             return false
