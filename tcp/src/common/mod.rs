@@ -61,31 +61,39 @@ pub(crate) mod util {
     /// then i writes it to a stream
     pub async fn wffb(
         s: &mut TcpStream,
-        size: i64,
+        _size: i64,
         reader: &mut BufReader<File>
-    ) -> Result<(u8, usize)> {
+    ) -> Result<usize> {
         let mut buf = vec![0; PACKET_SIZE];
         let mut sent = 0usize;
-
+        let mut i = 0;
         loop {
-            let _res = reader.read_buf(&mut buf).await;
+            println!("i");
+            let _res = reader.read(&mut buf).await;
+            println!("i");
             if _res.is_ok() {
                 let read = _res?;
                 if 0usize == read {
                     break;
                 }
+                if read < PACKET_SIZE && (read == _size as usize ){buf.resize_with(read, Default::default);}
                 let size = s.write(&buf).await?;
+                println!("i");
                 if size == 0usize {
                     break;
                 }
+                i+=1;
                 sent+=size;
+                println!("sending: {size}");
             }
         }
         s.flush().await?;
-        assert_eq!(size as usize , sent);
-        let status = s.read_u8().await?;
+        assert_eq!(_size as usize , sent);
+        println!("RW: sent: {sent} in {i} iter;");
+        println!("RW: waiting for confirm to end request");
+        s.write_u8(0).await?;
         
-        Ok((status, sent))
+        Ok(sent)
     }
     
     /// reads a standard (PACKET_SIZE) from stream and 
@@ -97,15 +105,28 @@ pub(crate) mod util {
         let mut wrote = 0usize;
         let mut recvd = 0usize;
         let mut buf = vec![0; PACKET_SIZE];
-
+        let mut i: u8 = 1; 
         loop {
+            if i == 0 {break;}
+            println!("i");
             let size = s.read(&mut buf).await?;
-            if 0usize == 0usize {
+            if 0usize == size  {
                 break;
             }
+            
+            println!("i");
             recvd+=size;
-            writer.write_all(&buf).await?;
-            wrote+=size;
+            if size < PACKET_SIZE {
+                buf.resize_with(size, Default::default);
+                println!("rszd");
+                i=0
+            }
+            println!("i: new buf {}",buf.len());
+            let wrt = writer.write(&buf).await?;
+            writer.flush().await?;
+            println!("i: wote {wrt}");
+            wrote+=wrt;
+            println!("ie");
         }
         assert_eq!(wrote, recvd);
         let status = s.read_u8().await?;

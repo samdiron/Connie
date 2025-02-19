@@ -1,7 +1,4 @@
 use sqlx::{PgPool,Row , Result};
-
-use crate::media::checksum;
-
 use super::checksum::get_size;
 
 
@@ -11,7 +8,7 @@ pub struct Media {
     pub cpid: String,
     pub path: String,
     pub checksum: String,
-    pub host: String,
+    pub in_host: String,
     pub type_: String,
     pub size: i64
 
@@ -22,7 +19,7 @@ pub struct Media {
 impl Media {
     pub async fn post(self, pool: &PgPool) -> Result<u8> {
         let sql = r#"
-            INSERT INTO media(name, cpid, path, checksum, host, type_, size)
+            INSERT INTO media(name, cpid, path, checksum, in_host, type, size)
             VALUES ($1, $2, $3, $4, $5, $6, $7);
         "#;
         let size = get_size(self.path.as_str()).await?;
@@ -31,7 +28,7 @@ impl Media {
             .bind(self.cpid)
             .bind(self.path)
             .bind(self.checksum)
-            .bind(self.host)
+            .bind(self.in_host)
             .bind(self.type_)
             .bind(size)
             .execute(pool)
@@ -66,7 +63,7 @@ impl Media {
         let media = Media {
             name,
             cpid,
-            host,
+            in_host: host,
             path,
             size,
             type_,

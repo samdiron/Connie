@@ -75,6 +75,12 @@ pub async fn handle(
                 }
                 drop(stream);
             }
+            else {
+
+                println!("SERVER: jwt auth invalid");
+                debug!("SERVER: jwt auth invalid");
+
+            }
 
         }
         

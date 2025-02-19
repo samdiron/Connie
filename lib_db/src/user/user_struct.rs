@@ -1,4 +1,5 @@
-use log::warn;
+
+use log::{debug, warn};
 use sha256::digest;
 use sqlx::{PgPool, Result, Row};
 use uuid::Uuid;
@@ -12,12 +13,12 @@ pub struct User {
     pub password: String,
 }
 pub async fn validate_claim_wcpid(
-    name: String,
+    cpid: String,
     paswd: String,
     pool: &PgPool
 ) -> sqlx::Result<bool> {
-    let res = fetch(name.clone(), paswd.clone(), pool).await;
-    if res.is_ok() && res.unwrap().name == name {
+    let res = fetch_wcpid(cpid.clone(), paswd.clone(), pool).await;
+    if res.is_ok() && res.unwrap().cpid == cpid {
         return Ok(true)
     } else {
         warn!("invalid auth");
@@ -41,11 +42,9 @@ pub async fn fetch_wcpid(
     _password: String,
     pool: &PgPool,
 ) -> sqlx::Result<User, sqlx::Error> {
-    let sql = r#"SELECT * FROM "user" WHERE cpid = $1 AND password = $2;"#;
-    let password = sha256::digest(_password);
-    let row = sqlx::query(sql)
-        .bind(cpid)
-        .bind(password)
+    let sql = format!(r#"SELECT * FROM "user" WHERE cpid = '{}' AND password = '{}';"#, cpid , _password);
+    debug!("SERVER_DB: {}",&sql);
+    let row = sqlx::query(&sql)
         .fetch_one(pool)
         .await?;
     let user = User {

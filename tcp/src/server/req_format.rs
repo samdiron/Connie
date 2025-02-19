@@ -22,7 +22,7 @@ impl LoginReq {
         drop(self);
     }
 
-    pub async fn validate(&self, pool: &PgPool) -> Result<bool, sqlE> {
+    pub(in crate::server) async fn validate(&self, pool: &PgPool) -> Result<bool, sqlE> {
         let paswd = self.paswd.clone();
         let cpid = self.cpid.clone();
         let res = validate_claim_wcpid(cpid, paswd, pool).await?;
@@ -53,8 +53,9 @@ impl LoginReq {
         Ok(res)
     }
     
-    pub fn dz(m: Vec<u8>) -> Result<Self, bincode::Error> {
-        let res: Self = bincode::deserialize(&m)?;
+    pub fn dz(buf: Vec<u8>) -> Result<Self, bincode::Error> {
+        let res: Self = bincode::deserialize(&buf)?;
+        drop(buf);
         Ok(res) 
     }
 
@@ -78,8 +79,9 @@ impl JwtReq {
         Ok(res)
     }
 
-    pub fn dz(m: Vec<u8>) -> Result<Self, bincode::Error> {
-        let res: Self = bincode::deserialize(&m)?;
+    pub fn dz(buf: Vec<u8>) -> Result<Self, bincode::Error> {
+        let res: Self = bincode::deserialize(&buf)?;
+        drop(buf);
         Ok(res) 
     }
 

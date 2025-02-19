@@ -93,8 +93,6 @@ pub async fn connect_tcp(pool: &PgPool, conn: Connection, rqm: RQM) -> io::Resul
         stream.write_u8(JWT_AUTH).await?;
         stream.flush().await?;
         debug!("CLIENT: sent auth state {}",JWT_AUTH);
-        println!("CLIENT: sent auth state {}",JWT_AUTH);
-        
 
         let size = stream.write(&request).await?;
         stream.flush().await?;
