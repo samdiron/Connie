@@ -61,35 +61,53 @@ pub(crate) mod util {
     /// then i writes it to a stream
     pub async fn wffb(
         s: &mut TcpStream,
-        _size: i64,
+        _size: u64,
         reader: &mut BufReader<File>
     ) -> Result<usize> {
-        let mut buf = vec![0; PACKET_SIZE];
+        let mut nbuf = vec![0; PACKET_SIZE];
         let mut sent = 0usize;
-        let mut i = 0;
-        loop {
+        let _usize = _size as usize;
+        let _tol = _size as f64 / PACKET_SIZE as f64;
+        let tol = _tol.ceil() as u16;
+        s.write_u16(tol).await?;
+        s.flush().await?;
+        s.write_u64(_size).await?;
+        s.flush().await?;
+        
+        println!("tol: {tol}, size: {_size}");
+        for i in 0..tol {
+
             println!("i");
-            let _res = reader.read(&mut buf).await;
-            println!("i");
-            if _res.is_ok() {
-                let read = _res?;
-                if 0usize == read {
-                    break;
-                }
-                if read < PACKET_SIZE && (read == _size as usize ){buf.resize_with(read, Default::default);}
-                let size = s.write(&buf).await?;
-                println!("i");
-                if size == 0usize {
-                    break;
-                }
-                i+=1;
-                sent+=size;
-                println!("sending: {size}");
+            if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
+                println!("e");
+                let buf_size = _usize - sent;
+                println!("buf_size: {buf_size}");
+                let end_buffer_size = buf_size as u16; 
+                s.write_u16(end_buffer_size).await?;
+                println!("sent buffer size to stream");
+
+                let mut buf = vec![0;buf_size];
+                reader.read_exact(&mut buf).await?;
+                println!("read");
+                s.write_all(&buf).await?;
+                s.flush().await?;
+                println!("write");
+                sent+=buf_size;
+                break;
+                
+            }else {
+                println!("n");
+                reader.read_exact(&mut nbuf).await?;
+                println!("read");
+                s.write_all(&nbuf).await?;
+                println!("write");
+                sent+=PACKET_SIZE
             }
+            println!("sent: {sent} {i} ")
         }
         s.flush().await?;
-        assert_eq!(_size as usize , sent);
-        println!("RW: sent: {sent} in {i} iter;");
+        assert_eq!(_usize , sent);
+        println!("RW: sent: {sent} in {tol} iter;");
         println!("RW: waiting for confirm to end request");
         s.write_u8(0).await?;
         
@@ -105,29 +123,36 @@ pub(crate) mod util {
         let mut wrote = 0usize;
         let mut recvd = 0usize;
         let mut buf = vec![0; PACKET_SIZE];
-        let mut i: u8 = 1; 
-        loop {
-            if i == 0 {break;}
-            println!("i");
-            let size = s.read(&mut buf).await?;
-            if 0usize == size  {
-                break;
+        let tol = s.read_u16().await?;
+        let s_all = s.read_u64().await? as usize;
+        println!("download will take {tol} iter");
+        let mut i = 0u16;
+        if i < tol && tol != 1  {
+            loop {
+                if i == tol || i == tol-1 || (recvd+PACKET_SIZE) > s_all {println!("break");break }
+                s.read_exact(&mut buf).await?;
+                println!("i");
+                writer.write_all(&buf).await?;
+                writer.flush().await?;
+                println!("ie");
+                i+=1;
+                println!("i: {i}");
             }
-            
-            println!("i");
-            recvd+=size;
-            if size < PACKET_SIZE {
-                buf.resize_with(size, Default::default);
-                println!("rszd");
-                i=0
-            }
-            println!("i: new buf {}",buf.len());
-            let wrt = writer.write(&buf).await?;
+        };
+
+        if tol == 1 || i <= tol || (recvd+PACKET_SIZE) > s_all {
+            println!("end tol");
+            let buf_size = s.read_u16().await? as usize;
+            let mut buf = vec![0; buf_size];
+            println!("buf_size: {buf_size}");
+            s.read_exact(&mut buf).await?;
+            println!("read size: {buf_size}");
+            recvd+=buf_size;
+            writer.write_all(&buf).await?;
             writer.flush().await?;
-            println!("i: wote {wrt}");
-            wrote+=wrt;
-            println!("ie");
-        }
+            wrote+=buf_size;
+            println!("buf_size: {buf_size}");
+        };
         assert_eq!(wrote, recvd);
         let status = s.read_u8().await?;
 

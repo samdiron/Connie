@@ -22,7 +22,7 @@ pub async fn handle_client_request(
         let ready = stream.read_u8().await?;
         if ready == READY_STATUS {
             println!("CLIENT: ready to send file");
-            let _size = wffb(stream, request.size , &mut reader).await?;
+            let _size = wffb(stream, request.size as u64 , &mut reader).await?;
             println!("CLIENT: witing for server confirm ~ ");
             status = stream.read_u8().await?;
             assert_eq!(request.size as usize, _size);
