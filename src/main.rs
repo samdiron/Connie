@@ -11,7 +11,7 @@ use lib_db::{
     user::user_struct::{fetch, User}
 };
 use rpassword::read_password;
-use tcp::{client::client::client_process, consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind, types::{GET, POST, RQM}};
+use tcp::{client::client::client_process, consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind, types::{POST, RQM}};
 
 use serde::{Deserialize, Serialize};
 use clap::{command, Parser, Subcommand};
@@ -32,6 +32,9 @@ struct Cli {
     
     #[arg(long)]
     db: Option<String>,
+
+    #[arg(long, short, default_value="false")]
+    tui: Option<bool>,
 
     #[command(subcommand)]
     config: Option<Commands>
@@ -349,31 +352,9 @@ async fn config_handle(command: Commands ) {
             println!("user cpid: {} , name: {}", usr.cpid, usr.username);
             if host.is_some() { 
                 let host = host.unwrap();
+                println!("creating a checksum this will take a moment");
                 let request: RQM = 
-                    if get.is_some() {
-                        let get = get.unwrap();
-                        let _is_type = get.extension();
-                        let type_ = if _is_type.is_none() {
-                            "".to_string()
-                        } else {
-                            let bind = _is_type.unwrap();
-                            let str = bind.to_str().unwrap();
-                            let string = str.to_string();
-                            string
-                        };
-                        let name = get.file_name().unwrap().to_str().unwrap().to_string();
-                        let header = GET.to_string();
-                        let r = RQM {
-                            size: 0,
-                            cpid: usr.cpid.clone(),
-                            name,
-                            type_,
-                            header,
-                            chcksum: "None".to_owned(),
-                            path: None
-                        };
-                        r
-                    }else if post.is_some() {
+                    if post.is_some() {
                         let r = RQM::create(
                             post.unwrap(),
                             POST.to_string(),

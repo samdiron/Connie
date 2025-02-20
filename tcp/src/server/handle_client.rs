@@ -30,14 +30,12 @@ use crate::{
 
 
 async fn login_create_jwt(pool: &PgPool, request: LoginReq) -> Result<String> {
-    println!("SERVER: trying to login client now");
     let is_val = request.validate(pool).await;
     if is_val.is_ok() && is_val.unwrap() == true {
             let jwt = request.token_gen().await.unwrap();
             return Ok(jwt)
     }else {
         
-        println!("invalid login request");
         let e = Error::new(ErrorKind::NotFound, "user not found");
         return Err(e)
     }
@@ -54,20 +52,16 @@ pub async fn handle(
     println!("SERVER: C{addr} will auth with {auth_type}");
     match auth_type {
         JWT_AUTH => {
-            println!("SERVER: jwt login");
             debug!("SERVER: jwt auth request");
             let buf = read_stream(&mut stream, 600).await?;
             if buf.is_empty() {
                 debug!("an empty request was sent");
             }
-            println!("SERVER: recved request with size: {}", buf.len());
             debug!("SERVER: recved request with size: {}", buf.len());
             
             let jwtreq = JwtReq::dz(buf).expect("could not unwrap struct");
-            println!("SERVER: dz request ");
             let is_valid = jwtreq.validate(&pool).await.unwrap();
             if  is_valid {
-                println!("SERVER: valid jwt login");
                 debug!("SERVER: valid jwt login");
                 let status = handle_server_request(jwtreq.request, &mut stream, &pool).await?;
                 if status == 0 {

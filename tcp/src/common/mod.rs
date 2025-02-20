@@ -77,33 +77,25 @@ pub(crate) mod util {
         println!("tol: {tol}, size: {_size}");
         for i in 0..tol {
 
-            println!("i");
             if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
-                println!("e");
+                println!("end tol");
                 let buf_size = _usize - sent;
                 println!("buf_size: {buf_size}");
                 let end_buffer_size = buf_size as u16; 
                 s.write_u16(end_buffer_size).await?;
-                println!("sent buffer size to stream");
 
                 let mut buf = vec![0;buf_size];
                 reader.read_exact(&mut buf).await?;
-                println!("read");
                 s.write_all(&buf).await?;
                 s.flush().await?;
-                println!("write");
                 sent+=buf_size;
                 break;
                 
             }else {
-                println!("n");
                 reader.read_exact(&mut nbuf).await?;
-                println!("read");
                 s.write_all(&nbuf).await?;
-                println!("write");
                 sent+=PACKET_SIZE
             }
-            println!("sent: {sent} {i} ")
         }
         s.flush().await?;
         assert_eq!(_usize , sent);
@@ -125,18 +117,14 @@ pub(crate) mod util {
         let mut buf = vec![0; PACKET_SIZE];
         let tol = s.read_u16().await?;
         let s_all = s.read_u64().await? as usize;
-        println!("download will take {tol} iter");
         let mut i = 0u16;
         if i < tol && tol != 1  {
             loop {
                 if i == tol || i == tol-1 || (recvd+PACKET_SIZE) > s_all {println!("break");break }
                 s.read_exact(&mut buf).await?;
-                println!("i");
                 writer.write_all(&buf).await?;
                 writer.flush().await?;
-                println!("ie");
                 i+=1;
-                println!("i: {i}");
             }
         };
 

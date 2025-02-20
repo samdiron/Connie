@@ -53,8 +53,18 @@ impl RQM {
         let data = f.metadata().await?;
         let size = data.size() as i64;
 
-        let str_type = path.extension().unwrap().to_str().unwrap();
-        let type_ = String::from_str(str_type).unwrap();
+        let ext = path.extension();
+        let type_ = if ext.is_some() {
+            let bind = String::from_str(
+                ext.unwrap()
+                    .to_str()
+                    .unwrap()
+            ).unwrap();
+            bind
+        }else {
+            let bind = String::new(); 
+            bind
+        };
 
         let str_name = path.file_name().unwrap().to_str().unwrap();
         let name = String::from_str(str_name).unwrap();
