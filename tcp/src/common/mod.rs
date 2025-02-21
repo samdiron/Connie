@@ -39,21 +39,32 @@ pub(crate) mod util {
         println!("STREAMREAD: bytes read {:?}", rcve);
         Ok(buf)
     } 
-
+    /// stands for read vector from stream 
+    /// and it only works with wvts
+    pub async fn rvfs (
+        s: &mut TcpStream,
+    ) -> Result<Vec<u8>> {
+        let buf_size = s.read_u16().await?;
+        let mut buf = vec![0; buf_size as usize];
+        s.read_exact(&mut buf).await?;
+        s.write_u8(0).await.unwrap();
+        Ok(buf)
+        
+    }
+    /// stands for write vectr into stream 
+    /// and only works with rvfs
+    /// make sure the input buffer is less than a standard paket size
     pub async fn wvts(
         s: &mut TcpStream,
         mut fbuf: Vec<u8>
-    ) -> Result<usize> {
+    ) -> Result<u8> {
         let all = fbuf.len();
-        let mut sent = 0usize;
-        loop {
-            fbuf.remove(sent);
-            let size = s.write(&fbuf).await?;
-            sent+=size;
-            if sent == all {break;};
-        }
-        assert_eq!(sent, all);
-        Ok(sent)
+        let sized = (all as u16);
+        s.write_u16(sized).await?;
+        s.write_all(&fbuf).await?;
+        let state = s.read_u8().await?;
+        assert_eq!(state, 0);
+        Ok(state)
         
     }
     /// stands for write from file buffer 
