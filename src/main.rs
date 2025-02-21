@@ -4,15 +4,15 @@
 
 use std::{fs::remove_file, io::{stdout, Write}, net::IpAddr, path::PathBuf, process::exit};
 
-use gethostname::gethostname;
+use common_lib::gethostname::gethostname;
 use lib_db::{
     database::{get_conn, DB_CONN},
     server::{host::get_host_info, server_struct::Server},
     user::user_struct::{fetch, User}
 };
-use rpassword::read_password;
 use tcp::{client::client::client_process, consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind, types::{POST, RQM}};
-
+use common_lib::rpassword::read_password;
+use common_lib::sysinfo;
 use serde::{Deserialize, Serialize};
 use clap::{command, Parser, Subcommand};
 use tokio::{fs::File, io::AsyncWriteExt};
@@ -159,6 +159,7 @@ enum Commands {
         email: String,
     }
 }
+
 
 fn get_pass(password: &mut String, name: &str) {
         print!("enter password for {} : ", name);

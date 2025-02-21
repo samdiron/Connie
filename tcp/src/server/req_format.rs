@@ -3,6 +3,13 @@ use lib_db::{jwt::{create, exp_gen, validate_jwt_claim, Claim}, types::{jwtE, sq
 use serde::{Deserialize, Serialize};
 use bincode;
 
+#[derive(Deserialize, Serialize)]
+pub struct Chead {
+    pub jwt: String,
+    pub cpid: String,
+    pub header: String,
+}
+
 
 #[derive(Deserialize, Serialize)]
 pub struct JwtReq {
@@ -87,3 +94,27 @@ impl JwtReq {
 
 } 
 
+impl Chead {
+    
+    pub fn drop(self) {
+        drop(self);
+    }
+    
+    pub(in crate::server) async fn validate(&self, pool: &PgPool) -> Result<bool, sqlE> {
+        let token = &self.jwt;
+        let state = validate_jwt_claim(token, pool).await;
+        Ok(state)
+    }
+
+    pub fn sz(self) -> Result<Vec<u8>, bincode::Error> {
+        let res: Vec<u8> = bincode::serialize(&self)?;
+        self.drop();
+        Ok(res)
+    }
+
+    pub fn dz(buf: Vec<u8>) -> Result<Self, bincode::Error> {
+        let res: Self = bincode::deserialize(&buf)?;
+        drop(buf);
+        Ok(res) 
+    }
+}

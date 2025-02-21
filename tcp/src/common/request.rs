@@ -1,4 +1,4 @@
-use lib_db::media::checksum;
+use lib_db::media::{checksum, fetch::Smedia};
 use tokio::fs::File;
 use std::{
     os::unix::fs::MetadataExt,
@@ -24,6 +24,7 @@ pub const SIGNIN_CRED: u8 = 2;
 
 pub const PACKET_SIZE: usize = 65533usize;
 
+pub const FETCH: u8 = 14;
 
 pub const GET: &str = "!G";
 
@@ -32,7 +33,6 @@ pub const POST: &str = "!P";
 pub const DELETE: &str = "!D";
 
 pub(crate) use crate::server::req_format;
-
 
 
 #[derive(Deserialize, Serialize)]
@@ -46,6 +46,7 @@ pub struct RQM {
     pub chcksum: String,
     pub path: Option<String>
 }
+
 
 impl RQM {
     pub async fn create(path: PathBuf, header: String, cpid: String) -> std::io::Result<Self> {

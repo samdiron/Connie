@@ -1,8 +1,10 @@
 use common_lib::cheat_sheet::gethostname;
+use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Result, Row};
 
 
 /// the s stand for short 
+#[derive(Serialize, Deserialize)]
 pub struct Smedia {
     pub name: String,
     pub type_: String,
@@ -29,3 +31,4 @@ pub async fn get_user_files(
     } 
     Ok(media_v)
 }
+

@@ -16,7 +16,7 @@ pub mod types {
 
 pub mod jwt {
     
-    pub const DURATION: u64 = 864000;
+    pub const DURATION: u64 = 86400;
 
     use std::sync::{LazyLock, Mutex};
 
