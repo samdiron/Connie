@@ -1,4 +1,4 @@
-use lib_db::types::PgPool;
+use lib_db::{media::{self, fetch::{self, Smedia}}, types::PgPool, user::user_struct::fetch};
 use log::{debug, info};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -12,15 +12,12 @@ use std::{
 use crate::{
     common::{
         request::{
-            JWT_AUTH,
-            LOGIN_CRED,
-            UNAUTHORIZED,
+            FETCH, JWT_AUTH, LOGIN_CRED, UNAUTHORIZED
         },
-        util::read_stream
+        util::{read_stream, wvts}
     },
     server::{
-        serving_request::handle_server_request,
-        req_format::{LoginReq, JwtReq},
+        req_format::{Chead, JwtReq, LoginReq}, serving_request::handle_server_request
 
     }
 };
@@ -106,6 +103,22 @@ pub async fn handle(
 
             }
 
+        } 
+        FETCH => {
+            println!("SERVER: fetch request");
+            let mut buf = vec![0;300];
+            let size = stream.read(&mut buf).await?;
+            let request = Chead::dz(buf).expect("could not deserialze");
+            let is_val = request.validate(&pool).await.unwrap();
+            if is_val {
+                let data: Vec<Smedia> = media::fetch::get_user_files(request.cpid, &pool).await.unwrap();
+                for d in data {
+                    let vec = bincode::serialize(&d).unwrap();
+                    let s = wvts(&mut stream, vec).await?;
+                    assert_eq!(s, 0);
+
+                }
+            }
         }
         _=> {debug!("client sent a invalid auth header: {auth_type}")}
     }
