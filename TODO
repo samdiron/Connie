@@ -1,10 +1,10 @@
 multicast protocol UDP
 protocol at multicast.lib
+replace surrealdb with for the db unit mysql and sqlite for normal units
 
+postgresql
 
-learn surrealql
-
-
+//TODO: create a install.sh file create a Connie.service create a root dir instead of a user home 
 
 error codes {
 4 int 
@@ -25,6 +25,15 @@ first int {
         mac uncompatiple 1,
         windows uncompatiple 2
         uncompatiple os 3,
+    }
+    program error 2 {
+        db_related 0,
+        unable to to run a function 1,
+        multicast fail 2,
+        tcp error 3,
+        udp error 4,
+        shit code 5"we will see alot of this ",
+
     }
 }
 

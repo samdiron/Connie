@@ -1,7 +1,4 @@
-#![allow(clippy::needless_return)]
-#[allow(clippy::deref_addrof)]
-pub mod dependencies;
-pub mod first;
 pub mod init;
-mod tests;
-mod common;
+pub(crate) mod get_config;
+pub(crate) mod check_path;
+pub(crate) mod checks;

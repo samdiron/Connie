@@ -1,6 +1,2 @@
-rocksdb dependency
-clang/llvm: 19
 ffmpeg -v 7.0
-
-waiting to rocks db pass tests
-and rocksdb rust bindings to pass
+postgres

@@ -3,23 +3,6 @@ name = "lib_start"
 version = "0.1.0"
 edition = "2021"
 
-
 [dependencies]
-sysinfo = "0.32.0"
-surreal_db = { path = "../surreal_db" }
-multicast = { path = "../protocol/multicast/" }
-#serde_yaml = "0.9.34"
-log = "0.4.22"
-rpassword = "7.3.1"
-num_cpus = "1.16.0"
-local-ip-address = "0.6.2"
-tokio = "1.39.2"
-fs-mistrust = "0.8.0"
-directories = "5.0"
-[dependencies.uuid]
-version = "1.10.0"
-features = [
-    "v4",                # Lets you generate random UUIDs
-    "fast-rng",          # Use a faster (but still sufficiently random) RNG
-    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
-]
+common_lib = { path = "../common_lib/"}
+lib_db = { path = "../lib_db/" }

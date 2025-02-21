@@ -3,18 +3,42 @@ name = "Connie"
 version = "0.1.0"
 edition = "2021"
 
+[profile.dev]
+opt-level = 2
+debug = true
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = "fat"
+
+[profile.client]
+inherits = "release"
+opt-level = "s"
+strip = "debuginfo"
+codegen-units = 1
+lto = "fat"
+
+
 [workspace]
 resolver = "1"
-members = ["surreal_db", "lib_start", "protocol/tcp", "common_lib", "protocol/multicast"]
+members = [
+  "common_lib",
+  "lib_db",
+  "lib_start",
+  "tcp",
+]
 
 [dependencies]
-rpassword = "7.3.1"
-local-ip-address = "0.6.2"
-rcgen = "0.13.1"
-lib_start = { path = "./lib_start" }
-#ratatui = "0.28.1"
-clap = { version = "4.5.20", features = ["cargo"] }
 tokio = "1.40.0"
+tcp = { path = "./tcp/" }
+lib_db = { path = "./lib_db/" }
+lib_start = { path = "./lib_start/" }
+common_lib = { path = "./common_lib/" }
 
-#
-# #i know it's just for a commit not cuz i wanted it
+clap = { version = "4.5.27", features = ["derive"] }
+serde = { version = "1.0.217", features = ["derive"] }
+toml = "0.8.19"
+rpassword = "7.3.1"
+gethostname = "1.0.0"
+sysinfo = "0.33.1"
