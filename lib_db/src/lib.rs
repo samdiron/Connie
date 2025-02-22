@@ -5,7 +5,6 @@ pub mod fncs;
 mod migrations;
 pub mod server;
 pub mod user;
-
 pub mod types {
     pub use crate::jwt::Claim;
     pub use jsonwebtoken::errors::Error as jwtE;

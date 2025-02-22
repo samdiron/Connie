@@ -7,7 +7,6 @@ use bincode;
 pub struct Chead {
     pub jwt: String,
     pub cpid: String,
-    pub header: String,
 }
 
 

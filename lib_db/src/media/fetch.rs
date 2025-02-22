@@ -1,4 +1,4 @@
-use common_lib::cheat_sheet::gethostname;
+use common_lib::{bincode, cheat_sheet::gethostname};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Result, Row};
 
@@ -17,7 +17,8 @@ pub async fn get_user_files(
     pool: &PgPool
 ) -> Result<Vec<Smedia>> {
     let host = gethostname();
-    let sql = format!("SELECT (name, type, checksum, size) FROM media WHERE cpid = {} AND in_host = {:?} ;",&cpid ,host);
+    let sql = format!("SELECT * FROM media WHERE cpid = '{}' AND in_host = '{}' ;",&cpid ,host.to_str().unwrap());
+    println!("sql: {}",&sql);
     let _res = sqlx::query(&sql).fetch_all(pool).await?;
     let mut media_v: Vec<Smedia> = Vec::new();
     for row in _res {
@@ -31,4 +32,17 @@ pub async fn get_user_files(
     } 
     Ok(media_v)
 }
+impl Smedia {
+    pub fn drop(s: Self) {
+        drop(s);
+    }
 
+    pub fn dz(buf: Vec<u8>) -> Result<Self, bincode::Error> {
+        let bind = bincode::deserialize(&buf)?;
+        Ok(bind)
+    }
+    pub fn sz(s: Self) -> Result<Vec<u8>, bincode::Error> {
+        let buf = bincode::serialize(&s)?;
+        Ok(buf)
+    }
+}
