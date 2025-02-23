@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 common_lib = { path = "../common_lib/"}
 lib_db = { path = "../lib_db/" }
+serde = { version = "1.0.217", features = ["derive"] }
