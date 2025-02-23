@@ -38,8 +38,4 @@ common_lib = { path = "./common_lib/" }
 
 clap = { version = "4.5.27", features = ["derive"] }
 serde = { version = "1.0.217", features = ["derive"] }
-toml = "0.8.19"
-rpassword = "7.3.1"
-gethostname = "1.0.0"
-sysinfo = "0.33.1"
 
