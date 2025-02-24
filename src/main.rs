@@ -10,7 +10,7 @@ use lib_db::{
     server::{host::get_host_info, server_struct::Server},
     user::{user_jwts::get_jwt, user_struct::{fetch, User}}
 };
-use tcp::{client::client::client_process, consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind, types::{POST, RQM}};
+use tcp::{client::{client::client_process, fetcher}, consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind, types::{POST, RQM}};
 use common_lib::rpassword::read_password;
 use common_lib::sysinfo;
 use serde::{Deserialize, Serialize};

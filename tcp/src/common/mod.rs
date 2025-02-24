@@ -56,10 +56,10 @@ pub(crate) mod util {
     /// make sure the input buffer is less than a standard paket size
     pub async fn wvts(
         s: &mut TcpStream,
-        mut fbuf: Vec<u8>
+        fbuf: Vec<u8>
     ) -> Result<u8> {
         let all = fbuf.len();
-        let sized = (all as u16);
+        let sized = all as u16;
         s.write_u16(sized).await?;
         s.write_all(&fbuf).await?;
         let state = s.read_u8().await?;

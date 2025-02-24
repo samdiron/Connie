@@ -1,9 +1,10 @@
-use lib_db::{media::{self, fetch::{self, Smedia}}, types::PgPool, user::user_struct::fetch};
+use lib_db::{media::{self, fetch::Smedia}, types::PgPool};
 use common_lib::log::{debug, info};
 use common_lib::tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream
 };
+use common_lib::bincode;
 use std::{
     io::{Error, ErrorKind, Result},
     net::SocketAddr
@@ -107,7 +108,7 @@ pub async fn handle(
         FETCH => {
             println!("SERVER: fetch request");
             let mut buf = vec![0;600];
-            let size = stream.read(&mut buf).await?;
+            let _size = stream.read(&mut buf).await?;
             let request = Chead::dz(buf).expect("could not deserialze");
             let is_val = request.validate(&pool).await.unwrap();
             if is_val {

@@ -88,7 +88,7 @@ mod tests {
     use std::time;
     #[test]
     fn db_conn_speed() {
-        tokio::runtime::Builder::new_multi_thread()
+        common_lib::tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .build()
             .unwrap()
