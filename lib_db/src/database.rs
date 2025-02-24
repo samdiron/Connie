@@ -1,6 +1,6 @@
 
 pub use common_lib::path::DB_CONN;
-use log::info;
+use common_lib::log::info;
 use sqlx::{PgPool, Result};
 use std::io::Read;
 

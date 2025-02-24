@@ -1,7 +1,7 @@
 use std::io::Result;
 
-use log::debug;
-use tokio::{fs::File, io::{AsyncReadExt, BufReader}, net::TcpStream};
+use common_lib::log::debug;
+use common_lib::tokio::{fs::File, io::{AsyncReadExt, BufReader}, net::TcpStream};
 
 use crate::{common::{request::{POST, READY_STATUS}, util::wffb}, types::RQM};
 

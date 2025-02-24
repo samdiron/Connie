@@ -1,5 +1,5 @@
 
-use log::{debug, warn};
+use common_lib::log::{debug, warn};
 use sha256::digest;
 use sqlx::{PgPool, Result, Row};
 use uuid::Uuid;
