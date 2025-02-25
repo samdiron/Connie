@@ -107,6 +107,7 @@ pub async fn handle(
         } 
         FETCH => {
             println!("SERVER: fetch request");
+
             let mut buf = vec![0;600];
             let _size = stream.read(&mut buf).await?;
             let request = Chead::dz(buf).expect("could not deserialze");

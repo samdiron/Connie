@@ -9,3 +9,4 @@ serde = "1.0.217"
 common_lib = { path = "../common_lib/"}
 lib_db = {path = "../lib_db/"}
 tokio-rustls = "0.26.1"
+webpki-roots = "0.26.8"

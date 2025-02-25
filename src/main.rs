@@ -281,7 +281,8 @@ async fn config_handle(command: Commands ) {
             }
         }
         Commands::BIND { ip, secret, port, server } => {
-
+            use common_lib::env_logger;
+            env_logger::init();
             let pool =  get_conn().await.unwrap();
             let pool = &pool;
             let mut passwd = String::new();

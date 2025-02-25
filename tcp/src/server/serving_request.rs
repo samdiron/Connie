@@ -26,7 +26,7 @@ pub async  fn handle_server_request(
             debug!("SERVER: handling( client post request )");
             let mut path = PathBuf::new();
             path.push(DATA_DIR);
-            let name = lib_db::fncs::random_string(8);
+            let name = lib_db::fncs::random_string(16);
             path.push(name);
             let f = File::create_new(&path).await?;
             println!("SERVER: created {:#?} ",&path);

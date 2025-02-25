@@ -1,8 +1,6 @@
 
 #[allow(dead_code)]
 pub(crate) mod request;
-pub(crate) mod handshake;
-
 
 #[allow(dead_code)]
 pub(crate) mod util {
@@ -59,6 +57,8 @@ pub(crate) mod util {
         fbuf: Vec<u8>
     ) -> Result<u8> {
         let all = fbuf.len();
+        assert!(all < PACKET_SIZE);
+
         let sized = all as u16;
         s.write_u16(sized).await?;
         s.write_all(&fbuf).await?;
