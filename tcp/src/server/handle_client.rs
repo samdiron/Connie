@@ -1,4 +1,4 @@
-use lib_db::{media::{self, fetch::{self, Smedia}}, types::PgPool, user::user_struct::fetch};
+use lib_db::{media::{self, fetch::Smedia}, types::PgPool};
 use log::{debug, info};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -107,7 +107,7 @@ pub async fn handle(
         FETCH => {
             println!("SERVER: fetch request");
             let mut buf = vec![0;300];
-            let size = stream.read(&mut buf).await?;
+            let _size = stream.read(&mut buf).await?;
             let request = Chead::dz(buf).expect("could not deserialze");
             let is_val = request.validate(&pool).await.unwrap();
             if is_val {

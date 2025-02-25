@@ -1,4 +1,4 @@
-use lib_db::media::{checksum, fetch::Smedia};
+use lib_db::media::checksum;
 use tokio::fs::File;
 use std::{
     os::unix::fs::MetadataExt,

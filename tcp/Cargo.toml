@@ -11,3 +11,4 @@ log = "0.4.25"
 common_lib = { path = "../common_lib/"}
 lib_db = {path = "../lib_db/"}
 tokio-rustls = "0.26.1"
+webpki-roots = "0.26.8"
