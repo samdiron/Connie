@@ -11,7 +11,7 @@ use lib_db::{
         user_struct::User
     }
 };
-use log::debug;
+use common_lib::log::debug;
 
 use crate::common::request::RQM;
 

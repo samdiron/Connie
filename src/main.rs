@@ -8,9 +8,9 @@ use common_lib::gethostname::gethostname;
 use lib_db::{
     database::{get_conn, DB_CONN},
     server::{host::get_host_info, server_struct::Server},
-    user::user_struct::{fetch, User}
+    user::{user_jwts::get_jwt, user_struct::{fetch, User}}
 };
-use tcp::{client::client::client_process, consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind, types::{POST, RQM}};
+use tcp::{client::{client::client_process, fetcher}, consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind, types::{POST, RQM}};
 use common_lib::rpassword::read_password;
 use common_lib::sysinfo;
 use serde::{Deserialize, Serialize};
@@ -78,6 +78,9 @@ enum Commands {
 
         #[arg(long, short)]
         host: Option<String>,
+        
+        #[arg(long, short)]
+        fetch_files: Option<bool>,
 
         #[arg(long, short)]
         get: Option<PathBuf>,
@@ -345,14 +348,17 @@ async fn config_handle(command: Commands ) {
                 }
             } 
         }
-        Commands::REQUEST { ip, port, host, get, post, user} => {
+        Commands::REQUEST { ip, port, host, get, post, fetch_files ,user} => {
             let _pool = get_conn().await.unwrap();
             let pool = &_pool;
             let mut passwd = String::new();
             get_pass(&mut passwd, user.as_str());
             let usr = fetch(user, passwd, pool).await.expect("could not fetch that user");
             println!("user cpid: {} , name: {}", usr.cpid, usr.username);
-            if host.is_some() { 
+            if fetch_files.is_some() && port.is_some() && ip.is_some()  &&  host.is_some() {
+                let jwt = get_jwt(host.unwrap(), usr.cpid.clone(), pool).await.unwrap();
+                fetcher::get_files(usr, ip.unwrap(), port.unwrap(), jwt).await.unwrap();
+            } else if host.is_some() && post.is_some() { 
                 let host = host.unwrap();
                 println!("creating a checksum this will take a moment");
                 let request: RQM = 

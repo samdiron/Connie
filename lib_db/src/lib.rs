@@ -5,7 +5,6 @@ pub mod fncs;
 mod migrations;
 pub mod server;
 pub mod user;
-
 pub mod types {
     pub use crate::jwt::Claim;
     pub use jsonwebtoken::errors::Error as jwtE;
@@ -89,7 +88,7 @@ mod tests {
     use std::time;
     #[test]
     fn db_conn_speed() {
-        tokio::runtime::Builder::new_multi_thread()
+        common_lib::tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .build()
             .unwrap()

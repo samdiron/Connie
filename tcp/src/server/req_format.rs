@@ -1,13 +1,12 @@
 use crate::common::request::RQM;
 use lib_db::{jwt::{create, exp_gen, validate_jwt_claim, Claim}, types::{jwtE, sqlE, PgPool}, user::user_struct::validate_claim_wcpid};
 use serde::{Deserialize, Serialize};
-use bincode;
+use common_lib::bincode;
 
 #[derive(Deserialize, Serialize)]
 pub struct Chead {
     pub jwt: String,
     pub cpid: String,
-    pub header: String,
 }
 
 
