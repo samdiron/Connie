@@ -25,33 +25,40 @@ else
 fi
 sudo mkdir /opt/Connie
 echo "created opt/Connie/"
-
-sudo mkdir /opt/Connie/metadata
+chown -c  -R $USER /opt/Connie
+mkdir /opt/Connie/metadata
 echo "created: /opt/Connie/metadata"
 
-sudo mkdir /opt/Connie/tmp
+mkdir /opt/Connie/tmp
 echo "created: /opt/Connie/tmp/"
 
-sudo mkdir /opt/Connie/logs
+mkdir /opt/Connie/logs
 echo "created: /opt/Connie/logs"
 
-sudo mkdir /opt/Connie/bin
+mkdir /opt/Connie/bin
 echo "created: /opt/Connie/bin"
 
-sudo mkdir /opt/Connie/conf
+mkdir /opt/Connie/conf
 echo "created: /opt/Connie/conf"
 
+mkdir /opt/Connie/conf/certs/
+
+cp openssl_script.sh /opt/Connie/bin/
+chmod +x /opt/Connie/bin/openssl_script.sh
 
 # cp ./connie.service /lib/systemd/system/connie.service
 # echo "created /lib/systemd/system/connie.service"
 
 if [ $type == "S" ] || [ $type == "s" ] ; then 
-  sudo cp ./target/client/Connie /opt/Connie/bin/cie
+  cp ./target/client/Connie /opt/Connie/bin/cie
+  chmod +x /opt/Connie/bin/cie
 elif [ $type = "dev" ] || [ $type == "DEV" ]; then 
-  sudo rm /opt/Connie/bin/cie
-  sudo cp ./target/debug/Connie /opt/Connie/bin/cie-debug
+  rm /opt/Connie/bin/cie
+  cp ./target/debug/Connie /opt/Connie/bin/cie-debug
+  chmod +x /opt/Connie/bin/cie-debug
 else
-  sudo cp ./target/client/Connie /opt/Connie/bin/cie  
+  cp ./target/client/Connie /opt/Connie/bin/cie  
+  chmod +x /opt/Connie/bin/cie
 fi
 
 echo "now you can export /opt/Connie/bin/ into your PATH :) "

@@ -4,12 +4,13 @@
 
 use std::{fs::remove_file, io::{stdout, Write}, net::IpAddr, path::PathBuf, process::exit};
 
-use common_lib::gethostname::gethostname;
+use common_lib::{env_logger, gethostname::gethostname};
 use lib_db::{
     database::{get_conn, DB_CONN},
     server::{host::get_host_info, server_struct::Server},
     user::{user_jwts::get_jwt, user_struct::{fetch, User}}
 };
+use lib_start::certs;
 use tcp::{client::{client::client_process, fetcher}, consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind, types::{POST, RQM}};
 use common_lib::rpassword::read_password;
 use common_lib::sysinfo;
@@ -33,11 +34,17 @@ struct Cli {
     #[arg(long)]
     db: Option<String>,
 
+    #[command(subcommand)]
+    config: Option<Commands>,
+
     #[arg(long, short, default_value="false")]
     tui: Option<bool>,
 
-    #[command(subcommand)]
-    config: Option<Commands>
+    #[arg(long, short, default_value="false")]
+    verbose: Option<bool>,
+
+    #[arg(long, short, default_value = "false")]
+    generate_certs: Option<bool>,
 
 }
 
@@ -46,6 +53,13 @@ struct Cli {
 
 #[derive(Debug, Deserialize, Serialize,Subcommand)]
 enum Commands {
+
+    DEV {
+        #[arg(long,short)]
+        tls_config: Option<bool>,
+        #[arg(long,short)]
+        env_logger: Option<bool>,
+    },
      
     BIND {
 
@@ -383,6 +397,16 @@ async fn main() {
     //start of the program 
 
     let _cli = Cli::parse();
+    
+    if _cli.generate_certs.is_some() && _cli.generate_certs.unwrap() {
+        certs::generate_certs();
+    }
+
+    if _cli.verbose.is_some() && _cli.verbose.unwrap() {
+        env_logger::Builder::new()
+            .parse_filters("trace")
+            .init();
+    }
     
 
 

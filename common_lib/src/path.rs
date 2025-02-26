@@ -5,6 +5,9 @@ pub const DATA_DIR: &str = "/opt/Connie/metadata";
 
 pub const CERTIFICATE_INFO: &str = "/opt/Connie/conf/cert.info.toml";
 
+pub const CERIFICATE_PATH: &str = "/opt/Connie/conf/certs/cert.pem";
+pub const PRIVATEKEY_PATH: &str = "/opt/Connie/conf/certs/key.pem";
+
 
 //
 // pub const SERVER_CRED: &str = "/opt/Connie/conf/server_ident.toml";
