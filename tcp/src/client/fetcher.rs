@@ -24,7 +24,7 @@ pub async fn get_files(u: User, ip: IpAddr, port: u16, jwt: String) -> Result<()
     for _i in 1..items {
         let buf = rvfs(&mut stream).await?;
         let media: Smedia = Smedia::dz(buf).unwrap();
-        println!("{_i}: name: {}, size: {}, checksum: {} ;",media.name, media.size, media.checksum);
+        println!("{_i}: name: {},\n size: {}, checksum: {} ;",media.name, media.size, media.checksum);
 
     }
 

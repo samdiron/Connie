@@ -96,13 +96,14 @@ pub async fn connect_tcp(pool: &PgPool, conn: Connection, rqm: RQM) -> io::Resul
 
         let size = stream.write(&request).await?;
         stream.flush().await?;
-        println!("CLIENT: sent full request with size: {:?}",size);
+        info!("CLIENT: sent full request with size: {:?}",size);
         let state = handle_client_request(&mut stream, rqm).await.unwrap();
         if state == 0 {
             println!("request request was succesful");
         }
         else {
             warn!("a request was unsuccesful");
+            println!("a request was unsuccesful");
             return Ok(1);
         }
         

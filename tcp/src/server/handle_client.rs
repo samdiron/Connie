@@ -69,7 +69,6 @@ pub async fn handle(
             }
             else {
 
-                println!("SERVER: jwt auth invalid");
                 debug!("SERVER: jwt auth invalid");
 
             }
@@ -88,7 +87,7 @@ pub async fn handle(
                 debug!("SERVER: login about to compleate");
                 stream.write_u8(0).await?;
                 stream.write_all(jwt.as_bytes()).await?;
-                println!("sent: {} bytes", jwt.len());
+                debug!("sent: {} bytes", jwt.len());
                 stream.flush().await?;
                 let confirm = stream.read_u8().await?;
                 if confirm  == 0 { debug!("SERVER: client login succsefully")};
@@ -106,7 +105,7 @@ pub async fn handle(
 
         } 
         FETCH => {
-            println!("SERVER: fetch request");
+            info!("SERVER: fetch request");
 
             let mut buf = vec![0;600];
             let _size = stream.read(&mut buf).await?;
@@ -124,7 +123,7 @@ pub async fn handle(
                 }
             }
         }
-        _=> {debug!("client sent a invalid auth header: {auth_type}")}
+        _=> {info!("client sent a invalid auth header: {auth_type}")}
     }
 
     

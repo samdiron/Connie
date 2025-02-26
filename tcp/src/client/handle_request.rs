@@ -1,6 +1,6 @@
 use std::io::Result;
 
-use common_lib::log::debug;
+use common_lib::log::{debug, info, warn};
 use common_lib::tokio::{fs::File, io::{AsyncReadExt, BufReader}, net::TcpStream};
 
 use crate::{common::{request::{POST, READY_STATUS}, util::wffb}, types::RQM};
@@ -15,21 +15,22 @@ pub async fn handle_client_request(
 ) -> Result<u8> {
     let mut status: u8 = 0; 
     if request.header == POST.to_owned() {
-        println!("CLIENT: opening file");
         let f = File::open(request.path.unwrap()).await?;
         debug!("post file is open");
         let mut reader = BufReader::new(f);
         let ready = stream.read_u8().await?;
         if ready == READY_STATUS {
-            println!("CLIENT: ready to send file");
+            debug!("CLIENT: ready to send file");
             let _size = wffb(stream, request.size as u64 , &mut reader).await?;
-            println!("CLIENT: witing for server confirm ~ ");
+            debug!("CLIENT: witing for server confirm ~ ");
             status = stream.read_u8().await?;
             assert_eq!(request.size as usize, _size);
             if status == 0 {
                 println!("CLIENT: file sent succefully; size of file {}",request.size);
+                info!("CLIENT: file sent succefully; size of file {}",request.size);
             }else {
                 println!("CLIENT:ERROR: server did not recv data the same");
+                warn!("CLIENT:ERROR: server did not recv data the same");
             }
         }
         

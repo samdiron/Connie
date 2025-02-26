@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::{fs::File, io::{Result, Write}, process::Command, time::{self, SystemTime}};
 
 use common_lib::{cheat_sheet::gethostname, path::CERTIFICATE_INFO};

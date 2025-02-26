@@ -3,8 +3,8 @@
 #![allow(unused_variables)]
 
 use std::{fs::remove_file, io::{stdout, Write}, net::IpAddr, path::PathBuf, process::exit};
-
-use common_lib::{env_logger, gethostname::gethostname};
+use env_logger;
+use common_lib::{gethostname::gethostname, log::debug};
 use lib_db::{
     database::{get_conn, DB_CONN},
     server::{host::get_host_info, server_struct::Server},
@@ -40,8 +40,8 @@ struct Cli {
     #[arg(long, short, default_value="false")]
     tui: Option<bool>,
 
-    #[arg(long, short, default_value="false")]
-    verbose: Option<bool>,
+    #[arg(long, short, default_value="1")]
+    verbose: Option<u8>,
 
     #[arg(long, short, default_value = "false")]
     generate_certs: Option<bool>,
@@ -268,7 +268,7 @@ async fn config_handle(command: Commands ) {
                     }else {
                         80
                     };
-                    let ip = if ip.is_none() {
+                    let ip = if ip.is_some() {
                         let ip = ip.unwrap();
                         ip.to_string()
                     } else {
@@ -295,8 +295,6 @@ async fn config_handle(command: Commands ) {
             }
         }
         Commands::BIND { ip, secret, port, server } => {
-            use common_lib::env_logger;
-            env_logger::init();
             let pool =  get_conn().await.unwrap();
             let pool = &pool;
             let mut passwd = String::new();
@@ -368,7 +366,7 @@ async fn config_handle(command: Commands ) {
             let mut passwd = String::new();
             get_pass(&mut passwd, user.as_str());
             let usr = fetch(user, passwd, pool).await.expect("could not fetch that user");
-            println!("user cpid: {} , name: {}", usr.cpid, usr.username);
+            debug!("user cpid: {} , name: {}", usr.cpid, usr.username);
             if fetch_files.is_some() && port.is_some() && ip.is_some()  &&  host.is_some() {
                 let jwt = get_jwt(host.unwrap(), usr.cpid.clone(), pool).await.unwrap();
                 fetcher::get_files(usr, ip.unwrap(), port.unwrap(), jwt).await.unwrap();
@@ -395,24 +393,39 @@ async fn config_handle(command: Commands ) {
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     //start of the program 
-
     let _cli = Cli::parse();
     
     if _cli.generate_certs.is_some() && _cli.generate_certs.unwrap() {
         certs::generate_certs();
     }
+    if _cli.verbose.is_some() {
+        match _cli.verbose.unwrap() {
+            0 => {
+            env_logger::Builder::new()
+                    .parse_filters("WARN")
+                    .parse_filters("ERROR")
+                    .init();
+            }
+            1 => {
+            env_logger::Builder::new()
+                    .parse_filters("WARN")
+                    .parse_filters("ERROR")
+                    .parse_filters("INFO")
+                    .init();
+            }
+            2 => {
+            env_logger::Builder::new()
+                    .parse_filters("WARN")
+                    .parse_filters("ERROR")
+                    .parse_filters("INFO")
+                    .parse_filters("DEBUG")
+                    .init();
+            }
+            _ => {}
+        }
 
-    if _cli.verbose.is_some() && _cli.verbose.unwrap() {
-        env_logger::Builder::new()
-            .parse_filters("trace")
-            .init();
     }
     
-
-
-
-
-
     
     if let Some(command) = _cli.config {
         config_handle(command).await;

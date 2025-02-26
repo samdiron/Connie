@@ -4,7 +4,7 @@ pub(crate) mod request;
 
 #[allow(dead_code)]
 pub(crate) mod util {
-    use common_lib::tokio::{
+    use common_lib::{log::info, tokio::{
         fs::File,
         io::{
             AsyncReadExt,
@@ -14,7 +14,7 @@ pub(crate) mod util {
             Result
         },
         net::TcpStream
-    };
+    }};
     use super::request::PACKET_SIZE;
     // reads the amount of b from a stream and returns the data read in a Vec<u8>
     // this function is made only for small reads it will not work as expected with larg buffers
@@ -34,7 +34,7 @@ pub(crate) mod util {
         if buf.len() > rcve {
             buf.resize_with(rcve, Default::default);
         }
-        println!("STREAMREAD: bytes read {:?}", rcve);
+        info!("STREAMREAD: bytes read {:?}", rcve);
         Ok(buf)
     } 
     /// stands for read vector from stream 
@@ -85,13 +85,13 @@ pub(crate) mod util {
         s.write_u64(_size).await?;
         s.flush().await?;
         
-        println!("tol: {tol}, size: {_size}");
+        info!("tol: {tol}, size: {_size}");
         for i in 0..tol {
 
             if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
-                println!("end tol");
+                info!("end tol");
                 let buf_size = _usize - sent;
-                println!("buf_size: {buf_size}");
+                info!("buf_size: {buf_size}");
                 let end_buffer_size = buf_size as u16; 
                 s.write_u16(end_buffer_size).await?;
 
@@ -110,8 +110,8 @@ pub(crate) mod util {
         }
         s.flush().await?;
         assert_eq!(_usize , sent);
-        println!("RW: sent: {sent} in {tol} iter;");
-        println!("RW: waiting for confirm to end request");
+        info!("RW: sent: {sent} in {tol} iter;");
+        info!("RW: waiting for confirm to end request");
         s.write_u8(0).await?;
         
         Ok(sent)
@@ -140,17 +140,17 @@ pub(crate) mod util {
         };
 
         if tol == 1 || i <= tol || (recvd+PACKET_SIZE) > s_all {
-            println!("end tol");
+            info!("end tol");
             let buf_size = s.read_u16().await? as usize;
             let mut buf = vec![0; buf_size];
-            println!("buf_size: {buf_size}");
+            info!("buf_size: {buf_size}");
             s.read_exact(&mut buf).await?;
-            println!("read size: {buf_size}");
+            info!("read size: {buf_size}");
             recvd+=buf_size;
             writer.write_all(&buf).await?;
             writer.flush().await?;
             wrote+=buf_size;
-            println!("buf_size: {buf_size}");
+            info!("buf_size: {buf_size}");
         };
         assert_eq!(wrote, recvd);
         let status = s.read_u8().await?;

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::{path::{Path, PathBuf}, sync::Arc};
 
 use common_lib::path::{CERIFICATE_PATH, PRIVATEKEY_PATH};
@@ -6,7 +7,7 @@ use tokio_rustls::rustls::{
         pem::PemObject,
         CertificateDer,
         PrivateKeyDer
-    }, KeyLog, KeyLogFile, ServerConfig, DEFAULT_VERSIONS
+    },KeyLogFile, ServerConfig, DEFAULT_VERSIONS
 };
 
 use rustls::crypto::aws_lc_rs as provider;

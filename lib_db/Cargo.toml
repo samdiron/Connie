@@ -8,6 +8,7 @@ sha256 = "1.5.0"
 sqlx = { version = "0.8.2", features = [
   "postgres",
   "runtime-tokio-rustls",
+  "sqlite",
   "chrono",
   "macros",
 ] }
