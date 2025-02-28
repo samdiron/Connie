@@ -5,13 +5,19 @@ pub mod fncs;
 mod migrations;
 pub mod server;
 pub mod user;
+
+
+/// this lib provides a sqlite db for the client to make it easer for 
+/// non technical users
 pub mod sqlite;
+
+/// provides useful types for functions
 pub mod types {
     pub use crate::jwt::Claim;
     pub use jsonwebtoken::errors::Error as jwtE;
     pub use jsonwebtoken::errors::Result;
     pub use sqlx::Error as sqlE;
-    pub use sqlx::{PgPool, Postgres};
+    pub use sqlx::{PgPool, Postgres, SqlitePool};
 }
 
 pub mod jwt {

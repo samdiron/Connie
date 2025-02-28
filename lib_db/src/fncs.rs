@@ -1,10 +1,17 @@
 use std::str::FromStr;
 use uuid::Error;
-use common_lib::rand::random;
+use common_lib::rand::{self, distributions::Alphanumeric, Rng}; 
 
-pub fn random_string(chars: u8) -> String {
-    (0..chars).map(|_| (0x20u8 + (random::<f32>() * 96.0) as u8) as char).collect()
+pub fn random_string(chars: u8) -> String{
+    let s: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(chars as usize)
+        .map(char::from)
+        .collect();
+    s
 }
+
+
 
 pub async fn valdiate_uuid(uuid: &str, v: u8)  -> Result<bool,  Error> {
     let uuid = uuid::Uuid::from_str(uuid)?;
