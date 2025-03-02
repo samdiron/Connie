@@ -1,3 +1,4 @@
+use common_lib::log::debug;
 use serde::{Deserialize, Serialize};
 use sqlx::{Result, Row, SqlitePool};
 
@@ -17,10 +18,12 @@ pub struct SqliteMedia {
 }
 
 
-const SQL: &str = "CREATE TABLE media(name TEXT, host TEXT, type TEXT, checksum: )";
+const SQL: &str = "CREATE TABLE media(name TEXT, host TEXT, type TEXT, checksum TEXT );";
 
-pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) {
-    sqlx::query(SQL).execute(pool).await.unwrap();
+pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{
+    debug!("SQLITE: {SQL}");
+    sqlx::query(SQL).execute(pool).await?;
+    Ok(())
 }
 
 

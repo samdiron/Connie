@@ -9,11 +9,13 @@ use sqlx::Row;
 use crate::jwt::exp_gen;
 
 
-const SQL: &str = "CREATE TABLE jwt(host TEXT, cpid TEXT, exp BIGINT, token TEXT)";
+const SQL: &str = "CREATE TABLE jwt(host TEXT, cpid TEXT, exp BIGINT, token TEXT);";
 
 
-pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) {
+pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{
+    debug!("SQLITE: {SQL}");
     sqlx::query(SQL).execute(pool).await.unwrap();
+    Ok(())
 }
 
 

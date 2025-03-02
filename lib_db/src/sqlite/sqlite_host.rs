@@ -1,13 +1,16 @@
 use common_lib::log::debug;
 use serde::Deserialize;
 use serde::Serialize;
+use sqlx::Result;
 use sqlx::SqlitePool;
 use sqlx::Row;
 
 const SQL: &str  = r#"CREATE TABLE host(name TEXT, pub_ip TEXT, pri_ip TEXT, cpid TEXT, host TEXT, port INT);"#;
 
-pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) {
-    sqlx::query(SQL).execute(pool).await.unwrap();
+pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{
+    debug!("SQLITE: {SQL}");
+    sqlx::query(SQL).execute(pool).await?;
+    Ok(())
 }
 #[derive(Serialize, Deserialize)]
 pub struct SqliteHost {

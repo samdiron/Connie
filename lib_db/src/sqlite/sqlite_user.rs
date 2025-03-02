@@ -1,4 +1,4 @@
-use common_lib::log::error;
+use common_lib::log::{debug, error};
 use sha256::digest;
 use sqlx::Row;
 use sqlx::{Result, SqlitePool};
@@ -15,7 +15,7 @@ pub struct SqliteUser {
 }
 
 const SQL: &str = "CREATE TABLE user(
-    name: TEXT,
+    name TEXT,
     host TEXT,
     cpid TEXT,
     email TEXT,
@@ -23,8 +23,10 @@ const SQL: &str = "CREATE TABLE user(
     usrname TEXT);";
 
 
-pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) {
+pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{
+    debug!("SQLITE: {SQL}");
     sqlx::query(SQL).execute(pool).await.unwrap();
+    Ok(())
 }
 
 

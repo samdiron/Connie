@@ -1,17 +1,14 @@
 use std::{
-    io::{ErrorKind, Result},
-    net::IpAddr, str::FromStr
+    io::{ErrorKind, Result}, net::IpAddr, path::PathBuf, str::FromStr
 };
 
 use lib_db::{
-    server::host::get_host_ip,
-    types::PgPool,
-    user::{
+    server::host::get_host_ip, sqlite::get_sqlite_conn, types::PgPool, user::{
         user_jwts::get_jwt,
         user_struct::User
     }
 };
-use common_lib::log::debug;
+use common_lib::{log::debug, path::SQLITEDB_PATH};
 
 use crate::common::request::RQM;
 
@@ -34,6 +31,8 @@ pub(crate) struct Cred {
 
 /// it tries to get a jwt and if the jwt is not valid it will instead load the user cred 
 async fn check_host(host: String, pool: &PgPool, cred: Cred ) -> Result<Connection> {
+    let _spool = get_sqlite_conn(&SQLITEDB_PATH.to_owned()).await.unwrap();
+
     let ip = get_host_ip(host.clone(), pool).await.unwrap();
     if 0usize < ip.len() {
         let ip = IpAddr::from_str(ip.as_str()).unwrap();

@@ -1,7 +1,9 @@
+use serde::{Deserialize, Serialize};
 use sha256::digest;
 use sqlx::{Error, PgPool, Row};
 use uuid::Uuid;
 
+#[derive(Serialize, Deserialize)]
 pub struct Server {
     pub ip: String,
     pub cpid: String,

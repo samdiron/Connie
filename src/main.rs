@@ -4,11 +4,9 @@
 
 use std::{fs::remove_file, io::{stdout, Write}, net::IpAddr, path::PathBuf, process::exit};
 use env_logger;
-use common_lib::{gethostname::gethostname, log::debug};
+use common_lib::{gethostname::gethostname, log::debug, path::SQLITEDB_PATH};
 use lib_db::{
-    database::{get_conn, DB_CONN},
-    server::{host::get_host_info, server_struct::Server},
-    user::{user_jwts::get_jwt, user_struct::{fetch, User}}
+    database::{get_conn, DB_CONN}, server::{host::get_host_info, server_struct::Server}, sqlite, user::{user_jwts::get_jwt, user_struct::{fetch, User}}
 };
 use lib_start::certs;
 use tcp::{client::{client::client_process, fetcher}, consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind, types::{POST, RQM}};
@@ -348,8 +346,10 @@ async fn config_handle(command: Commands ) {
             if let Some(migrations) = migrations {
                 let pool =  get_conn().await.unwrap();
                 let pool = &pool;
+                let spool = sqlite::get_sqlite_conn(&SQLITEDB_PATH.to_owned()).await.unwrap();
                 if migrations == true {
                     lib_db::database::migrate(pool).await.unwrap();
+                    lib_db::sqlite::migration(&spool).await.unwrap();
                 }
             }
             if let Some(test) = test {
@@ -415,10 +415,7 @@ async fn main() {
             }
             2 => {
             env_logger::Builder::new()
-                    .parse_filters("WARN")
-                    .parse_filters("ERROR")
-                    .parse_filters("INFO")
-                    .parse_filters("DEBUG")
+                    .parse_filters("trace")
                     .init();
             }
             _ => {}
