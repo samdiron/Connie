@@ -1,5 +1,5 @@
 use std::{
-    io::{ErrorKind, Result}, net::IpAddr, path::PathBuf, str::FromStr
+    io::{ErrorKind, Result}, net::IpAddr, str::FromStr
 };
 
 use lib_db::{

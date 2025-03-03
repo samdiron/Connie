@@ -1,8 +1,11 @@
+
 #![allow(dead_code)]
 
+use std::path::PathBuf;
 use std::{io::Result, process::exit};
-
-use common_lib::{log::error, path::SERVER_IDENT, tokio::{fs::File, io::{AsyncReadExt, AsyncWriteExt}}, toml};
+use std::io::{BufWriter, Read, Write};
+use std::fs::File;
+use common_lib::{log::error, path::SERVER_IDENT, toml};
 use lib_db::server::server_struct::Server;
 use serde::{Deserialize, Serialize};
 
@@ -24,11 +27,9 @@ pub struct ServerIdent {
 
 pub async fn get_server_config() -> Result<ServerIdent> {
     let mut f = File::open(SERVER_IDENT)
-        .await
         .expect("make sure you are runing this command in root status");
     let mut buf = String::new();
     f.read_to_string(&mut buf)
-        .await
         .expect("could not read SERVER_IDENT");
     let structed: ServerIdent  = toml::from_str(&buf).unwrap();
     Ok(structed)
@@ -37,7 +38,7 @@ pub async fn get_server_config() -> Result<ServerIdent> {
 
 
 impl ServerIdent{
-    pub async fn create_config(s: Self) {
+    pub async fn create_config(s:Self) {
         if s.default_network.as_str() != PUB_NET && s.default_network.as_str() != PRI_NET && s.default_network.as_str() != ALL_AV_NET {
             error!("default_network does not match expected input");
             exit(1)
@@ -48,16 +49,16 @@ impl ServerIdent{
         }
         let tomled = toml::to_string(&s);
         if tomled.is_ok() {
+            let path = PathBuf::from(SERVER_IDENT);
             let toml = tomled.unwrap();
-            let mut f = File::open(SERVER_IDENT)
-                .await
-                .expect("make sure you are runing this command in root status");
+            println!("toml: {}", &toml);
+            let f = if !path.exists() {
+                File::create_new(path).unwrap()
+            } else { File::open(path).unwrap()};
+            let mut f = BufWriter::new(f);
             f.write_all(toml.as_bytes())
-                .await
-                .expect("make sure you are runing this command in root status");
-            f.flush()
-                .await
-                .expect("make sure you are runing this command in root status");
+                .expect(" write make sure you are runing this command in root status");
+            f.flush().unwrap();
             drop(s);
         }else {
             error!("could not create server_ident: {:#?}", tomled.unwrap_err());

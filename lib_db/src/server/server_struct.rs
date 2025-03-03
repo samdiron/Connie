@@ -3,7 +3,7 @@ use sha256::digest;
 use sqlx::{Error, PgPool, Row};
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Server {
     pub ip: String,
     pub cpid: String,

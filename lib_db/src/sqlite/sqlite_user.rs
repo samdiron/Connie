@@ -14,13 +14,15 @@ pub struct SqliteUser {
     pub usrname: String,
 }
 
-const SQL: &str = "CREATE TABLE user(
+const SQL: &str = "
+CREATE TABLE user(
     name TEXT,
     host TEXT,
     cpid TEXT,
     email TEXT,
     paswd TEXT,
-    usrname TEXT);";
+    usrname TEXT
+);";
 
 
 pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{

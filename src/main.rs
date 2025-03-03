@@ -4,15 +4,15 @@
 
 use std::{fs::remove_file, io::{stdout, Write}, net::IpAddr, path::PathBuf, process::exit};
 use env_logger;
-use common_lib::{gethostname::gethostname, log::debug, path::SQLITEDB_PATH};
+use common_lib::{cheat_sheet::TCP_MAIN_PORT, gethostname::gethostname, log::debug, path::SQLITEDB_PATH};
 use lib_db::{
     database::{get_conn, DB_CONN}, server::{host::get_host_info, server_struct::Server}, sqlite, user::{user_jwts::get_jwt, user_struct::{fetch, User}}
 };
-use lib_start::certs;
+use lib_start::{certs, tcp::server_config::{ServerIdent, ALL_AV_NET, POSTGRES, PRI_NET, PUB_NET}};
+use lib_start::tcp::server_config;
 use tcp::{client::{client::client_process, fetcher}, consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind, types::{POST, RQM}};
 use common_lib::rpassword::read_password;
 use common_lib::sysinfo;
-use serde::{Deserialize, Serialize};
 use clap::{command, Parser, Subcommand};
 use tokio::{fs::File, io::AsyncWriteExt};
 
@@ -24,7 +24,7 @@ use tokio::{fs::File, io::AsyncWriteExt};
 //postgres default port is 5432, and ip by default is localhost
 //in the /Connie/etc/db_conn; file
 
-#[derive(Debug, Deserialize, Serialize, Parser)]
+#[derive(Debug,Parser)]
 #[command(version = "0.2beta", about = "a web server in rust for more info visit https://github.com/samdiron/Connie")]
 #[command(disable_help_flag = true)]
 struct Cli {
@@ -49,7 +49,7 @@ struct Cli {
 
 
 
-#[derive(Debug, Deserialize, Serialize,Subcommand)]
+#[derive(Debug,Subcommand)]
 enum Commands {
 
     DEV {
@@ -101,7 +101,6 @@ enum Commands {
         post: Option<PathBuf>,
 
 
-
     },
     
 
@@ -121,6 +120,19 @@ enum Commands {
         update: Option<bool>,
 
         #[arg(long, short)]
+        default_machine: Option<bool>,
+
+        #[arg(long)]
+        net_space: Option<String>,
+
+        #[arg(long)]
+        new_users: Option<bool>,
+        
+
+        #[arg(long,short)]
+        port: Option<u16>,
+
+        #[arg(long, short)]
         ip: Option<IpAddr>,
 
         #[arg(long, short)]
@@ -128,7 +140,7 @@ enum Commands {
 
         #[arg(long, short)]
         max_conn: Option<i16>,
-        
+         
         #[arg(long)]
         host: Option<String>,
 
@@ -240,13 +252,20 @@ async fn config_handle(command: Commands ) {
 
             }
         } 
-        Commands::SERVER { new, update, ip, name, host, max_conn } => {
+        Commands::SERVER { new, default_machine, port, new_users, net_space, update, ip, name, host, max_conn } => {
             let pool =  get_conn().await.unwrap();
             let pool = &pool;
+            let net_space = if net_space.is_some() {net_space.unwrap()} else {PRI_NET.to_string()};
+            if net_space.as_str() != PRI_NET &&  net_space.as_str() != PUB_NET && net_space.as_str() != ALL_AV_NET {
+                println!("--net-space should be one of [{PUB_NET},{PRI_NET},{ALL_AV_NET}]");
+                exit(1)
+
+            }
+
             if new.is_some() && update.is_some() {
                 println!("don't be crazy");
             }
-                if new.is_some() && new.unwrap() {
+                if new.is_some() {
                 if host.is_none() {
                     
                     let mut sys = sysinfo::System::new();
@@ -282,6 +301,24 @@ async fn config_handle(command: Commands ) {
                         password
 
                     };
+                    if default_machine.is_some() {
+                        let port: u16 = if port.is_some() {
+                            let p = port.unwrap();
+                            p
+                        } else {
+                            TCP_MAIN_PORT
+                        };
+                                                let new_users = if new.is_some() {true} else {false};
+                        let serveri = ServerIdent {
+                            default_server: server.clone(),
+                            default_port: port,
+                            default_database: POSTGRES.to_string(),
+                            default_network: net_space,
+                            new_users
+                        };
+                        server_config::ServerIdent::create_config(serveri).await;
+
+                    }
 
 
                     let _server = server.create(pool).await.unwrap();

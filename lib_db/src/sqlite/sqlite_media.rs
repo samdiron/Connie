@@ -18,7 +18,13 @@ pub struct SqliteMedia {
 }
 
 
-const SQL: &str = "CREATE TABLE media(name TEXT, host TEXT, type TEXT, checksum TEXT );";
+const SQL: &str = "
+CREATE TABLE media(
+    name TEXT,
+    host TEXT,
+    type TEXT,
+    checksum TEXT 
+);";
 
 pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{
     debug!("SQLITE: {SQL}");

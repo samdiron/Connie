@@ -5,7 +5,15 @@ use sqlx::Result;
 use sqlx::SqlitePool;
 use sqlx::Row;
 
-const SQL: &str  = r#"CREATE TABLE host(name TEXT, pub_ip TEXT, pri_ip TEXT, cpid TEXT, host TEXT, port INT);"#;
+const SQL: &str  = r#"
+CREATE TABLE host(
+    name TEXT,
+    pub_ip TEXT,
+    pri_ip TEXT,
+    cpid TEXT,
+    host TEXT,
+    port INT
+);"#;
 
 pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{
     debug!("SQLITE: {SQL}");
