@@ -14,7 +14,6 @@ pub async fn get_sqlite_conn(path: &String) -> Result<SqlitePool> {
 } 
 
 
-use std::path::PathBuf;
 
 use common_lib::log::{debug, info};
 use sqlx::SqlitePool;

@@ -8,8 +8,8 @@ use super::server_struct::Server;
 
 /// gets the host info used for bind --server 
 pub async fn get_host_info(
-    name: String,
-    password: String,
+    name: &String,
+    password: &String,
     pool: &PgPool
 ) -> Result<Server> {
     let sql = r#" SELECT * FROM server WHERE name = $1 AND password = $2;"#;

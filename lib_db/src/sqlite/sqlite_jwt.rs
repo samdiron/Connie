@@ -31,10 +31,20 @@ pub async fn get_jwt(host: &String, cpid: &String, pool: &SqlitePool) -> Result<
     let token: String = _res.get("token");
     Ok(token)
 } 
-
-pub async fn add_jwt(host: &String, token: &String, cpid: &String, pool: &SqlitePool) {
+pub async fn delete_jwt(token: &String, pool: &SqlitePool) -> Result<()>{
+    let sql = format!("DELETE FROM jwt WHERE token = '{token}' ;");
+    let res = sqlx::query(&sql).execute(pool).await?;
+    debug!("rows affected: {}", res.rows_affected());
+    Ok(())
+}
+pub async fn add_jwt(
+    host_cpid: &String,
+    token: &String,
+    cpid: &String,
+    pool: &SqlitePool
+) {
     let exp = exp_gen();
-    let sql = format!("INSERT INTO jwt(host, cpid, exp, token) VALUES('{host}', '{cpid}', {exp},'{token}');");
+    let sql = format!("INSERT INTO jwt(host, cpid, exp, token) VALUES('{host_cpid}', '{cpid}', {exp},'{token}');");
     let res = sqlx::query(&sql).execute(pool).await;
     if res.is_ok() {
         debug!("jwt added");
@@ -43,7 +53,7 @@ pub async fn add_jwt(host: &String, token: &String, cpid: &String, pool: &Sqlite
     }
 }
 
-pub async fn delete_expd(pool: &SqlitePool) {
+pub async fn delete_expd_jwt(pool: &SqlitePool) {
     let now = get_current_timestamp();
     let sql = format!("DELET FROM jwt WHERE exp < {now} ;");
     let res = sqlx::query(&sql).execute(pool).await;

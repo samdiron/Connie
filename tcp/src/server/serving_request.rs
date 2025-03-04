@@ -1,6 +1,6 @@
 use std::io::Result;
 use std::path::PathBuf;
-use common_lib::cheat_sheet::gethostname;
+use common_lib::gethostname::gethostname;
 use lib_db::media::checksum::{get_fsum, get_size};
 use lib_db::media::media::Media;
 use lib_db::types::PgPool;
@@ -8,7 +8,7 @@ use common_lib::log::{debug, info};
 use common_lib::tokio::io::AsyncWriteExt;
 use common_lib::tokio::{io::BufWriter, net::TcpStream};
 use common_lib::tokio::fs::File;
-use crate::common::request::{DATA_NOT_MATCH, GET, READY_STATUS};
+use crate::common::request::{DATA_NOT_MATCH, GET, NO_VAL, READY_STATUS};
 use crate::common::util::wifb;
 use crate::types::{POST, RQM};
 use common_lib::path::DATA_DIR;
@@ -35,7 +35,13 @@ pub async  fn handle_server_request(
             let _size = wifb(stream, &mut writer).await?;
             let local_sum = get_fsum(spath).await?;
             let local_size = get_size(spath).await?;
-            if (request.size != local_size) || (request.chcksum != local_sum) {
+            if &request.chcksum == NO_VAL {
+                debug!("a client sent a file with no checksum");
+            }else if request.chcksum != local_sum {
+                stream.write_u8(DATA_NOT_MATCH).await?;
+                stream.flush().await?;
+            };
+            if request.size != local_size {
                 stream.write_u8(DATA_NOT_MATCH).await?;
                 stream.flush().await?;
             };

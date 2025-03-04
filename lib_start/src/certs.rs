@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use std::{fs::File, io::{Result, Write}, process::Command, time::{self, SystemTime}};
 
-use common_lib::{cheat_sheet::gethostname, path::CERTIFICATE_INFO};
+use common_lib::{gethostname::gethostname, path::CERTIFICATE_INFO};
 use common_lib::toml;
 use common_lib::serde::Deserialize;
 use serde::Serialize;

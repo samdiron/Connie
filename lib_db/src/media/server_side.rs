@@ -1,4 +1,4 @@
-use common_lib::cheat_sheet::gethostname;
+use common_lib::gethostname::gethostname;
 use sqlx::{PgPool, Row};
 
 pub async fn in_storage(pool: &PgPool) -> u64 {

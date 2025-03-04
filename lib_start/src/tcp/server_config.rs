@@ -12,7 +12,6 @@ use serde::{Deserialize, Serialize};
 pub const SQLITE: &str = "SQLITE";
 pub const POSTGRES: &str = "POSTGRES";
 
-pub const PUB_NET: &str = "pub";
 pub const PRI_NET: &str = "local";
 pub const ALL_AV_NET: &str = "NET";
 
@@ -39,7 +38,7 @@ pub async fn get_server_config() -> Result<ServerIdent> {
 
 impl ServerIdent{
     pub async fn create_config(s:Self) {
-        if s.default_network.as_str() != PUB_NET && s.default_network.as_str() != PRI_NET && s.default_network.as_str() != ALL_AV_NET {
+        if s.default_network.as_str() != PRI_NET && s.default_network.as_str() != ALL_AV_NET {
             error!("default_network does not match expected input");
             exit(1)
         };

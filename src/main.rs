@@ -1,16 +1,15 @@
-
-#![allow(unused_assignments)]
+// #![allow(unused_assignments)]
 #![allow(unused_variables)]
 
 use std::{fs::remove_file, io::{stdout, Write}, net::IpAddr, path::PathBuf, process::exit};
 use env_logger;
-use common_lib::{cheat_sheet::TCP_MAIN_PORT, gethostname::gethostname, log::debug, path::SQLITEDB_PATH};
+use common_lib::{cheat_sheet::TCP_MAIN_PORT, gethostname::gethostname, log::{debug, error}, path::SQLITEDB_PATH};
 use lib_db::{
-    database::{get_conn, DB_CONN}, server::{host::get_host_info, server_struct::Server}, sqlite, user::{user_jwts::get_jwt, user_struct::{fetch, User}}
+    database::{get_conn, DB_CONN}, server::{host::get_host_info, server_struct::Server}, sqlite::{self, sqlite_user::ShortUser}, user::{user_jwts::get_jwt, user_struct::{fetch, User}}
 };
-use lib_start::{certs, tcp::server_config::{ServerIdent, ALL_AV_NET, POSTGRES, PRI_NET, PUB_NET}};
+use lib_start::{certs, tcp::server_config::{ServerIdent, ALL_AV_NET, POSTGRES, PRI_NET}};
 use lib_start::tcp::server_config;
-use tcp::{client::{client::client_process, fetcher}, consts::{IP, PORT, USE_IP, USE_PORT}, server::listener::bind, types::{POST, RQM}};
+use tcp::{client::{client::{client_process, signup_process}, fetcher}, consts::{NET_STATUS, NEW_USERS, PORT, PRIVATE_STATUS, USE_IP, USE_PORT}, server::listener::bind, types::{POST, RQM}};
 use common_lib::rpassword::read_password;
 use common_lib::sysinfo;
 use clap::{command, Parser, Subcommand};
@@ -60,12 +59,15 @@ enum Commands {
     },
      
     BIND {
+        
+        #[arg(long, short)]
+        default: Option<bool>,
 
         #[arg(long, short)]
         ip: Option<String>,
         
         #[arg(long, short)]
-        server: String,
+        server: Option<String>,
         
         #[arg(long)]
         secret: Option<String>,
@@ -81,6 +83,9 @@ enum Commands {
         
         #[arg(long, short)]
         user: String,
+
+        #[arg(long)]
+        signup: Option<bool>,
         
         #[arg(long, short)]
         ip: Option<IpAddr>,
@@ -99,7 +104,8 @@ enum Commands {
         
         #[arg(long, short)]
         post: Option<PathBuf>,
-
+        #[arg(long, short, default_value="true")]
+        create_checksum: Option<bool>,
 
     },
     
@@ -173,6 +179,9 @@ enum Commands {
         #[arg(long)]
         host: Option<String>,
 
+        #[arg(long, short)]
+        signup: Option<bool>,
+
         #[arg(long)]
         admin: Option<bool>,
 
@@ -221,7 +230,7 @@ fn get_new_pass(password: &mut String, name: &str) {
 
 async fn config_handle(command: Commands ) {
     match command {
-        Commands::User { new, update, host, admin, name, username, email } => {
+        Commands::User { new, signup ,update, host, admin, name, username, email } => {
             let pool =  get_conn().await.unwrap();
             let pool = &pool;
             if new.is_some() && new.unwrap()  {
@@ -250,14 +259,24 @@ async fn config_handle(command: Commands ) {
                     // empty for now
                 }
 
+            } else if signup.is_some() && signup.unwrap() {
+                let mut password = String::new(); 
+                get_new_pass(&mut password, &name);
+                let ShortUser {
+                    name,
+                    username,
+                    email,
+                    password
+                    
+                }
             }
         } 
         Commands::SERVER { new, default_machine, port, new_users, net_space, update, ip, name, host, max_conn } => {
             let pool =  get_conn().await.unwrap();
             let pool = &pool;
             let net_space = if net_space.is_some() {net_space.unwrap()} else {PRI_NET.to_string()};
-            if net_space.as_str() != PRI_NET &&  net_space.as_str() != PUB_NET && net_space.as_str() != ALL_AV_NET {
-                println!("--net-space should be one of [{PUB_NET},{PRI_NET},{ALL_AV_NET}]");
+            if net_space.as_str() != PRI_NET && net_space.as_str() != ALL_AV_NET {
+                println!("--net-space should be one of [{PRI_NET},{ALL_AV_NET}]");
                 exit(1)
 
             }
@@ -266,7 +285,7 @@ async fn config_handle(command: Commands ) {
                 println!("don't be crazy");
             }
                 if new.is_some() {
-                if host.is_none() {
+                if host.is_none(){
                     
                     let mut sys = sysinfo::System::new();
                     sys.refresh_all();
@@ -274,7 +293,7 @@ async fn config_handle(command: Commands ) {
                     
                     println!("memory: {}", memory);
                     let mut password = String::new();
-                    get_new_pass(&mut password, name.as_str());
+                    get_new_pass(&mut password, &name);
                     
 
                     let string_host = gethostname().to_str().unwrap().to_string();
@@ -301,6 +320,7 @@ async fn config_handle(command: Commands ) {
                         password
 
                     };
+                    let _server = server.create(pool).await.unwrap();
                     if default_machine.is_some() {
                         let port: u16 = if port.is_some() {
                             let p = port.unwrap();
@@ -308,9 +328,9 @@ async fn config_handle(command: Commands ) {
                         } else {
                             TCP_MAIN_PORT
                         };
-                                                let new_users = if new.is_some() {true} else {false};
+                        let new_users = if new.is_some() {true} else {false};
                         let serveri = ServerIdent {
-                            default_server: server.clone(),
+                            default_server: _server,
                             default_port: port,
                             default_database: POSTGRES.to_string(),
                             default_network: net_space,
@@ -321,7 +341,6 @@ async fn config_handle(command: Commands ) {
                     }
 
 
-                    let _server = server.create(pool).await.unwrap();
                     
                     println!("server has been create\n will exit now ");
                     exit(0)
@@ -329,40 +348,69 @@ async fn config_handle(command: Commands ) {
                 }  
             }
         }
-        Commands::BIND { ip, secret, port, server } => {
-            let pool =  get_conn().await.unwrap();
-            let pool = &pool;
-            let mut passwd = String::new();
-            get_pass(&mut passwd, server.as_str());
-
-            let _res = get_host_info(server, passwd, pool).await;
-            if _res.is_err() {
-                panic!("not a valid server");
-            }
-
-            if let Some(ip) = ip {
-                let mut _ip_mutex = *IP.lock().expect("could not lock port");
-                _ip_mutex = ip.as_str();
-
-                let mut _use_it = *USE_IP.lock().expect("could nto lock port");
-                _use_it = 1
+        Commands::BIND {default, ip, secret, port, server } => {
+            if default.is_some() && default.unwrap() {
+                let config = lib_start::tcp::server_config::get_server_config()
+                    .await
+                    .unwrap();
                 
-            }
-            if let Some(port) = port {
-                let mut _port_mutex = *PORT.lock().expect("could not lock port");
-                _port_mutex = port;
+                let pool =  get_conn().await.unwrap();
+                let _res = get_host_info(&config.default_server.name, &config.default_server.password, &pool).await;
 
-                let mut _use_it = *USE_PORT.lock().expect("could nto lock port");
-                _use_it = 1
+                if config.new_users {
+                    let mut new = NEW_USERS.lock().unwrap();
+                    *new = 1
+                };
+                match config.default_network.as_str() {
+                    ALL_AV_NET => {
+                        let mut _use_it = USE_IP.lock().expect("could nto lock port");
+                        *_use_it = NET_STATUS
+                    } 
+                    PRI_NET => {
+                        let mut _use_it = USE_IP.lock().expect("could nto lock port");
+                        *_use_it = PRIVATE_STATUS
+
+                    }
+                    _=> {error!("unexpected network from config")}
+                }
+                let ip_status = *USE_IP.lock().unwrap();
+                let port = *USE_PORT.lock().unwrap();
+                debug!("ip status {ip_status}, port status {port}");
+                bind(pool, config.default_server).await
                 
-            }
-            if let Some(secret) = secret {
-                let mut _word_mutex = *lib_db::jwt::MUTEX_SECRET_WORD.lock().unwrap();
-                _word_mutex = secret.as_str()
-            }
+            } else if server.is_some() {
+                let _pool =  get_conn().await.unwrap();
+                let pool = &_pool;
+                let mut passwd = String::new();
+                let server = server.unwrap();
+                get_pass(&mut passwd, &server);
 
-            
-            bind(pool.clone()).await;
+                let _res = get_host_info(&server, &passwd, pool).await;
+                if _res.is_err() {
+                    panic!("not a valid server");
+                }
+
+                if let Some(ip) = ip {
+                    let mut _use_it = *USE_IP.lock().expect("could nto lock port");
+                    _use_it = NET_STATUS
+                    
+                }
+                if let Some(port) = port {
+                    let mut _port_mutex = *PORT.lock().expect("could not lock port");
+                    _port_mutex = port;
+
+                    let mut _use_it = *USE_PORT.lock().expect("could nto lock port");
+                    _use_it = 1
+                    
+                }
+                if let Some(secret) = secret {
+                    let mut _word_mutex = *lib_db::jwt::MUTEX_SECRET_WORD.lock().unwrap();
+                    _word_mutex = secret.as_str()
+                }
+
+                
+                bind(_pool, _res.unwrap()).await;
+            }
         }
         Commands::DB { migrations, connection, delete_conn, test } => {
             if let Some(conn) = connection {
@@ -397,25 +445,29 @@ async fn config_handle(command: Commands ) {
                 }
             } 
         }
-        Commands::REQUEST { ip, port, host, get, post, fetch_files ,user} => {
-            let _pool = get_conn().await.unwrap();
+        Commands::REQUEST { ip, signup ,port, host, get, post, create_checksum, fetch_files ,user} => {    
+            let _pool = sqlite::get_sqlite_conn(&SQLITEDB_PATH.to_string()).await.unwrap();
             let pool = &_pool;
+          
             let mut passwd = String::new();
             get_pass(&mut passwd, user.as_str());
-            let usr = fetch(user, passwd, pool).await.expect("could not fetch that user");
-            debug!("user cpid: {} , name: {}", usr.cpid, usr.username);
+            let usr = sqlite::sqlite_user::fetch_sqlite_user(user, passwd, pool).await.expect("could not fetch that user");
+            
+            debug!("user cpid: {} , name: {}", usr.cpid, usr.usrname);
             if fetch_files.is_some() && port.is_some() && ip.is_some()  &&  host.is_some() {
-                let jwt = get_jwt(host.unwrap(), usr.cpid.clone(), pool).await.unwrap();
+                let jwt = sqlite::sqlite_jwt::get_jwt(&host.unwrap(), &usr.cpid, pool).await.unwrap();
                 fetcher::get_files(usr, ip.unwrap(), port.unwrap(), jwt).await.unwrap();
             } else if host.is_some() && post.is_some() { 
                 let host = host.unwrap();
+                let create_checksum = create_checksum.unwrap();
                 println!("creating a checksum this will take a moment");
                 let request: RQM = 
                     if post.is_some() {
                         let r = RQM::create(
                             post.unwrap(),
                             POST.to_string(),
-                            usr.cpid.clone()
+                            usr.cpid.clone(),
+                            create_checksum
                         ).await.unwrap();
                         r
                     } else {println!("you did not enter a request to exec"); exit(0)};

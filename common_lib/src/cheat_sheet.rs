@@ -15,14 +15,22 @@ pub const SYSTEM_TCP: u16 = 4445;
 pub const MULTICAST_PORT: u16 = 4441;
 pub const TCP_MAIN_PORT: u16 = 4443;
 pub static LOCAL_IP: LazyLock<IpAddr> = LazyLock::new(|| lip_fn());
+pub static PUB_IP: LazyLock<IpAddr> = LazyLock::new(|| pip_fn());
 
 
-pub use gethostname::gethostname;
-
+fn pip_fn() -> IpAddr {
+    let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
+    let ip = rt.block_on(public_ip::addr());
+    let ok: bool = ip.is_none();
+    if ok {
+        exit(1111);
+    }
+    ip.unwrap()
+}
 fn lip_fn() -> IpAddr {
     let ip = get_local_ip_address();
     let ok: bool = ip.is_ok();
-    if ok == false {
+    if !ok {
         exit(1111);
     }
     let ip = ip.unwrap();

@@ -1,4 +1,4 @@
-use common_lib::{bincode, cheat_sheet::gethostname, log::debug};
+use common_lib::{bincode, gethostname, log::debug};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Result, Row};
 
@@ -16,7 +16,7 @@ pub async fn get_user_files(
     cpid: String,
     pool: &PgPool
 ) -> Result<Vec<Smedia>> {
-    let host = gethostname();
+    let host = gethostname::gethostname();
     let sql = format!("SELECT * FROM media WHERE cpid = '{}' AND in_host = '{}' ;",&cpid ,host.to_str().unwrap());
     debug!("sql: {}",&sql);
     let _res = sqlx::query(&sql).fetch_all(pool).await?;

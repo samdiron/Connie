@@ -1,5 +1,11 @@
-use lib_db::{media::{self, fetch::Smedia}, types::PgPool};
-use common_lib::log::{debug, info};
+use lib_db::{
+    media::{self, fetch::Smedia},
+    sqlite::{
+        sqlite_host::{self, SqliteHost},
+        sqlite_user::{ShortUser, SqliteUser}
+    }, types::PgPool, user::user_struct
+};
+use common_lib::{gethostname::gethostname, log::{debug, info, warn}};
 use common_lib::tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream
@@ -13,12 +19,15 @@ use std::{
 use crate::{
     common::{
         request::{
-            FETCH, JWT_AUTH, LOGIN_CRED, UNAUTHORIZED
+            FETCH, JWT_AUTH, LOGIN_CRED, SIGNIN_CRED, UNAUTHORIZED
         },
-        util::{read_stream, wvts}
-    },
-    server::{
-        req_format::{Chead, JwtReq, LoginReq}, serving_request::handle_server_request
+        util::{read_stream, rvfs, wvts}
+    }, server::{
+        req_format::{
+            Chead,
+            JwtReq,
+            LoginReq
+        }, serving_request::handle_server_request
 
     }
 };
@@ -41,13 +50,15 @@ async fn login_create_jwt(pool: &PgPool, request: LoginReq) -> Result<String> {
 
 pub async fn handle(
     st: (TcpStream, SocketAddr),
-    pool: PgPool
+    pool: PgPool,
+    allow_new_users: bool,
+    sqlite_host: SqliteHost,
 ) -> Result<()> {
     
     let mut stream = st.0;
     let addr = st.1;
     let auth_type = stream.read_u8().await?;
-    println!("SERVER: C{addr} will auth with {auth_type}");
+    info!("SERVER: C{addr} will auth with {auth_type}");
     match auth_type {
         JWT_AUTH => {
             debug!("SERVER: jwt auth request");
@@ -60,6 +71,7 @@ pub async fn handle(
             let jwtreq = JwtReq::dz(buf).expect("could not unwrap struct");
             let is_valid = jwtreq.validate(&pool).await.unwrap();
             if  is_valid {
+                stream.write_u8(0).await?;
                 debug!("SERVER: valid jwt login");
                 let status = handle_server_request(jwtreq.request, &mut stream, &pool).await?;
                 if status == 0 {
@@ -68,7 +80,7 @@ pub async fn handle(
                 drop(stream);
             }
             else {
-
+                stream.write_u8(UNAUTHORIZED).await?;
                 debug!("SERVER: jwt auth invalid");
 
             }
@@ -103,9 +115,51 @@ pub async fn handle(
 
             }
 
-        } 
+        }
+        SIGNIN_CRED => {
+            debug!("SERVER: signin request");
+            if allow_new_users {
+                stream.write_u8(0).await?;
+                let server_vector = sqlite_host::SqliteHost::sz(sqlite_host).unwrap();
+                debug!("server vector size: {}",server_vector.len());
+                let vector = rvfs(&mut stream).await?;
+                wvts(&mut stream, server_vector).await?;
+                let confirm = stream.read_u8().await?;
+                if confirm == 0 { 
+                    let short_user = ShortUser::dz(vector).unwrap();
+                    let host = gethostname().to_str().unwrap().to_owned();
+                    let user = user_struct::User {
+                        cpid: String::new(),
+                        name: short_user.name,
+                        username: short_user.username,
+                        password: short_user.password,
+                        email: short_user.email,
+                        host,
+                    };
+                    let _user = user.create(&pool).await.unwrap();
+                    let sqlite_user = SqliteUser {
+                        cpid: _user.cpid,
+                        name: _user.name,
+                        host: _user.host,
+                        email: _user.email,
+                        paswd: _user.password,
+                        usrname: _user.username,
+                    };
+                    let user_vector = sqlite_user.sz().unwrap();
+                    debug!("user vector size: {}",user_vector.len());
+                    wvts(&mut stream, user_vector).await?;
+
+                    stream.write_u8(0).await?;
+                    stream.flush().await?;
+                } else {warn!("a user tried to signup then declind")}
+            } else {
+                stream.write_u8(UNAUTHORIZED).await?;
+                stream.flush().await?;
+            }
+
+        }
         FETCH => {
-            info!("SERVER: fetch request");
+            debug!("SERVER: fetch request");
 
             let mut buf = vec![0;600];
             let _size = stream.read(&mut buf).await?;

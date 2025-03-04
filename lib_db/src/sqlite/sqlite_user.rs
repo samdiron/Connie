@@ -1,10 +1,32 @@
+use common_lib::bincode;
 use common_lib::log::{debug, error};
+use serde::{Deserialize, Serialize};
 use sha256::digest;
 use sqlx::Row;
 use sqlx::{Result, SqlitePool};
 
-
-
+#[derive(Serialize, Deserialize)]
+pub struct ShortUser {
+    pub name: String,
+    pub email: String,
+    pub password: String,
+    pub username: String,
+}
+impl ShortUser {
+    
+    pub fn sz(self) -> Result<Vec<u8>, bincode::Error> {
+        let res: Vec<u8> = bincode::serialize(&self)?;
+        drop(self);
+        Ok(res)
+    }
+    
+    pub fn dz(buf: Vec<u8>) -> Result<Self, bincode::Error> {
+        let res: Self = bincode::deserialize(&buf)?;
+        drop(buf);
+        Ok(res) 
+    }
+}
+#[derive(Serialize, Deserialize, Clone)]
 pub struct SqliteUser {
     pub name: String,
     pub host: String,
@@ -95,5 +117,18 @@ impl SqliteUser {
         );
         sqlx::query(&sql).execute(pool).await?;
         Ok(())
+    }
+
+
+    pub fn sz(self) -> Result<Vec<u8>, bincode::Error> {
+        let res: Vec<u8> = bincode::serialize(&self)?;
+        drop(self);
+        Ok(res)
+    }
+    
+    pub fn dz(buf: Vec<u8>) -> Result<Self, bincode::Error> {
+        let res: Self = bincode::deserialize(&buf)?;
+        drop(buf);
+        Ok(res) 
     }
 }

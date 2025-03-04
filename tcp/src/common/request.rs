@@ -35,6 +35,7 @@ pub const DELETE: &str = "!D";
 
 pub(crate) use crate::server::req_format;
 
+pub(crate) const NO_VAL: &str = "N//A";
 
 #[derive(Deserialize, Serialize)]
 #[derive(Clone)]
@@ -50,7 +51,7 @@ pub struct RQM {
 
 
 impl RQM {
-    pub async fn create(path: PathBuf, header: String, cpid: String) -> std::io::Result<Self> {
+    pub async fn create(path: PathBuf, header: String, cpid: String, create_checksum: bool) -> std::io::Result<Self> {
         let f = File::open(path.clone()).await?;
         let data = f.metadata().await?;
         let size = data.size() as i64;
@@ -72,7 +73,9 @@ impl RQM {
         let name = String::from_str(str_name).unwrap();
         
         let path = path.to_str().unwrap();
-        let chcksum = checksum::get_fsum(path).await?;
+        let chcksum = if create_checksum {
+            checksum::get_fsum(path).await?
+        }else {NO_VAL.to_string()};
 
         Ok(RQM {
             size,

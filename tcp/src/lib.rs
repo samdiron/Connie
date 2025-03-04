@@ -19,13 +19,15 @@ pub mod types {
 
 pub mod consts {
     use std::sync::Mutex;
-
-    pub static IP: Mutex<&str> = Mutex::new("");
+    pub const NET_STATUS:u8 = 1;
+    pub const PRIVATE_STATUS: u8 = 0;
+    
+    pub static NEW_USERS: Mutex<u8> = Mutex::new(0);
 
     pub static PORT: Mutex<u16> = Mutex::new(0);
 
 
-    pub static USE_IP: Mutex<u8> = Mutex::new(0);
+    pub static USE_IP: Mutex<u8> = Mutex::new(PRIVATE_STATUS);
 
     pub static USE_PORT: Mutex<u8> = Mutex::new(0);
 

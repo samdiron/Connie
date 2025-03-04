@@ -1,13 +1,13 @@
 use std::{io::Result, net::{IpAddr, SocketAddr}};
 
-use lib_db::{media::fetch::Smedia, user::user_struct::User};
+use lib_db::{media::fetch::Smedia, sqlite::sqlite_user::SqliteUser};
 use common_lib::{log::debug, tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream}};
 use crate::{
     common::{request::FETCH, util::rvfs}, server::req_format::Chead
 };
 
 
-pub async fn get_files(u: User, ip: IpAddr, port: u16, jwt: String) -> Result<()> {
+pub async fn get_files(u: SqliteUser, ip: IpAddr, port: u16, jwt: String) -> Result<()> {
     let addr = SocketAddr::new(ip, port);
     let mut stream = TcpStream::connect(addr).await?;
     let head = Chead {
