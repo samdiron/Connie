@@ -1,15 +1,63 @@
 // #![allow(unused_assignments)]
 #![allow(unused_variables)]
 
-use std::{fs::remove_file, io::{stdout, Write}, net::IpAddr, path::PathBuf, process::exit};
-use env_logger;
-use common_lib::{cheat_sheet::TCP_MAIN_PORT, gethostname::gethostname, log::{debug, error}, path::SQLITEDB_PATH};
-use lib_db::{
-    database::{get_conn, DB_CONN}, server::{host::get_host_info, server_struct::Server}, sqlite::{self, sqlite_user::ShortUser}, user::{user_jwts::get_jwt, user_struct::{fetch, User}}
+use std::{
+    fs::remove_file,
+    io::{stdout, Write},
+    net::{IpAddr, SocketAddr},
+    path::PathBuf,
+    process::exit
 };
-use lib_start::{certs, tcp::server_config::{ServerIdent, ALL_AV_NET, POSTGRES, PRI_NET}};
+use env_logger;
+use common_lib::{
+    cheat_sheet::TCP_MAIN_PORT,
+    gethostname::gethostname,
+    log::{debug, error},
+    path::SQLITEDB_PATH
+};
+use lib_db::{
+    database::{get_conn, DB_CONN},
+    server::{
+        host::get_host_info,
+        server_struct::Server
+    }, 
+    sqlite::{
+        self,
+        get_sqlite_conn,
+        sqlite_host::fetch_server,
+        sqlite_user::ShortUser
+    },
+    user::user_struct::User
+};
+use lib_start::{
+    certs,
+    tcp::server_config::{
+        ServerIdent,
+        ALL_AV_NET,
+        POSTGRES,
+        PRI_NET
+    }
+};
 use lib_start::tcp::server_config;
-use tcp::{client::{client::{client_process, signup_process}, fetcher}, consts::{NET_STATUS, NEW_USERS, PORT, PRIVATE_STATUS, USE_IP, USE_PORT}, server::listener::bind, types::{POST, RQM}};
+use tcp::{
+    client::{
+        client::{
+            client_process,
+            signup_process
+        },
+        fetcher
+    },
+    consts::{
+        NET_STATUS,
+        NEW_USERS,
+        PORT,
+        PRIVATE_STATUS,
+        USE_IP,
+        USE_PORT
+    },
+    server::listener::bind,
+    types::{POST, RQM}
+};
 use common_lib::rpassword::read_password;
 use common_lib::sysinfo;
 use clap::{command, Parser, Subcommand};
@@ -80,13 +128,9 @@ enum Commands {
 
     REQUEST {
 
-        
         #[arg(long, short)]
         user: String,
 
-        #[arg(long)]
-        signup: Option<bool>,
-        
         #[arg(long, short)]
         ip: Option<IpAddr>,
         
@@ -95,6 +139,8 @@ enum Commands {
 
         #[arg(long, short)]
         host: Option<String>,
+        #[arg(long, short)]
+        server_name: Option<String>,
         
         #[arg(long, short)]
         fetch_files: Option<bool>,
@@ -179,6 +225,12 @@ enum Commands {
         #[arg(long)]
         host: Option<String>,
 
+        #[arg(long)]
+        ip: Option<IpAddr>,
+
+        #[arg(long)]
+        port: Option<u16>,
+        
         #[arg(long, short)]
         signup: Option<bool>,
 
@@ -230,7 +282,18 @@ fn get_new_pass(password: &mut String, name: &str) {
 
 async fn config_handle(command: Commands ) {
     match command {
-        Commands::User { new, signup ,update, host, admin, name, username, email } => {
+        Commands::User {
+            new,
+            signup,
+            update,
+            host,
+            ip,
+            port,
+            admin,
+            name,
+            username,
+            email
+        } => {
             let pool =  get_conn().await.unwrap();
             let pool = &pool;
             if new.is_some() && new.unwrap()  {
@@ -259,23 +322,40 @@ async fn config_handle(command: Commands ) {
                     // empty for now
                 }
 
-            } else if signup.is_some() && signup.unwrap() {
-                let mut password = String::new(); 
+            } else if signup.is_some() && signup.unwrap() && port.is_some() && ip.is_some() {
+                let mut password = String::new();
+                let pool = get_sqlite_conn(&SQLITEDB_PATH.to_string()).await.unwrap();
+                println!("you are creating a user for a host");
                 get_new_pass(&mut password, &name);
-                let ShortUser {
+                let user = ShortUser {
                     name,
                     username,
                     email,
-                    password
-                    
-                }
+                    password  
+                };
+                let addr = SocketAddr::new(ip.unwrap(), port.unwrap());
+                signup_process(addr, user, &pool).await.unwrap();
             }
         } 
-        Commands::SERVER { new, default_machine, port, new_users, net_space, update, ip, name, host, max_conn } => {
+        Commands::SERVER {
+            new,
+            default_machine,
+            port, 
+            new_users,
+            net_space,
+            update,
+            ip,
+            name,
+            host,
+            max_conn 
+        } => {
             let pool =  get_conn().await.unwrap();
             let pool = &pool;
-            let net_space = if net_space.is_some() {net_space.unwrap()} else {PRI_NET.to_string()};
-            if net_space.as_str() != PRI_NET && net_space.as_str() != ALL_AV_NET {
+            let net_space = if net_space.is_some() {
+                net_space.unwrap()
+            } else {PRI_NET.to_string()};
+            if net_space.as_str() != PRI_NET&&
+                net_space.as_str() != ALL_AV_NET {
                 println!("--net-space should be one of [{PRI_NET},{ALL_AV_NET}]");
                 exit(1)
 
@@ -296,7 +376,10 @@ async fn config_handle(command: Commands ) {
                     get_new_pass(&mut password, &name);
                     
 
-                    let string_host = gethostname().to_str().unwrap().to_string();
+                    let string_host = gethostname()
+                        .to_str()
+                        .unwrap()
+                        .to_string();
                     let max_conn = if max_conn.is_some() {
                         let int = max_conn.unwrap();
                         int
@@ -348,14 +431,24 @@ async fn config_handle(command: Commands ) {
                 }  
             }
         }
-        Commands::BIND {default, ip, secret, port, server } => {
+        Commands::BIND {
+            default,
+            ip,
+            secret,
+            port,
+            server
+        } => {
             if default.is_some() && default.unwrap() {
                 let config = lib_start::tcp::server_config::get_server_config()
                     .await
                     .unwrap();
                 
                 let pool =  get_conn().await.unwrap();
-                let _res = get_host_info(&config.default_server.name, &config.default_server.password, &pool).await;
+                let _res = get_host_info(
+                    &config.default_server.name,
+                    &config.default_server.password,
+                    &pool
+                ).await;
 
                 if config.new_users {
                     let mut new = NEW_USERS.lock().unwrap();
@@ -363,11 +456,13 @@ async fn config_handle(command: Commands ) {
                 };
                 match config.default_network.as_str() {
                     ALL_AV_NET => {
-                        let mut _use_it = USE_IP.lock().expect("could nto lock port");
+                        let mut _use_it = USE_IP.lock()
+                            .expect("could nto lock port");
                         *_use_it = NET_STATUS
                     } 
                     PRI_NET => {
-                        let mut _use_it = USE_IP.lock().expect("could nto lock port");
+                        let mut _use_it = USE_IP.lock()
+                            .expect("could nto lock port");
                         *_use_it = PRIVATE_STATUS
 
                     }
@@ -391,20 +486,24 @@ async fn config_handle(command: Commands ) {
                 }
 
                 if let Some(ip) = ip {
-                    let mut _use_it = *USE_IP.lock().expect("could nto lock port");
+                    let mut _use_it = *USE_IP.lock()
+                        .expect("could nto lock port");
                     _use_it = NET_STATUS
                     
                 }
                 if let Some(port) = port {
-                    let mut _port_mutex = *PORT.lock().expect("could not lock port");
+                    let mut _port_mutex = *PORT.lock()
+                        .expect("could not lock port");
                     _port_mutex = port;
 
-                    let mut _use_it = *USE_PORT.lock().expect("could nto lock port");
+                    let mut _use_it = *USE_PORT.lock()
+                        .expect("could nto lock port");
                     _use_it = 1
                     
                 }
                 if let Some(secret) = secret {
-                    let mut _word_mutex = *lib_db::jwt::MUTEX_SECRET_WORD.lock().unwrap();
+                    let mut _word_mutex = *lib_db::jwt::MUTEX_SECRET_WORD
+                        .lock().unwrap();
                     _word_mutex = secret.as_str()
                 }
 
@@ -412,7 +511,12 @@ async fn config_handle(command: Commands ) {
                 bind(_pool, _res.unwrap()).await;
             }
         }
-        Commands::DB { migrations, connection, delete_conn, test } => {
+        Commands::DB { 
+            migrations,
+            connection,
+            delete_conn,
+            test
+        } => {
             if let Some(conn) = connection {
                 let mut f = File::create_new(DB_CONN)
                     .await
@@ -431,7 +535,9 @@ async fn config_handle(command: Commands ) {
             if let Some(migrations) = migrations {
                 let pool =  get_conn().await.unwrap();
                 let pool = &pool;
-                let spool = sqlite::get_sqlite_conn(&SQLITEDB_PATH.to_owned()).await.unwrap();
+                let spool = sqlite::get_sqlite_conn(
+                    &SQLITEDB_PATH.to_owned()
+                ).await.unwrap();
                 if migrations == true {
                     lib_db::database::migrate(pool).await.unwrap();
                     lib_db::sqlite::migration(&spool).await.unwrap();
@@ -439,25 +545,58 @@ async fn config_handle(command: Commands ) {
             }
             if let Some(test) = test {
                 if test == true {
-                    let _pool = get_conn().await.expect("can't connect to db");
+                    let _pool = get_conn()
+                        .await
+                        .expect("can't connect to db");
                     println!("db connection valid");
                     exit(0)
                 }
             } 
         }
-        Commands::REQUEST { ip, signup ,port, host, get, post, create_checksum, fetch_files ,user} => {    
-            let _pool = sqlite::get_sqlite_conn(&SQLITEDB_PATH.to_string()).await.unwrap();
+        Commands::REQUEST { 
+            ip,
+            port,
+            host,
+            server_name,
+            get,
+            post,
+            create_checksum,
+            fetch_files, 
+            user
+        } => {    
+            let _pool = sqlite::get_sqlite_conn(&SQLITEDB_PATH.to_string())
+                .await
+                .unwrap();
             let pool = &_pool;
           
             let mut passwd = String::new();
             get_pass(&mut passwd, user.as_str());
-            let usr = sqlite::sqlite_user::fetch_sqlite_user(user, passwd, pool).await.expect("could not fetch that user");
+            let usr = sqlite::sqlite_user::fetch_sqlite_user(
+                user,
+                passwd,
+                pool
+            ).await
+            .expect("could not fetch that user");
             
             debug!("user cpid: {} , name: {}", usr.cpid, usr.usrname);
-            if fetch_files.is_some() && port.is_some() && ip.is_some()  &&  host.is_some() {
-                let jwt = sqlite::sqlite_jwt::get_jwt(&host.unwrap(), &usr.cpid, pool).await.unwrap();
-                fetcher::get_files(usr, ip.unwrap(), port.unwrap(), jwt).await.unwrap();
-            } else if host.is_some() && post.is_some() { 
+            if fetch_files.is_some()&&
+                port.is_some()&&
+                ip.is_some()&&
+                host.is_some() {
+                let jwt = sqlite::sqlite_jwt::get_jwt(
+                    &host.unwrap(),
+                    &usr.cpid,
+                    pool
+                ).await.unwrap();
+                fetcher::get_files(
+                    usr,
+                    ip.unwrap(),
+                    port.unwrap(),
+                    jwt
+                ).await.unwrap();
+            } else if host.is_some()&&
+                post.is_some()&&
+                server_name.is_some(){ 
                 let host = host.unwrap();
                 let create_checksum = create_checksum.unwrap();
                 println!("creating a checksum this will take a moment");
@@ -470,8 +609,21 @@ async fn config_handle(command: Commands ) {
                             create_checksum
                         ).await.unwrap();
                         r
-                    } else {println!("you did not enter a request to exec"); exit(0)};
-                let res = client_process(host, ip, _pool, usr, request).await.unwrap();
+                    } else {
+                    println!("you did not enter a request to exec");
+                    exit(0)
+                };
+                let server = fetch_server(
+                    &server_name.unwrap(),
+                    &host,
+                    pool
+                ).await;
+                let res = client_process(
+                    _pool,
+                    usr,
+                    server,
+                    request
+                ).await.unwrap();
                 println!("done {}", res);
             }
         }

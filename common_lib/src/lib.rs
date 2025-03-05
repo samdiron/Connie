@@ -11,4 +11,5 @@ pub use bincode;
 pub use gethostname;
 pub use log;
 pub use sysinfo;
+pub use public_ip;
 pub use rpassword;

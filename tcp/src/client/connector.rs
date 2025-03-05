@@ -3,10 +3,10 @@ use std::net::SocketAddr;
 use std::time::Duration;
 use std::thread;
 use std::process::exit;
-use common_lib::cheat_sheet::{PUB_IP, TCP_MAIN_PORT};
+use common_lib::public_ip;
 use lib_db::sqlite::sqlite_host::SqliteHost;
 use lib_db::sqlite::sqlite_user::{ShortUser, SqliteUser};
-use lib_db::types::{PgPool, SqlitePool};
+use lib_db::types::SqlitePool;
 use lib_db::sqlite::sqlite_jwt::{add_jwt, delete_jwt};
 use common_lib::log::{debug, info, warn, error};
 use common_lib::tokio::io::{
@@ -25,14 +25,20 @@ use super::handle_request::handle_client_request;
 
 
 
-pub async fn signup_process(addr: SocketAddr, user: ShortUser, pool: &SqlitePool) -> Result<()> {
+pub async fn signup_process(
+    addr: SocketAddr,
+    user: ShortUser,
+    pool: &SqlitePool
+) -> Result<()> {
     let short_user_vec = user.sz().unwrap();
-    let mut stream = TcpStream::connect(addr).await?;
+    let mut stream = TcpStream::connect(&addr).await?;
+    info!("connected to {addr}");
     stream.write_u8(SIGNIN_CRED).await?;
     stream.flush().await?;
-    
+    debug!("sent status to host {SIGNIN_CRED}");
     let will_allow = stream.read_u8().await?;
     if will_allow == 0 {
+        info!("server accsepted request");
         let vector = rvfs(&mut stream).await?;
         let server = SqliteHost::dz(vector).unwrap();
         info!("server: name: {}, host: {};",&server.name, &server.host);
@@ -40,14 +46,19 @@ pub async fn signup_process(addr: SocketAddr, user: ShortUser, pool: &SqlitePool
         let dur = Duration::from_secs(2);
         thread::sleep(dur);
         stream.write_u8(0).await?;
+        stream.flush().await?;
         wvts(&mut stream, short_user_vec).await?;
 
         let user_vec = rvfs(&mut stream).await?;
         
         let user = SqliteUser::dz(user_vec).unwrap();
+        debug!("host name: {}",&user.host);
         SqliteUser::add_user(user, pool).await.unwrap();
         SqliteHost::new(server, pool).await;
 
+    }
+    else {
+        info!("server did not allow to signup");
     }
 
     Ok(())
@@ -55,11 +66,16 @@ pub async fn signup_process(addr: SocketAddr, user: ShortUser, pool: &SqlitePool
 }
 
 
-pub async fn connect_tcp(pool: &SqlitePool, conn: Connection, rqm: RQM) -> Result<u8> {
+pub async fn connect_tcp(
+    pool: &SqlitePool,
+    conn: Connection,
+    rqm: RQM
+) -> Result<u8> {
     if conn.jwt.is_none(){
         debug!("CLIENT: no jwt will try to login ");
         let port = conn.server.port;
-        let addr = if *PUB_IP.to_string() != conn.server.pub_ip {
+        let me_pub_ip = public_ip::addr().await;
+        let addr = if me_pub_ip.is_some() && me_pub_ip.unwrap().to_string() != conn.server.pub_ip {
             SocketAddr::new(conn.server.pub_ip.parse().unwrap(), port)
         } else {
             SocketAddr::new(conn.server.pri_ip.parse().unwrap(), port) 
@@ -99,7 +115,11 @@ pub async fn connect_tcp(pool: &SqlitePool, conn: Connection, rqm: RQM) -> Resul
         else {
             match what {
                 UNAUTHORIZED => {
-                    error!("SERVER: you are not authorized to log in\n check if you are an already a in the db used by the server \n will exit not with status of 1");
+                    error!(
+                    "SERVER: you are not authorized to log in
+                        check if you are an already a in the db used by the server 
+                        will exit not with status of 1"
+                    );
                     exit(1)
                     
                 } 
@@ -117,7 +137,8 @@ pub async fn connect_tcp(pool: &SqlitePool, conn: Connection, rqm: RQM) -> Resul
         let request = req.sz().unwrap();
 
         let port = conn.server.port;
-        let addr = if *PUB_IP.to_string() != conn.server.pub_ip {
+        let me_pub_ip = public_ip::addr().await;
+        let addr = if me_pub_ip.is_some() && me_pub_ip.unwrap().to_string() != conn.server.pub_ip {
             SocketAddr::new(conn.server.pub_ip.parse().unwrap(), port)
         } else {
             SocketAddr::new(conn.server.pri_ip.parse().unwrap(), port) 
@@ -137,7 +158,12 @@ pub async fn connect_tcp(pool: &SqlitePool, conn: Connection, rqm: RQM) -> Resul
             exit(UNAUTHORIZED as i32)
         };
         info!("CLIENT: sent full request with size: {:?}",size);
-        let state = handle_client_request(&mut stream, rqm).await.unwrap();
+        let state = handle_client_request(
+            &mut stream,
+            rqm,
+            conn.server.cpid,
+            pool
+        ).await.unwrap();
         if state == 0 {
             info!("request request was succesful");
         }

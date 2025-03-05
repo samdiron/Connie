@@ -49,7 +49,11 @@ pub async fn get_host_ip(
     Ok(vector)
 }
 
-pub async fn fetch_server(name: &String, host: &String,pool: &SqlitePool) -> SqliteHost {
+pub async fn fetch_server(
+    name: &String,
+    host: &String,
+    pool: &SqlitePool
+) -> SqliteHost {
     let sql = format!("SELECT * FROM host WHERE name = '{name}' AND host = '{host}'");
     let _res = sqlx::query(&sql).fetch_one(pool).await.unwrap();
     let name: String = _res.get("name");
@@ -99,9 +103,10 @@ impl SqliteHost {
         sqlx::query(&sql).execute(pool).await?;
         Ok(())
     }
+    /// note this function takes into account that host is OsStr aka 'host'
     pub async fn new(s: Self, pool: &SqlitePool) {
         let sql = format!(
-            "INSERT INTO host(name, cpid, host, port, pub_ip, pri_ip) VALUES('{}','{}','{}',{},'{}','{}');",
+            "INSERT INTO host(name, cpid, host, port, pub_ip, pri_ip) VALUES('{}','{}','{}', {}, '{}','{}');",
             s.name,
             s.cpid,
             s.host,

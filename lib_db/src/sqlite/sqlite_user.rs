@@ -93,21 +93,8 @@ impl SqliteUser {
     ) -> Result<()> {
         let paswd = digest(s.paswd);
         let sql = format!(
-            "INSERT INTO user(
-                name,
-                host,
-                cpid,
-                email,
-                paswd,
-                usrname
-            ) VALUES (
-                '{}'
-                '{}'
-                '{}'
-                '{}'
-                '{}'
-                '{}'
-                ); ",
+"INSERT INTO user(name, host, cpid, email, paswd, usrname) 
+VALUES ('{}','{}','{}','{}','{}','{}'); ",
                 s.name,
                 s.host,
                 s.cpid,

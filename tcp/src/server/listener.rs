@@ -1,6 +1,7 @@
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
-use common_lib::cheat_sheet::{LOCAL_IP, PUB_IP, TCP_MAIN_PORT};
+use common_lib::cheat_sheet::{LOCAL_IP, TCP_MAIN_PORT};
+use common_lib::public_ip;
 use lib_db::server::server_struct::Server;
 use lib_db::sqlite::sqlite_host::SqliteHost;
 use lib_db::types::PgPool;
@@ -32,12 +33,13 @@ pub async fn bind(pool: PgPool, ident: Server) {
     let allow_new_users = if *NEW_USERS.lock().unwrap() == 1 {
         true
     }else {false};
+    let me_pub_ip = public_ip::addr().await.unwrap();
     let sqlite_host = SqliteHost {
         name: ident.name,
         cpid: ident.cpid,
         host: ident.host,
         port,
-        pub_ip: PUB_IP.to_string(),
+        pub_ip: me_pub_ip.to_string(),
         pri_ip:LOCAL_IP.to_string(),
     };
     loop {

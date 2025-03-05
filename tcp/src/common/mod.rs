@@ -4,7 +4,7 @@ pub(crate) mod request;
 
 #[allow(dead_code)]
 pub(crate) mod util {
-    use common_lib::{log::info, tokio::{
+    use common_lib::{log::{debug, info}, tokio::{
         fs::File,
         io::{
             AsyncReadExt,
@@ -43,8 +43,9 @@ pub(crate) mod util {
         s: &mut TcpStream,
     ) -> Result<Vec<u8>> {
         let buf_size = s.read_u16().await?;
+        debug!("should read {buf_size}");
         let mut buf = vec![0; buf_size as usize];
-        s.read_exact(&mut buf).await?;
+        s.read(&mut buf).await?;
         s.write_u8(0).await.unwrap();
         Ok(buf)
         
@@ -60,8 +61,11 @@ pub(crate) mod util {
         assert!(all < PACKET_SIZE);
 
         let sized = all as u16;
+        debug!("should write {all}");
         s.write_u16(sized).await?;
+        s.flush().await?;
         s.write_all(&fbuf).await?;
+        s.flush().await?;
         let state = s.read_u8().await?;
         assert_eq!(state, 0);
         Ok(state)

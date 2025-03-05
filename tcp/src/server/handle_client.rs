@@ -120,14 +120,15 @@ pub async fn handle(
             debug!("SERVER: signin request");
             if allow_new_users {
                 stream.write_u8(0).await?;
+                stream.flush().await?;
                 let server_vector = sqlite_host::SqliteHost::sz(sqlite_host).unwrap();
                 debug!("server vector size: {}",server_vector.len());
-                let vector = rvfs(&mut stream).await?;
                 wvts(&mut stream, server_vector).await?;
                 let confirm = stream.read_u8().await?;
                 if confirm == 0 { 
+                    let vector = rvfs(&mut stream).await?;
                     let short_user = ShortUser::dz(vector).unwrap();
-                    let host = gethostname().to_str().unwrap().to_owned();
+                    let host = gethostname().to_str().unwrap().to_string();
                     let user = user_struct::User {
                         cpid: String::new(),
                         name: short_user.name,

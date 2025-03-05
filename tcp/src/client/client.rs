@@ -1,14 +1,16 @@
-use std::{
-    io::{ErrorKind, Result}, net::IpAddr
-};
+use std::
+    io::Result
+;
 
 use lib_db::{
     sqlite::{
-        sqlite_host::{get_host_ip, SqliteHost}, sqlite_jwt::get_jwt, sqlite_user::SqliteUser
+        sqlite_host::SqliteHost,
+        sqlite_jwt::get_jwt,
+        sqlite_user::SqliteUser
     },
     types::SqlitePool
 };
-use common_lib::log::{debug, warn};
+// use common_lib::log::{debug, warn};
 
 use crate::common::request::RQM;
 
@@ -19,57 +21,6 @@ pub(crate) struct Connection {
     pub user: SqliteUser,
     pub server: SqliteHost,
 }
-
-// #[derive(Clone)]
-// pub(crate) struct Cred {
-//     pub cpid: String,
-//     pub name: String,
-//     pub paswd: String,
-// }
-
-/// it tries to get a jwt and if the jwt is not valid it will instead load the user cred 
-// async fn check_host(host_name: String, host: String, user_name: String, pool: &SqlitePool, cred: Cred) -> Result<Connection> {
-//     let user = 
-//     
-//     let ip = get_host_ip(&name &host, pool).await;
-//     if ip.is_ok() {
-//         let ip = ip.unwrap();
-//         let pri_ip = ip.0;
-//         let pub_ip = ip.1;
-//         let  res = get_jwt(&host, &cred.cpid, pool).await;
-//         if  res.is_ok() {
-//             let res = res.unwrap();
-//             debug!("CLIENT: found jwt for Host: {}",&res);
-//             let jwt = Some(res);
-//             let conn = Connection {
-//                 host,
-//                 pub_ip,
-//                 pri_ip,
-//                 jwt,
-//                 cred
-//             };
-//             return Ok(conn)
-//
-//         }
-//         else {
-//             let e = res.unwrap_err();
-//             warn!("error while trying to get jwt: {:#?}", e);
-//             let conn = Connection {
-//                 host,
-//                 pri_ip,
-//                 pub_ip,
-//                 jwt: None,
-//                 cred
-//             };
-//             return Ok(conn);
-//         }
-//     }
-//     let e = ErrorKind::NotFound;
-//     Err(e.into()) 
-//     
-//     
-// }
-//
 
 pub use crate::client::connector::signup_process;
 

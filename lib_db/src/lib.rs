@@ -27,8 +27,9 @@ pub mod jwt {
     use std::sync::{LazyLock, Mutex};
 
     use jsonwebtoken::{
-        decode, encode, errors::Result, get_current_timestamp, DecodingKey, EncodingKey, Header, Validation
+        decode, encode, errors::Result, DecodingKey, EncodingKey, Header, Validation
     };
+    pub use jsonwebtoken::get_current_timestamp;
     pub fn exp_gen() -> u64 {
         let now = get_current_timestamp();
         let exp = now + DURATION;

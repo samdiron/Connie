@@ -7,12 +7,17 @@ use crate::{
 };
 
 
-pub async fn get_files(u: SqliteUser, ip: IpAddr, port: u16, jwt: String) -> Result<()> {
+pub async fn get_files(
+    u: SqliteUser,
+    ip: IpAddr,
+    port: u16,
+    jwt: String,
+) -> Result<()> {
     let addr = SocketAddr::new(ip, port);
     let mut stream = TcpStream::connect(addr).await?;
     let head = Chead {
         jwt,
-        cpid: u.cpid
+        cpid: u.cpid.clone()
     };
     let request = head.sz().unwrap(); 
     stream.write_u8(FETCH).await?;
