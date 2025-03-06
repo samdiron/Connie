@@ -1,7 +1,7 @@
-use std::{io::Result, net::{IpAddr, SocketAddr}};
+use std::{io::Result, net::SocketAddr};
 
-use lib_db::{media::fetch::Smedia, sqlite::sqlite_user::SqliteUser};
-use common_lib::{log::debug, tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream}};
+use lib_db::{media::fetch::Smedia, sqlite::{sqlite_host::SqliteHost, sqlite_user::SqliteUser}};
+use common_lib::{log::debug, public_ip, tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream}};
 use crate::{
     common::{request::FETCH, util::rvfs}, server::req_format::Chead
 };
@@ -9,11 +9,16 @@ use crate::{
 
 pub async fn get_files(
     u: SqliteUser,
-    ip: IpAddr,
-    port: u16,
+    server: SqliteHost,
     jwt: String,
 ) -> Result<()> {
-    let addr = SocketAddr::new(ip, port);
+  let port = server.port;
+        let me_pub_ip = public_ip::addr().await;
+        let addr = if me_pub_ip.is_some() && me_pub_ip.unwrap().to_string() != server.pub_ip {
+            SocketAddr::new(server.pub_ip.parse().unwrap(), port)
+        } else {
+            SocketAddr::new(server.pri_ip.parse().unwrap(), port) 
+        };
     let mut stream = TcpStream::connect(addr).await?;
     let head = Chead {
         jwt,
@@ -31,7 +36,12 @@ pub async fn get_files(
         let buf = rvfs(&mut stream).await?;
         let media: Smedia = Smedia::dz(buf).unwrap();
         println!("{_i}: name: {},\n size: {}, checksum: {} ;",media.name, media.size, media.checksum);
-
+        // let sqlitem = SqliteMedia {
+        //     name: media.name,
+        //     cpid: u.cpid.clone(),
+        //     host: server.cpid.clone(),
+        //     path
+        // }
     }
 
 

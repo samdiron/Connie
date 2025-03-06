@@ -29,13 +29,14 @@ pub async fn client_process(
     pool: SqlitePool,
     usr: SqliteUser,
     server: SqliteHost,
+    check_for_sum: Option<bool>,
     request: RQM,
 
 ) -> Result<u8> {
     let state: u8;
     
-    let jwt = get_jwt(&server.cpid, &usr.cpid, &pool).await;
-    let conn = if jwt.is_ok() {
+    let jwt = get_jwt(&server.cpid, &usr.cpid, &pool).await.unwrap();
+    let conn = if jwt.is_some() {
         let jwt = Some(jwt.unwrap());
         let conn = Connection {
             jwt,
@@ -50,7 +51,7 @@ pub async fn client_process(
             server,
         }
     };
-    state = connect_tcp(&pool, conn, request).await.unwrap();
+    state = connect_tcp(&pool, conn, check_for_sum,request).await.unwrap();
     Ok(state)
 
 } 

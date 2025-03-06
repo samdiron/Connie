@@ -21,9 +21,13 @@ pub struct SqliteMedia {
 const SQL: &str = "
 CREATE TABLE media(
     name TEXT,
+    cpid TEXT,
     host TEXT,
+    path TEXT,
     type TEXT,
-    checksum TEXT 
+    checksum TEXT,
+    size INT,
+    date INT
 );";
 
 pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{
@@ -107,27 +111,8 @@ impl SqliteMedia {
         pool: &SqlitePool
     ) -> Result<()> {
         let sql = format!(
-        "INSERT INTO media(
-            name,
-            cpid,
-            host,
-            path,
-            type_,
-            checksum,
-            size,
-            date,
-        ) 
-        VALUES (
-            '{}',
-            '{}',
-            '{}',
-            '{}',
-            '{}',
-            '{}',
-            {},
-            {},
-        );
-        ",
+"INSERT INTO media(name, cpid, host, path, type, checksum, size, date)
+VALUES ('{}', '{}', '{}', '{}', '{}', '{}', {}, {});",
             s.name,
             s.cpid,
             s.host,

@@ -1,7 +1,7 @@
 use common_lib::bincode;
 use common_lib::log::{debug, error};
 use serde::{Deserialize, Serialize};
-use sha256::digest;
+// use sha256::digest;
 use sqlx::Row;
 use sqlx::{Result, SqlitePool};
 
@@ -54,12 +54,42 @@ pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{
 }
 
 
-pub async fn fetch_sqlite_user(
-    username: String,
-    password: String,
+pub async fn fetch_sqlite_user_with_server_cpid(
+    username: &String,
+    cpid: &String,
     pool: &SqlitePool
 ) -> Result<SqliteUser> {
-    let password = digest(password);
+    let sql = format!("SELECT * from user WHERE usrname = '{username}' AND host = '{cpid}';");
+    let _res = sqlx::query(&sql).fetch_one(pool).await;
+    if _res.is_ok() {
+        let res = _res.unwrap();
+        let name: String = res.get("name");
+        let host: String = res.get("host");
+        let cpid: String = res.get("cpid");
+        let email: String = res.get("email");
+        let paswd: String = res.get("paswd");
+        let usrname: String = res.get("usrname");
+        let user = SqliteUser {
+            name,
+            host,
+            cpid,
+            email,
+            paswd,
+            usrname,
+        };
+        return Ok(user);
+    }else {
+        error!("error while trying to fetch user");
+        return Err(_res.err().unwrap())
+    }
+}
+
+
+pub async fn fetch_sqlite_user(
+    username: &String,
+    password: &String,
+    pool: &SqlitePool
+) -> Result<SqliteUser> {
     let sql = format!("SELECT * from user WHERE usrname = '{username}' AND paswd = '{password}';");
     let _res = sqlx::query(&sql).fetch_one(pool).await;
     if _res.is_ok() {
@@ -91,7 +121,6 @@ impl SqliteUser {
         s: Self,
         pool: &SqlitePool
     ) -> Result<()> {
-        let paswd = digest(s.paswd);
         let sql = format!(
 "INSERT INTO user(name, host, cpid, email, paswd, usrname) 
 VALUES ('{}','{}','{}','{}','{}','{}'); ",
@@ -99,7 +128,7 @@ VALUES ('{}','{}','{}','{}','{}','{}'); ",
                 s.host,
                 s.cpid,
                 s.email,
-                paswd,
+                s.paswd,
                 s.usrname,
         );
         sqlx::query(&sql).execute(pool).await?;

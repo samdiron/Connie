@@ -24,12 +24,17 @@ pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{
 }
 
 
-pub async fn get_jwt(host: &String, cpid: &String, pool: &SqlitePool) -> Result<String> {
+pub async fn get_jwt(host: &String, cpid: &String, pool: &SqlitePool) -> Result<Option<String>> {
     let now = get_current_timestamp();
     let sql = format!("SELECT token FROM jwt WHERE host = '{host}' AND exp > {now} AND cpid = '{cpid}' ;");
-    let _res = sqlx::query(&sql).fetch_one(pool).await.unwrap();
-    let token: String = _res.get("token");
-    Ok(token)
+    let _res = sqlx::query(&sql).fetch_one(pool).await;
+    if _res.is_ok() {
+        let _res= _res.unwrap();
+        let token: String = _res.get("token");
+        return Ok(Some(token))
+    } else {
+        return Ok(None)
+    };
 } 
 pub async fn delete_jwt(token: &String, pool: &SqlitePool) -> Result<()>{
     let sql = format!("DELETE FROM jwt WHERE token = '{token}' ;");
@@ -40,11 +45,11 @@ pub async fn delete_jwt(token: &String, pool: &SqlitePool) -> Result<()>{
 pub async fn add_jwt(
     host_cpid: &String,
     token: &String,
-    cpid: &String,
+    user_cpid: &String,
     pool: &SqlitePool
 ) {
     let exp = exp_gen();
-    let sql = format!("INSERT INTO jwt(host, cpid, exp, token) VALUES('{host_cpid}', '{cpid}', {exp},'{token}');");
+    let sql = format!("INSERT INTO jwt(host, cpid, exp, token) VALUES('{host_cpid}', '{user_cpid}', {exp},'{token}');");
     let res = sqlx::query(&sql).execute(pool).await;
     if res.is_ok() {
         debug!("jwt added");

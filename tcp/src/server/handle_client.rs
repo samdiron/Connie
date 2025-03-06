@@ -73,10 +73,13 @@ pub async fn handle(
             if  is_valid {
                 stream.write_u8(0).await?;
                 debug!("SERVER: valid jwt login");
-                let status = handle_server_request(jwtreq.request, &mut stream, &pool).await?;
+                let status = handle_server_request(jwtreq.request, &mut stream, &sqlite_host.cpid, &pool).await?;
                 if status == 0 {
                     info!("a request was handled succsefully");
                 }
+                stream.write_u8(status).await?;
+                stream.flush().await?;
+
                 drop(stream);
             }
             else {

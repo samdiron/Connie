@@ -6,14 +6,14 @@ use std::{
     io::{stdout, Write},
     net::{IpAddr, SocketAddr},
     path::PathBuf,
-    process::exit
+    process::exit, str::FromStr
 };
 use env_logger;
 use common_lib::{
     cheat_sheet::TCP_MAIN_PORT,
     gethostname::gethostname,
     log::{debug, error},
-    path::SQLITEDB_PATH
+    path::SQLITEDB_PATH, public_ip
 };
 use lib_db::{
     database::{get_conn, DB_CONN},
@@ -25,7 +25,7 @@ use lib_db::{
         self,
         get_sqlite_conn,
         sqlite_host::fetch_server,
-        sqlite_user::ShortUser
+        sqlite_user::{fetch_sqlite_user_with_server_cpid, ShortUser}
     },
     user::user_struct::User
 };
@@ -233,6 +233,9 @@ enum Commands {
         
         #[arg(long, short)]
         signup: Option<bool>,
+        /// this is for when you are trying to enter your account from another machine  
+        // #[arg(long, short)]
+        // signin: Option<bool>,
 
         #[arg(long)]
         admin: Option<bool>,
@@ -259,10 +262,10 @@ fn get_pass(password: &mut String, name: &str) {
 
 fn get_new_pass(password: &mut String, name: &str) {
     for i in 0..2 {
-        print!("enter password for {} : ", name);
+        print!("enter password for {}: ", name);
         stdout().flush().expect("could not flush");
         let password1 = read_password().unwrap();
-        print!("confirm password");
+        print!("confirm password: ");
         stdout().flush().expect("could not flush");
         let password2 = read_password().unwrap();
         if password2 == password1 && (password1.is_empty() == false) {
@@ -292,7 +295,7 @@ async fn config_handle(command: Commands ) {
             admin,
             name,
             username,
-            email
+            email,
         } => {
             let pool =  get_conn().await.unwrap();
             let pool = &pool;
@@ -335,7 +338,20 @@ async fn config_handle(command: Commands ) {
                 };
                 let addr = SocketAddr::new(ip.unwrap(), port.unwrap());
                 signup_process(addr, user, &pool).await.unwrap();
-            }
+            }//else if signin.is_some() && signin.unwrap() && port.is_some() && ip.is_some() {
+            //     let mut password = String::new();
+            //     let pool = get_sqlite_conn(&SQLITEDB_PATH.to_string()).await.unwrap();
+            //     println!("you are creating a user for a host");
+            //     get_new_pass(&mut password, &name);
+            //     let user = ShortUser {
+            //         name,
+            //         username,
+            //         email,
+            //         password  
+            //     };
+            //     let addr = SocketAddr::new(ip.unwrap(), port.unwrap());
+            //     signup_process(addr, user, &pool).await.unwrap();
+            // }
         } 
         Commands::SERVER {
             new,
@@ -560,71 +576,85 @@ async fn config_handle(command: Commands ) {
             server_name,
             get,
             post,
-            create_checksum,
+            create_checksum: checksum,
             fetch_files, 
             user
-        } => {    
+        } => {
+            if post.is_some() && get.is_some() {println!("you can't enter a get and post command");exit(1)}
             let _pool = sqlite::get_sqlite_conn(&SQLITEDB_PATH.to_string())
                 .await
                 .unwrap();
             let pool = &_pool;
-          
-            let mut passwd = String::new();
-            get_pass(&mut passwd, user.as_str());
-            let usr = sqlite::sqlite_user::fetch_sqlite_user(
-                user,
-                passwd,
-                pool
-            ).await
-            .expect("could not fetch that user");
             
-            debug!("user cpid: {} , name: {}", usr.cpid, usr.usrname);
-            if fetch_files.is_some()&&
-                port.is_some()&&
-                ip.is_some()&&
-                host.is_some() {
+            let server = if host.is_some() && server_name.is_some() {
+                let server_name = server_name.unwrap();
+                let server = fetch_server(&server_name, host, pool).await;
+                server
+            } else if let Some(name) = server_name {
+                let server = fetch_server(&name, None, pool).await;
+                server
+            }else {
+                error!("you need to enter a user - server_name if
+                you have more than 1 server with the same name it's
+                better to enter the host too");
+                exit(1)
+
+            };
+            let checksum = if checksum.is_some() {
+                checksum.unwrap()
+            }else {true};
+
+            
+            let usr = fetch_sqlite_user_with_server_cpid(&user, &server.cpid, pool)
+                    .await
+                    .expect("could not fetch user");
+
+            if fetch_files.is_some(){
+                debug!("fetching files");
                 let jwt = sqlite::sqlite_jwt::get_jwt(
-                    &host.unwrap(),
+                    &server.cpid,
                     &usr.cpid,
                     pool
                 ).await.unwrap();
+                if jwt.is_none() {
+                    error!("a jwt was not found");
+
+                }
+                let jwt = jwt.unwrap();
+                let me_pub_ip = public_ip::addr().await;
+                let ip = if ip.is_some() {ip.unwrap()} 
+                    else if me_pub_ip.is_some()&&
+                    me_pub_ip.unwrap().to_string() == server.pub_ip {
+                    IpAddr::from_str(&server.pri_ip).unwrap()
+                }else {IpAddr::from_str(&server.pub_ip).unwrap()};
                 fetcher::get_files(
                     usr,
-                    ip.unwrap(),
-                    port.unwrap(),
-                    jwt
+                    server,
+                    jwt,
                 ).await.unwrap();
-            } else if host.is_some()&&
-                post.is_some()&&
-                server_name.is_some(){ 
-                let host = host.unwrap();
-                let create_checksum = create_checksum.unwrap();
-                println!("creating a checksum this will take a moment");
-                let request: RQM = 
-                    if post.is_some() {
-                        let r = RQM::create(
-                            post.unwrap(),
-                            POST.to_string(),
-                            usr.cpid.clone(),
-                            create_checksum
-                        ).await.unwrap();
-                        r
-                    } else {
-                    println!("you did not enter a request to exec");
-                    exit(0)
-                };
-                let server = fetch_server(
-                    &server_name.unwrap(),
-                    &host,
-                    pool
-                ).await;
+            } else if post.is_some() { 
+              
+                println!("creating a checksum: {checksum}");
+                let request: RQM = RQM::create(
+                    post.unwrap(),
+                    POST.to_string(),
+                    usr.cpid.clone(),
+                    checksum
+                ).await.unwrap();
+                let usr = fetch_sqlite_user_with_server_cpid(&user, &server.cpid, pool).await.unwrap();
                 let res = client_process(
                     _pool,
                     usr,
                     server,
+                    None,
                     request
                 ).await.unwrap();
                 println!("done {}", res);
+            } else if get.is_some() {
+                
+            }
+            else {
+                error!("you did not enter a command to execute")
             }
         }
         _ => {}
@@ -656,9 +686,18 @@ async fn main() {
             }
             2 => {
             env_logger::Builder::new()
-                    .parse_filters("trace")
+                    .parse_filters("WARN")
+                    .parse_filters("ERROR")
+                    .parse_filters("INFO")
+                    .parse_filters("DEBUG")
                     .init();
             }
+            3 => {
+                env_logger::Builder::new()
+                    .parse_filters("trace")
+                    .init();
+
+        }
             _ => {}
         }
 

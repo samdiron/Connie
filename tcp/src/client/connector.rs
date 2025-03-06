@@ -1,7 +1,7 @@
 use std::io::Result;
 use std::net::SocketAddr;
 use std::time::Duration;
-use std::thread;
+use std::thread::{self};
 use std::process::exit;
 use common_lib::public_ip;
 use lib_db::sqlite::sqlite_host::SqliteHost;
@@ -51,7 +51,8 @@ pub async fn signup_process(
 
         let user_vec = rvfs(&mut stream).await?;
         
-        let user = SqliteUser::dz(user_vec).unwrap();
+        let mut user = SqliteUser::dz(user_vec).unwrap();
+        user.host = server.cpid.clone();
         debug!("host name: {}",&user.host);
         SqliteUser::add_user(user, pool).await.unwrap();
         SqliteHost::new(server, pool).await;
@@ -69,31 +70,49 @@ pub async fn signup_process(
 pub async fn connect_tcp(
     pool: &SqlitePool,
     conn: Connection,
+    check_for_sum: Option<bool>,
     rqm: RQM
 ) -> Result<u8> {
+    let port = conn.server.port;
+
+    let pub_addr = SocketAddr::new(conn.server.pub_ip.parse().unwrap(), port);
+    
+    let pri_addr = SocketAddr::new(conn.server.pri_ip.parse().unwrap(), port);
+    let me_pub_ip = public_ip::addr().await;
+    info!("server pulic ip: {}, private ip: {}",&conn.server.pub_ip, &conn.server.pri_ip );
+    if me_pub_ip.is_some() {
+        info!("current public ip: {}",me_pub_ip.unwrap().to_string())
+    };
+        
     if conn.jwt.is_none(){
-        debug!("CLIENT: no jwt will try to login ");
-        let port = conn.server.port;
-        let me_pub_ip = public_ip::addr().await;
-        let addr = if me_pub_ip.is_some() && me_pub_ip.unwrap().to_string() != conn.server.pub_ip {
-            SocketAddr::new(conn.server.pub_ip.parse().unwrap(), port)
-        } else {
-            SocketAddr::new(conn.server.pri_ip.parse().unwrap(), port) 
-        };
-        // debug!("sent to host: cpid: {}, paswd: *********",&cpi);
+        debug!("no jwt will try to login ");
+        let name  = conn.user.usrname;
+        let cpid = conn.user.cpid;
+        let paswd = conn.user.paswd;
         let req = LoginReq {
-            cpid: conn.user.cpid.clone(),
-            name: conn.user.name.clone(),
-            paswd: conn.user.paswd.clone(),
+            cpid: cpid.clone(),
+            name: name.clone(),
+            paswd: paswd.clone(),
         };
+        debug!("login request name:{}, cpid:{}, password:{} ;",&name, &cpid, &paswd);
         let request = req.sz().unwrap();
-        let mut stream = TcpStream::connect(&addr).await?;
-        info!("connected to host: {:?}",addr);
+        let private_s =  TcpStream::connect(&pri_addr).await;
+        let mut stream = if private_s.is_ok() {
+            info!("trying private ip: {:?}",&pri_addr);
+            private_s.unwrap()
+        } else {
+            debug!("faild to connect to private");
+            info!("trying public ip: {:?}", &pub_addr);
+            TcpStream::connect(pub_addr)
+                .await
+                .expect("could not connect to public ip")
+        };
 
         stream.write_u8(LOGIN_CRED).await?;
+
         stream.flush().await?;
         let reques_len = request.len();
-        debug!("CLIENT: login request size: {:?}", reques_len);
+        debug!("login request size: {:?}", reques_len);
         let size = stream.write(&request).await?;
         stream.flush().await?;
         debug!("request was sent: bytes sent {:?}",size);
@@ -107,7 +126,7 @@ pub async fn connect_tcp(
             let mut jwt_buf = vec![0;500];
             let size = stream.read(&mut jwt_buf).await.unwrap();
             let jwt = String::from_utf8(jwt_buf[..size].to_vec()).unwrap();
-            add_jwt(&conn.server.cpid, &jwt, &conn.user.cpid.clone(), pool).await;
+            add_jwt(&conn.server.cpid, &jwt, &cpid, pool).await;
             stream.write_u8(0).await?;
             drop(stream);
             return Ok(8)
@@ -127,7 +146,7 @@ pub async fn connect_tcp(
             }
         }
     } else  {
-        println!("CLIENT: Will use jwt auth");
+        debug!("Will use jwt auth");
         let jwt = conn.jwt.unwrap();
         let req = JwtReq {
             jwt,
@@ -136,19 +155,22 @@ pub async fn connect_tcp(
         let extra_jwt = req.jwt.clone();
         let request = req.sz().unwrap();
 
-        let port = conn.server.port;
-        let me_pub_ip = public_ip::addr().await;
-        let addr = if me_pub_ip.is_some() && me_pub_ip.unwrap().to_string() != conn.server.pub_ip {
-            SocketAddr::new(conn.server.pub_ip.parse().unwrap(), port)
+        let private_s =  TcpStream::connect(&pri_addr).await;
+        let mut stream = if private_s.is_ok() {
+            info!("trying private ip: {:?}",&pri_addr);
+            private_s.unwrap()
         } else {
-            SocketAddr::new(conn.server.pri_ip.parse().unwrap(), port) 
+            debug!("faild to connect to private");
+            info!("trying public ip: {:?}", &pub_addr);
+            TcpStream::connect(pub_addr)
+                .await
+                .expect("could not connect to public ip")
         };
+
         
-        let mut stream = TcpStream::connect(&addr).await?;
-        info!("CLIENT: connected to {}",&addr);
         stream.write_u8(JWT_AUTH).await?;
         stream.flush().await?;
-        debug!("CLIENT: sent auth state {}",JWT_AUTH);
+        debug!("sent auth state {}",JWT_AUTH);
         let size = stream.write(&request).await?;
         stream.flush().await?;
         let is_valid = stream.read_u8().await?;
@@ -157,11 +179,12 @@ pub async fn connect_tcp(
             info!("there was an unexpected jwt change please run the same command again");
             exit(UNAUTHORIZED as i32)
         };
-        info!("CLIENT: sent full request with size: {:?}",size);
+        info!("sent full request with size: {:?}",size);
         let state = handle_client_request(
             &mut stream,
             rqm,
             conn.server.cpid,
+            check_for_sum,
             pool
         ).await.unwrap();
         if state == 0 {

@@ -51,10 +51,15 @@ pub async fn get_host_ip(
 
 pub async fn fetch_server(
     name: &String,
-    host: &String,
+    host: Option<String>,
     pool: &SqlitePool
 ) -> SqliteHost {
-    let sql = format!("SELECT * FROM host WHERE name = '{name}' AND host = '{host}'");
+    let sql = if let Some(host) = host {
+        
+        format!("SELECT * FROM host WHERE name = '{name}' AND host = '{host}'")
+    }else  {
+        format!("SELECT * FROM host WHERE name = '{name}';")
+    };
     let _res = sqlx::query(&sql).fetch_one(pool).await.unwrap();
     let name: String = _res.get("name");
     let cpid: String = _res.get("cpid");
