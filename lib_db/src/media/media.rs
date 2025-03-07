@@ -25,16 +25,20 @@ pub async fn check_if_media_exist(
 ) -> bool {
     let sql = format!("
 SELECT count(1) FROM media
-WHERE name: '{name}' 
+WHERE name = '{name}' 
 AND size = {size} 
-AND host = '{host}' 
+AND in_host = '{host}' 
 AND type = '{type_}'
 AND cpid = '{cpid}';");
-    let _res = sqlx::query(&sql).fetch_one(pool).await.unwrap();
-    let count: i8 = _res.get("count");
-    return if count == 1 {
-        true
-    } else {false}
+     let _count = sqlx::query(&sql).fetch_one(pool).await;
+    if _count.is_err() {return false}else {
+    let count: i64 = _count.unwrap().get("count");
+    if count == 1 {
+        return true
+    } else {
+        return false
+    }
+    }
 
 }
 

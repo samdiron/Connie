@@ -1,5 +1,5 @@
 
-use common_lib::log::{debug, warn};
+use common_lib::log::debug;
 use sha256::digest;
 use sqlx::{PgPool, Result, Row};
 use uuid::Uuid;
@@ -17,23 +17,42 @@ pub async fn validate_claim_wcpid(
     paswd: String,
     pool: &PgPool
 ) -> sqlx::Result<bool> {
-    let res = fetch_wcpid(cpid.clone(), paswd.clone(), pool).await;
-    if res.is_ok() && res.unwrap().cpid == cpid {
-        return Ok(true)
+    let table = r#" "user" "#;
+    let sql = format!(
+        "SELECT count(1) FROM {} WHERE cpid = '{}' AND password = '{}' ;",
+        table,
+        cpid,
+        paswd
+    );
+    let _count = sqlx::query(&sql).fetch_one(pool).await?;
+    let count: i64 = _count.get("count");
+    if count == 1 {
+        Ok(true)
     } else {
-        warn!("invalid auth");
-        return Ok(false)
+        Ok(false)
     }
 }
 
-pub async fn validate_claim(name: String, paswd: String, pool: &PgPool) -> sqlx::Result<bool> {
-    let user = fetch(name.clone(), paswd.clone(), pool).await?;
-    if user.name == name {
-        drop(user);
+pub async fn validate_claim(
+    name: String,
+    paswd: String,
+    pool: &PgPool
+) -> sqlx::Result<bool> {
+    let table = r#" "user" "#;
+    let sql = format!(
+        "SELECT count(1) FROM {} WHERE name = '{}' AND password = '{}' ;",
+        table,
+        name,
+        paswd,
+    );
+    let _count = sqlx::query(&sql).fetch_one(pool).await;
+    if _count.is_err() {Ok(false)}else {
+    let count: i64 = _count.unwrap().get("count");
+    if count == 1 {
         Ok(true)
     } else {
-        warn!("invalid auth");
         Ok(false)
+    }
     }
 }
 

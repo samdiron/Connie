@@ -1,9 +1,15 @@
+use tokio::net::TcpStream;
+
 
 #[allow(dead_code)]
 pub(crate) mod request;
 
+
+pub(crate) type Stream = TcpStream;
+
 #[allow(dead_code)]
 pub(crate) mod util {
+    use crate::common::Stream;
     use common_lib::{log::{debug, info}, tokio::{
         fs::File,
         io::{
@@ -13,13 +19,12 @@ pub(crate) mod util {
             BufWriter,
             Result
         },
-        net::TcpStream
     }};
     use super::request::PACKET_SIZE;
     // reads the amount of b from a stream and returns the data read in a Vec<u8>
     // this function is made only for small reads it will not work as expected with larg buffers
     pub async fn read_stream(
-        s: &mut TcpStream,
+        s: &mut Stream,
         b: u16
     ) -> Result<Vec<u8>> {
         let mut buf = vec![0; b as usize];
@@ -40,7 +45,7 @@ pub(crate) mod util {
     /// stands for read vector from stream 
     /// and it only works with wvts
     pub async fn rvfs (
-        s: &mut TcpStream,
+        s: &mut Stream,
     ) -> Result<Vec<u8>> {
         let buf_size = s.read_u16().await?;
         debug!("should read {buf_size}");
@@ -54,7 +59,7 @@ pub(crate) mod util {
     /// and only works with rvfs
     /// make sure the input buffer is less than a standard paket size
     pub async fn wvts(
-        s: &mut TcpStream,
+        s: &mut Stream,
         fbuf: Vec<u8>
     ) -> Result<u8> {
         let all = fbuf.len();
@@ -75,7 +80,7 @@ pub(crate) mod util {
     /// it reads from the file a standard size buffer (PACKET_SIZE)
     /// then i writes it to a stream
     pub async fn wffb(
-        s: &mut TcpStream,
+        s: &mut Stream,
         _size: u64,
         reader: &mut BufReader<File>
     ) -> Result<usize> {
@@ -124,7 +129,7 @@ pub(crate) mod util {
     /// reads a standard (PACKET_SIZE) from stream and 
     /// writes the buffer into file
     pub async fn wifb(
-        s: &mut TcpStream,
+        s: &mut Stream,
         writer: &mut BufWriter<File>
     ) -> Result<(u8, usize)> {
         let mut wrote = 0usize;

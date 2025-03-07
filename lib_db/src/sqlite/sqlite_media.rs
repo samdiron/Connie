@@ -4,7 +4,7 @@ use sqlx::{Result, Row, SqlitePool};
 
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct SqliteMedia {
     pub name: String,
     pub cpid: String,
@@ -38,8 +38,8 @@ pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{
 
 
 pub async fn fetch_all_media_from_host(
-    host: String,
-    user: String,
+    host: &String,
+    user: &String,
     pool: &SqlitePool
 ) -> Result<Vec<SqliteMedia>> {
     let sql = format!("SELECT * FROM media WHERE cpid = '{user}' AND host = '{host}' ;");
@@ -72,7 +72,7 @@ pub async fn fetch_all_media_from_host(
 }
 
 pub async fn fetch_all_media(
-    user: String,
+    user: &String,
     pool: &SqlitePool
 ) -> Result<Vec<SqliteMedia>> {
     let sql = format!("SELECT * FROM media WHERE cpid = '{user}';");
