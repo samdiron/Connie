@@ -37,7 +37,6 @@ pub async fn client_process(
     
     let jwt = get_jwt(&server.cpid, &usr.cpid, &pool).await.unwrap();
     let conn = if jwt.is_some() {
-        let jwt = Some(jwt.unwrap());
         let conn = Connection {
             jwt,
             user: usr,

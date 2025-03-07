@@ -15,6 +15,7 @@ use common_lib::tokio::io::{
 };
 use common_lib::tokio::net::TcpStream;
 use crate::client::client::Connection;
+use crate::common::handshakes;
 use crate::common::request::{
     JWT_AUTH, RQM, SIGNIN_CRED, UNAUTHORIZED
 };
@@ -107,6 +108,10 @@ pub async fn connect_tcp(
                 .await
                 .expect("could not connect to public ip")
         };
+        let is_who_server = handshakes::client(&mut stream, &conn.server, pool).await?;
+        if is_who_server != 0 {
+            exit(1);
+        };
         
         stream.write_u8(LOGIN_CRED).await?;
 
@@ -158,6 +163,8 @@ pub async fn connect_tcp(
         let private_s =  TcpStream::connect(&pri_addr).await;
         let mut stream = if private_s.is_ok() {
             info!("trying private ip: {:?}",&pri_addr);
+
+            info!("Connected to  private ip: {:?}", &pri_addr);
             private_s.unwrap()
         } else {
             debug!("faild to connect to private");
@@ -166,8 +173,15 @@ pub async fn connect_tcp(
                 .await
                 .expect("could not connect to public ip")
         };
-
-        
+        // let is_who_server = handshakes::client(
+        //     &mut stream,
+        //     &conn.server,
+        //     pool
+        // ).await?;
+        // if is_who_server != 0 {
+        //     exit(1);
+        // };
+         
         stream.write_u8(JWT_AUTH).await?;
         stream.flush().await?;
         debug!("sent auth state {}",JWT_AUTH);

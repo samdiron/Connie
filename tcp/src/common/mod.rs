@@ -1,15 +1,105 @@
-use tokio::net::TcpStream;
 
 
 #[allow(dead_code)]
 pub(crate) mod request;
 
+#[allow(dead_code)]
+pub(crate) mod handshakes {
+    use std::io;
 
-pub(crate) type Stream = TcpStream;
+    use common_lib::log::{debug, warn};
+    use lib_db::{sqlite::sqlite_host::SqliteHost, types::SqlitePool};
+    use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream};
+
+    /// makes sure the client is in the correct addres and takes the public ip of the server if
+    /// it's correct and returns 0 if the server is correct if not 1
+    pub async fn client(
+        stream: &mut TcpStream,
+        server: &SqliteHost,
+        pool: &SqlitePool
+    ) -> Result<u8, io::Error>  {
+
+        debug!("START:HANDSHAKE");
+        let _res = stream.write(server.name.as_bytes()).await;
+        stream.flush().await?;
+        let server_confirm = stream.read_u8().await?;
+        if server_confirm != 0 {return Ok(1)};
+        if _res.is_ok() {
+            let mut cpid = String::new();
+            stream.read_to_string(&mut cpid).await?;
+            stream.write_u8(0).await?;
+            stream.flush().await?;
+            let mut host = String::new();
+            stream.read_to_string(&mut host).await?;
+            if cpid != server.cpid {
+                warn!("server confirmed name and sent a wrong cpid");
+                stream.write_u8(1).await?;
+                stream.flush().await?;
+                if host == server.host {
+                    warn!("the server on this addres is not {}, but it's ont he same machine: {}", server.name, host);
+                }else {warn!("the server on this addres is not {}", server.name);}
+                return Ok(1)
+            } else {
+                stream.write_u8(0).await?;
+                stream.flush().await?;
+                let mut public_ip = String::new();
+                stream.read_to_string(&mut public_ip).await?;
+                if public_ip != server.pub_ip {
+                    SqliteHost::update_pub_ip(
+                        server,
+                        public_ip.parse().unwrap(),
+                        pool
+                    ).await.unwrap();
+                    
+                };
+                debug!("SUCCSESFUL:HANDSHAKE");
+                return Ok(0)
+            }
+
+        } Ok(1)
+
+    }
+
+    /// this function assures the client that is 
+    /// in the correct addres and send the pub ip of
+    /// the server and if the if the client is in the correct addres it will return 0 else 1
+    pub async fn server(
+        stream: &mut TcpStream,
+        server: &SqliteHost
+    ) -> Result<u8, io::Error> {
+        debug!("START:HANDSHAKE");
+        let mut buf = Vec::new();
+        let size = stream.read(&mut buf).await?;
+        let name = String::from_utf8(buf[..size].to_vec()).unwrap();
+        if name != server.name {
+            stream.write_u8(1).await?;
+            stream.flush().await?;
+            return Ok(1)
+        };
+        stream.write_u8(0).await?;
+        stream.write(server.cpid.as_bytes()).await?;
+        stream.flush().await?;
+        let _confirm = stream.read_u8().await?;
+        stream.write(server.host.as_bytes()).await?;
+        stream.flush().await?;
+        let client_confirm = stream.read_u8().await?;
+        if client_confirm == 0 {
+            stream.write(server.pub_ip.as_bytes()).await?;
+            stream.flush().await?;
+            debug!("SUCCSESFUL:HANDSHAKE");
+            return Ok(0)
+        } else {return Ok(1)}
+
+        
+        
+    }
+
+}
+
+
 
 #[allow(dead_code)]
 pub(crate) mod util {
-    use crate::common::Stream;
     use common_lib::{log::{debug, info}, tokio::{
         fs::File,
         io::{
@@ -20,11 +110,12 @@ pub(crate) mod util {
             Result
         },
     }};
+    use tokio::net::TcpStream;
     use super::request::PACKET_SIZE;
     // reads the amount of b from a stream and returns the data read in a Vec<u8>
     // this function is made only for small reads it will not work as expected with larg buffers
     pub async fn read_stream(
-        s: &mut Stream,
+        s: &mut TcpStream,
         b: u16
     ) -> Result<Vec<u8>> {
         let mut buf = vec![0; b as usize];
@@ -45,7 +136,7 @@ pub(crate) mod util {
     /// stands for read vector from stream 
     /// and it only works with wvts
     pub async fn rvfs (
-        s: &mut Stream,
+        s: &mut TcpStream,
     ) -> Result<Vec<u8>> {
         let buf_size = s.read_u16().await?;
         debug!("should read {buf_size}");
@@ -59,7 +150,7 @@ pub(crate) mod util {
     /// and only works with rvfs
     /// make sure the input buffer is less than a standard paket size
     pub async fn wvts(
-        s: &mut Stream,
+        s: &mut TcpStream,
         fbuf: Vec<u8>
     ) -> Result<u8> {
         let all = fbuf.len();
@@ -80,7 +171,7 @@ pub(crate) mod util {
     /// it reads from the file a standard size buffer (PACKET_SIZE)
     /// then i writes it to a stream
     pub async fn wffb(
-        s: &mut Stream,
+        s: &mut TcpStream,
         _size: u64,
         reader: &mut BufReader<File>
     ) -> Result<usize> {
@@ -129,7 +220,7 @@ pub(crate) mod util {
     /// reads a standard (PACKET_SIZE) from stream and 
     /// writes the buffer into file
     pub async fn wifb(
-        s: &mut Stream,
+        s: &mut TcpStream,
         writer: &mut BufWriter<File>
     ) -> Result<(u8, usize)> {
         let mut wrote = 0usize;

@@ -30,6 +30,7 @@ pub async fn handle_client_request(
     let mut status: u8 = 0; 
     match request.header.as_str() {
     POST =>  {
+        debug!("serving post request ");
         let path: String = request.path.unwrap();
         let f = File::open(&path).await?;
         debug!("post file is open");
@@ -73,10 +74,12 @@ pub async fn handle_client_request(
         }
     }    
     GET => {
+        debug!("serving get request ");
         let server_status = stream.read_u8().await?;
         let path = request.path.unwrap();
         let f = File::create(&path).await;
         if f.is_err() {
+
             stream.write_u8(CLIENT_SIDE_ERR).await?;
             stream.flush().await?;
             status = stream.read_u8().await?;
@@ -86,6 +89,7 @@ pub async fn handle_client_request(
         };
         match server_status {
             READY_STATUS => {
+            debug!("GET:request:READY");
                 let f = f.unwrap();
                 stream.write_u8(READY_STATUS).await?;
                 let mut writer = BufWriter::new(f);
@@ -95,6 +99,7 @@ pub async fn handle_client_request(
                     stream.flush().await?;
                     error!("DATA SERVER SENT DOES NOT MATCH WHAT it's supposed to be");
                 }else if check_for_sum.is_some() && check_for_sum.unwrap() {
+                    debug!("GET:request:Check_CORRECT_DATA");
                     let local_sum = get_fsum(&path).await?;
                     if local_sum != request.chcksum {
                     stream.write_u8(DATA_NOT_MATCH).await?;

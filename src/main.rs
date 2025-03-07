@@ -3,7 +3,7 @@
 
 use std::{
     fs::remove_file,
-    io::{stdin, stdout, Read, Write},
+    io::{stdin, stdout, Write},
     net::{IpAddr, SocketAddr},
     path::PathBuf,
     process::exit, str::FromStr
