@@ -153,6 +153,9 @@ enum Commands {
         #[arg(long, short)]
         fetch_files: Option<bool>,
 
+        #[arg(short)]
+        db: Option<PathBuf>,
+
         #[arg(long, short)]
         get: Option<PathBuf>,
         
@@ -583,6 +586,7 @@ async fn config_handle(command: Commands ) {
             port,
             host,
             server_name,
+            db,
             get,
             post,
             create_checksum: checksum,
@@ -590,7 +594,16 @@ async fn config_handle(command: Commands ) {
             user
         } => {
             if post.is_some() && get.is_some() {println!("you can't enter a get and post command");exit(1)}
-            let _pool = sqlite::get_sqlite_conn(&SQLITEDB_PATH.to_string())
+            let db_path = if db.is_some() {
+                let path = db
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string();
+                debug!("using db path: {}",&path);
+                path
+            } else {SQLITEDB_PATH.to_string()};
+            let _pool = sqlite::get_sqlite_conn(&db_path)
                 .await
                 .unwrap();
             let pool = &_pool;
@@ -670,26 +683,30 @@ async fn config_handle(command: Commands ) {
                     
                 }else {
                     let mv = _media_vec.unwrap();
-                    let mut i = 1;
+                    let mut i = 0;
 
                     for m in &mv {
-                        println!("{i}(name: {}\n type: {}\nsize: {}\n checksum: {})",
+                        i+=1;
+                        println!("{i}(name: {}\n type: {}\nsize: {} checksum: {})",
                             m.name,
                             m.type_,
                             m.size,
                             m.checksum
                         );
-                        i+=1;
                     };
-                    println!("found {i}");
                     print!("enter the index of media you want: ");
                     stdout().flush().unwrap();
                     let mut buf =  String::new();
                     let size = stdin().read_line(&mut buf).unwrap();
-                    let index = buf.trim_ascii_end();
+                    let index = buf.trim_ascii_end() ;
                     println!("you chose {index}");
-                    let index:u32 = index.parse().unwrap();
-                    let m: SqliteMedia = mv.last().unwrap().clone();
+                    let user_index:u32 = index.parse().unwrap();
+                    let index = user_index - 1;
+                    let m: SqliteMedia = mv[index as usize ].clone();
+                    let getp = get.unwrap();
+                    let path = if getp == PathBuf::from("./") {
+                        m.path
+                    } else {getp.to_str().unwrap().to_string()};
                     let request = RQM {
                         cpid: m.cpid,
                         name: m.name,
@@ -697,7 +714,7 @@ async fn config_handle(command: Commands ) {
                         type_: m.type_,
                         header: GET.to_string(),
                         chcksum: m.checksum,
-                        path: Some(m.path)
+                        path: Some(path),
                     };
                     let res = client_process(
                         _pool,
