@@ -4,7 +4,7 @@ use std::process::exit;
 use common_lib::log::{debug, error, info, warn};
 use common_lib::tokio::{fs::File, io::{AsyncReadExt, BufReader}, net::TcpStream};
 use lib_db::jwt::get_current_timestamp;
-use lib_db::media::checksum::get_fsum;
+use lib_db::media::checksum::{get_fsum, get_size};
 use lib_db::sqlite::sqlite_media::SqliteMedia;
 use lib_db::types::SqlitePool;
 use tokio::io::{AsyncWriteExt, BufWriter};
@@ -93,8 +93,9 @@ pub async fn handle_client_request(
                 let f = f.unwrap();
                 stream.write_u8(READY_STATUS).await?;
                 let mut writer = BufWriter::new(f);
-                let res = wifb(stream, &mut writer).await?;
-                if res.1 != request.size as usize {
+                wifb(stream, &mut writer).await?;
+                let local_size = get_size(&path).await?;
+                if local_size != request.size {
                     stream.write_u8(DATA_NOT_MATCH).await?;
                     stream.flush().await?;
                     error!("DATA SERVER SENT DOES NOT MATCH WHAT it's supposed to be");

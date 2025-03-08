@@ -11,6 +11,8 @@ pub(crate) mod handshakes {
     use lib_db::{sqlite::sqlite_host::SqliteHost, types::SqlitePool};
     use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream};
 
+    use crate::common::util::{rvfs, wvts};
+
     /// makes sure the client is in the correct addres and takes the public ip of the server if
     /// it's correct and returns 0 if the server is correct if not 1
     pub async fn client(
@@ -20,43 +22,45 @@ pub(crate) mod handshakes {
     ) -> Result<u8, io::Error>  {
 
         debug!("START:HANDSHAKE");
-        let _res = stream.write(server.name.as_bytes()).await;
-        stream.flush().await?;
+        debug!("HANDSHAKING:{}", server.name);
+        let server_name = server.name.as_bytes();
+        let _res = wvts(stream, server_name.to_vec()).await?;
+        debug!("sent server_name with {_res}");
         let server_confirm = stream.read_u8().await?;
-        if server_confirm != 0 {return Ok(1)};
-        if _res.is_ok() {
-            let mut cpid = String::new();
-            stream.read_to_string(&mut cpid).await?;
+        if server_confirm != 0 {debug!("HANDSHAKE:FAILD:SERVER did not confirm");return Ok(1)};
+        debug!("MID:HANDSHAKE");
+        let buf_cpid = rvfs(stream).await?;
+        let cpid = String::from_utf8(buf_cpid).unwrap();
+        stream.write_u8(0).await?;
+        stream.flush().await?;
+        let buf_host = rvfs(stream).await?;
+        let host = String::from_utf8(buf_host).unwrap();
+        if cpid != server.cpid {
+            warn!("server confirmed name and sent a wrong cpid");
+            stream.write_u8(1).await?;
+            stream.flush().await?;
+            if host == server.host {
+                warn!("the server on this addres is not {}, but it's ont he same machine: {}", server.name, host);
+            }else {warn!("the server on this addres is not {}", server.name);}
+            return Ok(1)
+        } else {
+            debug!("END:HANDSHAKE");
             stream.write_u8(0).await?;
             stream.flush().await?;
-            let mut host = String::new();
-            stream.read_to_string(&mut host).await?;
-            if cpid != server.cpid {
-                warn!("server confirmed name and sent a wrong cpid");
-                stream.write_u8(1).await?;
-                stream.flush().await?;
-                if host == server.host {
-                    warn!("the server on this addres is not {}, but it's ont he same machine: {}", server.name, host);
-                }else {warn!("the server on this addres is not {}", server.name);}
-                return Ok(1)
-            } else {
-                stream.write_u8(0).await?;
-                stream.flush().await?;
-                let mut public_ip = String::new();
-                stream.read_to_string(&mut public_ip).await?;
-                if public_ip != server.pub_ip {
-                    SqliteHost::update_pub_ip(
-                        server,
-                        public_ip.parse().unwrap(),
-                        pool
-                    ).await.unwrap();
-                    
-                };
-                debug!("SUCCSESFUL:HANDSHAKE");
-                return Ok(0)
-            }
+            let buf_ip = rvfs(stream).await?;
+            let public_ip = String::from_utf8(buf_ip).unwrap();
+            if public_ip != server.pub_ip {
+                SqliteHost::update_pub_ip(
+                    server,
+                    public_ip.parse().unwrap(),
+                    pool
+                ).await.unwrap();
+                
+            };
+            debug!("SUCCSESFUL:HANDSHAKE");
+            return Ok(0)
+        }
 
-        } Ok(1)
 
     }
 
@@ -68,24 +72,38 @@ pub(crate) mod handshakes {
         server: &SqliteHost
     ) -> Result<u8, io::Error> {
         debug!("START:HANDSHAKE");
-        let mut buf = Vec::new();
-        let size = stream.read(&mut buf).await?;
-        let name = String::from_utf8(buf[..size].to_vec()).unwrap();
+        let buf = rvfs(stream).await?;
+        let name = String::from_utf8(buf).unwrap();
         if name != server.name {
+            debug!("FAILD:HANDSHAKE: {name}");
             stream.write_u8(1).await?;
             stream.flush().await?;
             return Ok(1)
         };
         stream.write_u8(0).await?;
-        stream.write(server.cpid.as_bytes()).await?;
-        stream.flush().await?;
+        wvts(
+            stream,
+            server.cpid
+                .as_bytes()
+                .to_vec()
+        ).await?;
+        debug!("HANDSHAKE:SENT:CPID");
         let _confirm = stream.read_u8().await?;
-        stream.write(server.host.as_bytes()).await?;
-        stream.flush().await?;
+        wvts(
+            stream,
+            server.host
+                .as_bytes()
+                .to_vec()
+        ).await?;
+        debug!("HANDSHAKE:SENT:HOST");
         let client_confirm = stream.read_u8().await?;
         if client_confirm == 0 {
-            stream.write(server.pub_ip.as_bytes()).await?;
-            stream.flush().await?;
+            wvts(
+                stream,
+                server.pub_ip
+                    .as_bytes()
+                    .to_vec()
+            ).await?;
             debug!("SUCCSESFUL:HANDSHAKE");
             return Ok(0)
         } else {return Ok(1)}

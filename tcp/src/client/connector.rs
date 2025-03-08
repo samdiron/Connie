@@ -108,7 +108,11 @@ pub async fn connect_tcp(
                 .await
                 .expect("could not connect to public ip")
         };
-        let is_who_server = handshakes::client(&mut stream, &conn.server, pool).await?;
+        let is_who_server = handshakes::client(
+            &mut stream,
+            &conn.server,
+            pool
+        ).await?;
         if is_who_server != 0 {
             exit(1);
         };
@@ -173,14 +177,14 @@ pub async fn connect_tcp(
                 .await
                 .expect("could not connect to public ip")
         };
-        // let is_who_server = handshakes::client(
-        //     &mut stream,
-        //     &conn.server,
-        //     pool
-        // ).await?;
-        // if is_who_server != 0 {
-        //     exit(1);
-        // };
+        let is_who_server = handshakes::client(
+            &mut stream,
+            &conn.server,
+            pool
+        ).await?;
+        if is_who_server != 0 {
+            exit(1);
+        };
          
         stream.write_u8(JWT_AUTH).await?;
         stream.flush().await?;

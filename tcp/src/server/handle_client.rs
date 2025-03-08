@@ -59,11 +59,14 @@ pub async fn handle(
     // this function assures the client that is 
     // in the correct addres and send the pub ip of
     // the server and if the if the client is in the correct addres it will return 0 else 1
-    // let is_correct_addres = handshakes::server(&mut stream, &sqlite_host).await?;
-    // if is_correct_addres != 0 {
-    //     debug!("a client was lost");
-    //     return Ok(())
-    // };
+    let is_correct_addres = handshakes::server(
+        &mut stream,
+        &sqlite_host
+    ).await?;
+    if is_correct_addres != 0 {
+        debug!("a client was lost");
+        return Ok(())
+    };
     let auth_type = stream.read_u8().await?;
     info!("SERVER: C{addr} will auth with {auth_type}");
     match auth_type {
