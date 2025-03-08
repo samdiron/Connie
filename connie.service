@@ -1,12 +1,14 @@
 [Unit] 
-Description=CCS (Connie Control Server)
+Description=Connie Server (cie)
+After=network-online.target
 
 
 [Service]
 Type=Net-Server
-ExecStart=/opt/Connie/bin/cie -v 2 bind -d true
+ExecStart=/opt/Connie/bin/cie -v 1 bind -d true
 Restart=on-failure
 RestartSec=10
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
+
