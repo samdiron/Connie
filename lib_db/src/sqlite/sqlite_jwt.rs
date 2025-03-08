@@ -60,7 +60,7 @@ pub async fn add_jwt(
 
 pub async fn delete_expd_jwt(pool: &SqlitePool) {
     let now = get_current_timestamp();
-    let sql = format!("DELET FROM jwt WHERE exp < {now} ;");
+    let sql = format!("DELETE FROM jwt WHERE exp < {now} ;");
     let res = sqlx::query(&sql).execute(pool).await;
     if res.is_ok(){
         debug!("DELETED {} jwts from db", res.unwrap().rows_affected())
