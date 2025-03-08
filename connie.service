@@ -4,7 +4,7 @@ Description=CCS (Connie Control Server)
 
 [Service]
 Type=Net-Server
-ExecStart=/opt/Connie/bin/cie
+ExecStart=/opt/Connie/bin/cie -v 2 bind -d true
 Restart=on-failure
 RestartSec=10
 
