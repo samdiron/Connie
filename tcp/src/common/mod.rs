@@ -3,6 +3,29 @@
 #[allow(dead_code)]
 pub(crate) mod request;
 
+
+
+
+
+
+pub(crate) mod tls {
+    use std::io::{Result, Write};
+
+    use crate::client::client::Client;
+    pub enum Tls {
+        Client
+    }
+    
+
+}
+
+
+
+
+
+
+
+
 #[allow(dead_code)]
 pub(crate) mod handshakes {
     use std::io;
