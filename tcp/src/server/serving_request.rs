@@ -1,5 +1,5 @@
 use std::io::Result;
-use std::os::unix::fs::MetadataExt;
+use std::fs::metadata;
 use std::path::PathBuf;
 use lib_db::media::checksum::{get_fsum, get_size};
 use lib_db::media::media::{check_if_media_exist, Media};
@@ -92,10 +92,10 @@ pub async  fn handle_server_request(
                 ).await.unwrap();
                 let path = PathBuf::from(&media.path);
                 assert_eq!(true, path.exists());
-                let f = File::open(path).await?;
-                let metadate = f.metadata().await;
-                let size = if metadate.is_ok() {
-                    let size = metadate.unwrap().size();
+                let metadata = metadata(&path);
+                let f = File::open(&path).await?;
+                let size = if metadata.is_ok() {
+                    let size = metadata.unwrap().len();
                     assert_eq!(size as i64, request.size);
                     size 
                 } else  {

@@ -118,7 +118,7 @@ pub(crate) mod handshakes {
 
 #[allow(dead_code)]
 pub(crate) mod util {
-    use std::time::{self, Duration};
+    use std::time;
 
     use common_lib::{log::{debug, info}, tokio::{
         fs::File,

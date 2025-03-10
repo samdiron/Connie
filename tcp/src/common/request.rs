@@ -1,8 +1,7 @@
 use lib_db::media::checksum;
 
-use common_lib::tokio::fs::File;
 use std::{
-    os::unix::fs::MetadataExt,
+    fs::metadata,
     path::PathBuf, str::FromStr
 };
 use serde::{Deserialize, Serialize};
@@ -58,9 +57,8 @@ pub struct RQM {
 
 impl RQM {
     pub async fn create(path: PathBuf, header: String, cpid: String, create_checksum: bool) -> std::io::Result<Self> {
-        let f = File::open(path.clone()).await?;
-        let data = f.metadata().await?;
-        let size = data.size() as i64;
+        let data = metadata(&path)?;
+        let size = data.len() as i64;
 
         let ext = path.extension();
         let type_ = if ext.is_some() {
