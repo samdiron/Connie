@@ -118,6 +118,8 @@ pub(crate) mod handshakes {
 
 #[allow(dead_code)]
 pub(crate) mod util {
+    use std::time::{self, Duration};
+
     use common_lib::{log::{debug, info}, tokio::{
         fs::File,
         io::{
@@ -191,8 +193,10 @@ pub(crate) mod util {
     pub async fn wffb(
         s: &mut TcpStream,
         _size: u64,
-        reader: &mut BufReader<File>
+        reader: &mut BufReader<File>,
+        verbose: bool
     ) -> Result<usize> {
+        let start = time::Instant::now();
         let mut nbuf = vec![0; PACKET_SIZE];
         let mut sent = 0usize;
         let _usize = _size as usize;
@@ -204,31 +208,67 @@ pub(crate) mod util {
         s.flush().await?;
         
         info!("tol: {tol}, size: {_size}");
-        for i in 0..tol {
+        if verbose {
 
-            if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
-                info!("end tol");
-                let buf_size = _usize - sent;
-                info!("buf_size: {buf_size}");
-                let end_buffer_size = buf_size as u16; 
-                s.write_u16(end_buffer_size).await?;
+            for i in 0..tol {
 
-                let mut buf = vec![0;buf_size];
-                reader.read_exact(&mut buf).await?;
-                s.write_all(&buf).await?;
-                s.flush().await?;
-                sent+=buf_size;
-                break;
-                
-            }else {
-                reader.read_exact(&mut nbuf).await?;
-                s.write_all(&nbuf).await?;
-                sent+=PACKET_SIZE
+                if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
+                    info!("end tol");
+                    let buf_size = _usize - sent;
+                    info!("buf_size: {buf_size}");
+                    let end_buffer_size = buf_size as u16; 
+                    s.write_u16(end_buffer_size).await?;
+
+                    let mut buf = vec![0;buf_size];
+                    reader.read_exact(&mut buf).await?;
+                    s.write_all(&buf).await?;
+                    s.flush().await?;
+                    sent+=buf_size;
+                    break;
+                    
+                }else {
+                    reader.read_exact(&mut nbuf).await?;
+                    s.write_all(&nbuf).await?;
+                    sent+=PACKET_SIZE
+                }
+                let percent = (i as f64 / tol as f64) * 100.0;
+                info!("upload: {:.2}%", percent);
+            }
+        }
+        else {
+            for i in 0..tol {
+
+                if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
+                    info!("end tol");
+                    let buf_size = _usize - sent;
+                    info!("buf_size: {buf_size}");
+                    let end_buffer_size = buf_size as u16; 
+                    s.write_u16(end_buffer_size).await?;
+
+                    let mut buf = vec![0;buf_size];
+                    reader.read_exact(&mut buf).await?;
+                    s.write_all(&buf).await?;
+                    s.flush().await?;
+                    sent+=buf_size;
+                    break;
+                    
+                }else {
+                    reader.read_exact(&mut nbuf).await?;
+                    s.write_all(&nbuf).await?;
+                    sent+=PACKET_SIZE
+                }
             }
         }
         s.flush().await?;
+        let end = time::Instant::now();
         assert_eq!(_usize , sent);
-        info!("RW: sent: {sent} in {tol} iter;");
+        let dur = (end - start).as_secs() as f64;
+        let mb = (sent as f64 / 1000.0)  / 1000.0;
+
+        info!(
+            "RW: sent {:.2}MB in {dur}s Average speed {:.2}Mb/s",
+            mb, mb/dur
+        );
         info!("RW: waiting for confirm to end request");
         s.write_u8(0).await?;
         
@@ -239,17 +279,35 @@ pub(crate) mod util {
     /// writes the buffer into file
     pub async fn wifb(
         s: &mut TcpStream,
-        writer: &mut BufWriter<File>
+        writer: &mut BufWriter<File>,
+        verbose: bool
     ) -> Result<(u8, usize)> {
+        let start = time::Instant::now();
         let mut wrote = 0usize;
         let mut recvd = 0usize;
         let mut buf = vec![0; PACKET_SIZE];
         let tol = s.read_u16().await?;
         let s_all = s.read_u64().await? as usize;
         let mut i = 0u16;
-        if i < tol && tol != 1  {
+        
+        if i < tol && tol != 1 && verbose {
             loop {
-                if i == tol || i == tol-1 || (recvd+PACKET_SIZE) > s_all {println!("break");break }
+                if i == tol || i == tol-1 || (recvd+PACKET_SIZE) > s_all {
+                    debug!("last loop");break 
+                }
+                s.read_exact(&mut buf).await?;
+                writer.write_all(&buf).await?;
+                writer.flush().await?;
+                i+=1;
+                let percent = (i as f64 / tol as f64) * 100.0;
+                info!("download: {:.2}%", percent);
+            }
+        };
+        if i < tol && tol != 1 && !verbose {
+            loop {
+                if i == tol || i == tol-1 || (recvd+PACKET_SIZE) > s_all {
+                    debug!("last loop");break 
+                }
                 s.read_exact(&mut buf).await?;
                 writer.write_all(&buf).await?;
                 writer.flush().await?;
@@ -258,21 +316,23 @@ pub(crate) mod util {
         };
 
         if tol == 1 || i <= tol || (recvd+PACKET_SIZE) > s_all {
-            info!("end tol");
             let buf_size = s.read_u16().await? as usize;
             let mut buf = vec![0; buf_size];
-            info!("buf_size: {buf_size}");
             s.read_exact(&mut buf).await?;
-            info!("read size: {buf_size}");
             recvd+=buf_size;
             writer.write_all(&buf).await?;
             writer.flush().await?;
             wrote+=buf_size;
-            info!("buf_size: {buf_size}");
         };
         assert_eq!(wrote, recvd);
         let status = s.read_u8().await?;
-
+        let end = time::Instant::now();
+        let mb = (s_all as f64 / 1000 as f64) / 1000 as f64;
+        let dur = (end-start).as_secs_f64();
+        info!(
+            "RW: received {:.2}MB in {:.2}s Average speed {:.2}Mb/s",
+            mb, dur, mb/dur
+        );
         Ok((status, wrote))
     }
 

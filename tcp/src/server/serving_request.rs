@@ -48,7 +48,7 @@ pub async  fn handle_server_request(
             let spath = path.to_str().unwrap();
             let mut writer = BufWriter::new(f);
             stream.write_u8(READY_STATUS).await?;
-            let _size = wifb(stream, &mut writer).await?;
+            let _size = wifb(stream, &mut writer, false).await?;
             let local_sum = get_fsum(spath).await?;
             let local_size = get_size(spath).await?;
             if &request.chcksum == NO_VAL {
@@ -112,7 +112,7 @@ pub async  fn handle_server_request(
                     let ready = stream.read_u8().await?;
                     if ready == READY_STATUS {
                         let mut reader = BufReader::new(f);
-                        wffb(stream, size, &mut reader).await?;
+                        wffb(stream, size, &mut reader, false).await?;
                         let confirm = stream.read_u8().await?;
                         if confirm == SUCCESFUL {
                             info!("SUCCESFUL:GET");

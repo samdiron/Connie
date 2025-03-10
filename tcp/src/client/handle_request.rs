@@ -38,7 +38,7 @@ pub async fn handle_client_request(
         let ready = stream.read_u8().await?;
         if ready == READY_STATUS {
             debug!("ready to send file");
-            let _size = wffb(stream, request.size as u64 , &mut reader).await?;
+            let _size = wffb(stream, request.size as u64 , &mut reader, true).await?;
             debug!("witing for server confirm ~ ");
             let checksum = if &request.chcksum == NO_VAL {
                 debug!("waiting for server to send checksum");
@@ -63,14 +63,12 @@ pub async fn handle_client_request(
                     path,
                 };
                 SqliteMedia::add_media(sqlitem, pool).await.unwrap();
-                println!("CLIENT: file sent succefully; size of file {}",request.size);
                 info!("CLIENT: file sent succefully; size of file {}",request.size);
             }else {
-                println!("CLIENT:ERROR: server did not recv data the same");
                 warn!("CLIENT:ERROR: server did not recv data the same");
             }
         } else if ready == MEDIA_ALREADY_EXISTS {
-            debug!("the server has this same media file under your account so it will not be sent");
+            info!("the server has this same media file under your account so it will not be sent");
         }
     }    
     GET => {
@@ -93,7 +91,7 @@ pub async fn handle_client_request(
                 let f = f.unwrap();
                 stream.write_u8(READY_STATUS).await?;
                 let mut writer = BufWriter::new(f);
-                wifb(stream, &mut writer).await?;
+                wifb(stream, &mut writer, true).await?;
                 let local_size = get_size(&path).await?;
                 if local_size != request.size {
                     stream.write_u8(DATA_NOT_MATCH).await?;
