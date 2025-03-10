@@ -13,7 +13,7 @@ use std::sync::LazyLock;
 pub const POSTGRESQL_PORT: u16 = 5432;
 pub const SYSTEM_TCP: u16 = 4445;
 pub const MULTICAST_PORT: u16 = 4441;
-pub const TCP_MAIN_PORT: u16 = 4443;
+pub const TCP_MAIN_PORT: u16 = 443;
 pub static LOCAL_IP: LazyLock<IpAddr> = LazyLock::new(|| lip_fn());
 
 fn lip_fn() -> IpAddr {
