@@ -132,7 +132,8 @@ async fn get_stream(
     if me_pub_ip.is_some() {
         info!("current public ip: {}",me_pub_ip.unwrap().to_string())
     };
-    let pri_s = TcpStream::connect(pri_addr).await;
+    let dur = Duration::from_secs_f32(0.25);
+    let pri_s = timeout(dur, TcpStream::connect(pri_addr)).await.unwrap();
     let stream = if pri_s.is_ok() {
         info!("trying private ip: {:?}",&pri_addr);
         addr = pri_addr;
