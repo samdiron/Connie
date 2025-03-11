@@ -144,10 +144,10 @@ pub async fn handle_cli_request(command: Commands) {
 
                     for m in &mv {
                         i+=1;
-                        println!("{i}(name: {}\n type: {}\nsize: {} checksum: {})",
+                        println!("{i}(name: {}\n type: {}\nsize: {:.2}MB checksum: {}\n)",
                             m.name,
                             m.type_,
-                            m.size,
+                            (m.size as f64 / 1000 as f64) / 1000 as f64,
                             m.checksum
                         );
                     };
