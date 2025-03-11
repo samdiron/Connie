@@ -30,11 +30,13 @@ pub(crate) mod handshakes {
         if server_confirm != 0 {debug!("HANDSHAKE:FAILD:SERVER did not confirm");return Ok(1)};
         debug!("MID:HANDSHAKE");
         let buf_cpid = rvfs(stream).await?;
-        let cpid = String::from_utf8(buf_cpid).unwrap();
+        let buf_cpid = buf_cpid.to_vec();
+        let cpid = String::from_utf8_lossy(&buf_cpid);
         stream.write_u8(0).await?;
         stream.flush().await?;
         let buf_host = rvfs(stream).await?;
-        let host = String::from_utf8(buf_host).unwrap();
+        let buf_host = buf_host.to_vec();
+        let host = String::from_utf8_lossy(&buf_host);
         if cpid != server.cpid {
             warn!("server confirmed name and sent a wrong cpid");
             stream.write_u8(1).await?;
@@ -48,7 +50,8 @@ pub(crate) mod handshakes {
             stream.write_u8(0).await?;
             stream.flush().await?;
             let buf_ip = rvfs(stream).await?;
-            let public_ip = String::from_utf8(buf_ip).unwrap();
+            let buf_ip = buf_ip.to_vec();
+            let public_ip = String::from_utf8_lossy(&buf_ip);
             if public_ip != server.pub_ip {
                 SqliteHost::update_pub_ip(
                     server,
@@ -73,7 +76,8 @@ pub(crate) mod handshakes {
     ) -> Result<u8, io::Error> {
         debug!("START:HANDSHAKE");
         let buf = rvfs(stream).await?;
-        let name = String::from_utf8(buf).unwrap();
+        let lossy = buf.to_vec();
+        let name = String::from_utf8_lossy(&lossy);
         if name != server.name {
             debug!("FAILD:HANDSHAKE: {name}");
             stream.write_u8(1).await?;
@@ -211,7 +215,7 @@ pub(crate) mod util {
         if verbose {
 
             for i in 0..tol {
-
+                let mut _when_to_print: u8 = 0;
                 if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
                     info!("end tol");
                     let buf_size = _usize - sent;
@@ -230,9 +234,13 @@ pub(crate) mod util {
                     reader.read_exact(&mut nbuf).await?;
                     s.write_all(&nbuf).await?;
                     sent+=PACKET_SIZE
-                }
-                let percent = (i as f64 / tol as f64) * 100.0;
-                info!("upload: {:.2}%", percent);
+                };
+                if _when_to_print == 3 {_when_to_print=0};
+                if _when_to_print == 0 {
+                    let percent = (i as f64 / tol as f64) * 100.0;
+                    info!("upload: {:.2}%", percent);
+                };
+                _when_to_print+=1;
             }
         }
         else {
@@ -262,13 +270,14 @@ pub(crate) mod util {
         s.flush().await?;
         let end = time::Instant::now();
         assert_eq!(_usize , sent);
-        let dur = (end - start).as_secs() as f64;
-        let mb = (sent as f64 / 1000.0)  / 1000.0;
-
+        let mb = (sent as f64 / 1000 as f64) / 1000 as f64;
+        let dur = (end-start).as_secs_f64();
         info!(
-            "RW: sent {:.2}MB in {dur}s Average speed {:.2}Mb/s",
-            mb, mb/dur
+            "RW: sent {:.2}MB in {:.2}s Average speed {:.2}Mb/s",
+            mb, dur, mb/dur
         );
+
+
         info!("RW: waiting for confirm to end request");
         s.write_u8(0).await?;
         
@@ -291,6 +300,7 @@ pub(crate) mod util {
         let mut i = 0u16;
         
         if i < tol && tol != 1 && verbose {
+            let mut when_to_print:u8 = 0;
             loop {
                 if i == tol || i == tol-1 || (recvd+PACKET_SIZE) > s_all {
                     debug!("last loop");break 
@@ -299,8 +309,15 @@ pub(crate) mod util {
                 writer.write_all(&buf).await?;
                 writer.flush().await?;
                 i+=1;
-                let percent = (i as f64 / tol as f64) * 100.0;
-                info!("download: {:.2}%", percent);
+                if when_to_print == 3 {
+                    when_to_print = 0;
+                }
+
+                if when_to_print == 0 {
+                    let percent = (i as f64 / tol as f64) * 100.0;
+                    info!("download: {:.2}%", percent);
+                };
+                when_to_print+=1;
             }
         };
         if i < tol && tol != 1 && !verbose {
