@@ -24,6 +24,27 @@ pub(crate) struct Connection {
 
 pub use crate::client::connector::signup_process;
 
+
+
+
+use tokio_rustls::rustls::ClientConnection;
+
+
+pub struct Client {
+    pub inner: ClientConnection
+}
+
+
+// impl Client {
+//     pub fn write_u8(&mut self, u8) -> Result<> 
+// }
+//
+
+
+
+
+
+
 /// spins up a client process that could be use inside a task
 pub async fn client_process(
     pool: SqlitePool,

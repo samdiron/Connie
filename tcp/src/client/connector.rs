@@ -1,7 +1,8 @@
 use std::io::Result;
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr};
+use std::sync::Arc;
 use std::time::Duration;
-use std::thread::{self};
+use std::thread;
 use std::process::exit;
 use common_lib::public_ip;
 use lib_db::sqlite::sqlite_host::SqliteHost;
@@ -15,6 +16,8 @@ use common_lib::tokio::io::{
 };
 use common_lib::tokio::net::TcpStream;
 use tokio::time::timeout;
+use tokio_rustls::rustls::pki_types::ServerName;
+use tokio_rustls::rustls::{ClientConfig, ClientConnection};
 use crate::client::client::Connection;
 use crate::common::handshakes;
 use crate::common::request::{
@@ -24,6 +27,7 @@ use crate::common::request::req_format::{JwtReq, LoginReq};
 use crate::common::util::{rvfs, wvts};
 use crate::types::LOGIN_CRED;
 use super::handle_request::handle_client_request;
+
 
 
 
@@ -67,7 +71,90 @@ pub async fn signup_process(
     Ok(())
     
 }
+#[allow(dead_code)]
+async fn get_tlstream(
+    host: &SqliteHost,
+    config: Arc<ClientConfig>
+) -> Result<ClientConnection> {
+    let port = host.port;
+    let pub_ip: IpAddr = host.pub_ip.parse().unwrap();
+    let pri_ip: IpAddr = host.pri_ip.parse().unwrap();
+    
+    let pub_addr = SocketAddr::new(pub_ip, port).to_string();
+    let pri_addr = SocketAddr::new(pri_ip, port).to_string();
 
+    let me_pub_ip = public_ip::addr().await;
+    info!("server pulic ip: {}, private ip: {}",&host.pub_ip, &host.pri_ip );
+    if me_pub_ip.is_some() {
+        info!("current public ip: {}",me_pub_ip.unwrap().to_string())
+    };
+    let server_name = ServerName::try_from(pri_addr.clone()).unwrap();
+    let pri_tls = ClientConnection::new(
+        config.clone(),
+        server_name
+    );
+
+    let tls = if pri_tls.is_ok() {
+        info!("trying private ip: {:?}",&pri_addr);
+        pri_tls.unwrap()
+
+    } else {
+        debug!("faild to connect to private");
+        info!("trying public ip: {:?}", &pub_addr);
+
+        let server_name = ServerName::try_from(pub_addr).unwrap();
+        ClientConnection::new(
+            config,
+            server_name
+        ).expect("could not connect to public ip")
+
+    };
+    
+
+    
+    Ok(tls)
+
+    
+} 
+
+async fn get_stream(
+    host: &SqliteHost,
+) -> Result<(TcpStream, SocketAddr)> {
+    let port = host.port;
+    let pub_ip: IpAddr = host.pub_ip.parse().unwrap();
+    let pri_ip: IpAddr = host.pri_ip.parse().unwrap();
+    
+    let pub_addr = SocketAddr::new(pub_ip, port);
+    let pri_addr = SocketAddr::new(pri_ip, port);
+    let addr: SocketAddr;
+    let me_pub_ip = public_ip::addr().await;
+    info!("server pulic ip: {}, private ip: {}",&host.pub_ip, &host.pri_ip );
+    if me_pub_ip.is_some() {
+        info!("current public ip: {}",me_pub_ip.unwrap().to_string())
+    };
+    let dur = Duration::from_secs_f32(0.25);
+    let pri_s = timeout(dur, TcpStream::connect(pri_addr)).await.unwrap();
+    let stream = if pri_s.is_ok() {
+        info!("trying private ip: {:?}",&pri_addr);
+        addr = pri_addr;
+        pri_s.unwrap()
+
+    } else {
+        debug!("faild to connect to private");
+        info!("trying public ip: {:?}", &pub_addr);
+        addr = pub_addr;
+        TcpStream::connect(&addr)
+            .await
+            .expect("could not connect to public ip")
+
+    };
+    
+
+    
+    Ok((stream, addr))
+
+    
+} 
 
 pub async fn connect_tcp(
     pool: &SqlitePool,
@@ -75,17 +162,6 @@ pub async fn connect_tcp(
     check_for_sum: Option<bool>,
     rqm: RQM
 ) -> Result<u8> {
-    let port = conn.server.port;
-
-    let pub_addr = SocketAddr::new(conn.server.pub_ip.parse().unwrap(), port);
-    
-    let pri_addr = SocketAddr::new(conn.server.pri_ip.parse().unwrap(), port);
-    let me_pub_ip = public_ip::addr().await;
-    info!("server pulic ip: {}, private ip: {}",&conn.server.pub_ip, &conn.server.pri_ip );
-    if me_pub_ip.is_some() {
-        info!("current public ip: {}",me_pub_ip.unwrap().to_string())
-    };
-        
     if conn.jwt.is_none(){
         debug!("no jwt will try to login ");
         let name  = conn.user.usrname;
@@ -96,20 +172,12 @@ pub async fn connect_tcp(
             name: name.clone(),
             paswd: paswd.clone(),
         };
-        debug!("login request name:{}, cpid:{}, password:{} ;",&name, &cpid, &paswd);
+        debug!(
+            "login request name:{}, cpid:{}, password:{} ;",
+            &name, &cpid, &paswd
+        );
         let request = req.sz().unwrap();
-        let dur = Duration::from_secs_f32(0.5);
-        let private_s =  timeout(dur, TcpStream::connect(&pri_addr)).await.unwrap();
-        let mut stream = if private_s.is_ok() {
-            info!("trying private ip: {:?}",&pri_addr);
-            private_s.unwrap()
-        } else {
-            debug!("faild to connect to private");
-            info!("trying public ip: {:?}", &pub_addr);
-            TcpStream::connect(pub_addr)
-                .await
-                .expect("could not connect to public ip")
-        };
+        let (mut stream, _addr) = get_stream(&conn.server).await?;
         let is_who_server = handshakes::client(
             &mut stream,
             &conn.server,
@@ -136,7 +204,10 @@ pub async fn connect_tcp(
         if what == 0 {
             let mut jwt_buf = vec![0;500];
             let size = stream.read(&mut jwt_buf).await.unwrap();
-            let jwt = String::from_utf8(jwt_buf[..size].to_vec()).unwrap();
+            let jwt = String::from_utf8(
+                jwt_buf[..size]
+                    .to_vec()
+            ).unwrap();
             add_jwt(&conn.server.cpid, &jwt, &cpid, pool).await;
             stream.write_u8(0).await?;
             drop(stream);
@@ -165,20 +236,12 @@ pub async fn connect_tcp(
         };
         let extra_jwt = req.jwt.clone();
         let request = req.sz().unwrap();
-        let dur = Duration::from_secs_f32(0.25);
-        let private_s =  timeout(dur, TcpStream::connect(&pri_addr)).await.unwrap();
-        let mut stream = if private_s.is_ok() {
-            info!("trying private ip: {:?}",&pri_addr);
 
-            info!("Connected to  private ip: {:?}", &pri_addr);
-            private_s.unwrap()
-        } else {
-            debug!("faild to connect to private");
-            info!("trying public ip: {:?}", &pub_addr);
-            TcpStream::connect(pub_addr)
-                .await
-                .expect("could not connect to public ip")
-        };
+        let (
+            mut stream,
+            _tls_server_name
+        ) = get_stream(&conn.server).await?;
+         
         let is_who_server = handshakes::client(
             &mut stream,
             &conn.server,
@@ -187,6 +250,7 @@ pub async fn connect_tcp(
         if is_who_server != 0 {
             exit(1);
         };
+
          
         stream.write_u8(JWT_AUTH).await?;
         stream.flush().await?;

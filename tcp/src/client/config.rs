@@ -32,7 +32,7 @@ mod danger {
     impl rustls::client::danger::ServerCertVerifier for NoCertificateVerification {
         fn verify_server_cert(
             &self,
-            _end_entity: &CertificateDer<'_>,
+_end_entity: &CertificateDer<'_>,
             _intermediates: &[CertificateDer<'_>],
             _server_name: &ServerName<'_>,
             _ocsp: &[u8],
@@ -78,7 +78,7 @@ mod danger {
 }
 
 #[allow(dead_code)]
-pub async fn make_config() -> Arc<rustls::ClientConfig> {
+pub fn make_config() -> Arc<rustls::ClientConfig> {
     let mut root_store = RootCertStore::empty();
     root_store.extend(
         webpki_roots::TLS_SERVER_ROOTS
@@ -100,7 +100,9 @@ pub async fn make_config() -> Arc<rustls::ClientConfig> {
 
     config.key_log = Arc::new(rustls::KeyLogFile::new());
     config.dangerous()
-            .set_certificate_verifier(Arc::new(danger::NoCertificateVerification::new(
+            .set_certificate_verifier(
+            Arc::new(danger::NoCertificateVerification::new
+                (
                 provider::default_provider(),
             )));
 
