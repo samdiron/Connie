@@ -14,6 +14,7 @@ use common_lib::tokio::io::{
     AsyncWriteExt
 };
 use common_lib::tokio::net::TcpStream;
+use tokio::time::timeout;
 use crate::client::client::Connection;
 use crate::common::handshakes;
 use crate::common::request::{
@@ -97,7 +98,8 @@ pub async fn connect_tcp(
         };
         debug!("login request name:{}, cpid:{}, password:{} ;",&name, &cpid, &paswd);
         let request = req.sz().unwrap();
-        let private_s =  TcpStream::connect(&pri_addr).await;
+        let dur = Duration::from_secs_f32(0.5);
+        let private_s =  timeout(dur, TcpStream::connect(&pri_addr)).await.unwrap();
         let mut stream = if private_s.is_ok() {
             info!("trying private ip: {:?}",&pri_addr);
             private_s.unwrap()
@@ -163,8 +165,8 @@ pub async fn connect_tcp(
         };
         let extra_jwt = req.jwt.clone();
         let request = req.sz().unwrap();
-
-        let private_s =  TcpStream::connect(&pri_addr).await;
+        let dur = Duration::from_secs_f32(0.25);
+        let private_s =  timeout(dur, TcpStream::connect(&pri_addr)).await.unwrap();
         let mut stream = if private_s.is_ok() {
             info!("trying private ip: {:?}",&pri_addr);
 
