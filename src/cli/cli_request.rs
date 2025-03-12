@@ -189,12 +189,23 @@ pub async fn handle_cli_request(command: Commands) {
                         path: Some(path),
                     };
                     let res = client_process(
-                        _pool,
-                        usr,
-                        server,
-                        Some(checksum),
-                        request
+                        _pool.clone(),
+                        usr.clone(),
+                        server.clone(),
+                        Some(checksum).clone(),
+                        request.clone()
                     ).await.unwrap();
+                    let res = if res == 8 {
+                        info!("will connect again");
+                        client_process(
+                            _pool,
+                            usr,
+                            server,
+                            Some(checksum),
+                            request
+                        ).await.unwrap()
+
+                    }else {res};
                     info!("STATUS: {res}");
                 }
             }
