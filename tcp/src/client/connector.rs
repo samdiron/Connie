@@ -1,6 +1,5 @@
 use std::io::Result;
 use std::net::{IpAddr, SocketAddr};
-use std::sync::Arc;
 use std::time::Duration;
 use std::thread;
 use std::process::exit;
@@ -16,8 +15,6 @@ use common_lib::tokio::io::{
 };
 use common_lib::tokio::net::TcpStream;
 use tokio::time::timeout;
-use tokio_rustls::rustls::pki_types::ServerName;
-use tokio_rustls::rustls::{ClientConfig, ClientConnection};
 use crate::client::client::Connection;
 use crate::common::handshakes;
 use crate::common::request::{
@@ -71,51 +68,6 @@ pub async fn signup_process(
     Ok(())
     
 }
-#[allow(dead_code)]
-async fn get_tlstream(
-    host: &SqliteHost,
-    config: Arc<ClientConfig>
-) -> Result<ClientConnection> {
-    let port = host.port;
-    let pub_ip: IpAddr = host.pub_ip.parse().unwrap();
-    let pri_ip: IpAddr = host.pri_ip.parse().unwrap();
-    
-    let pub_addr = SocketAddr::new(pub_ip, port).to_string();
-    let pri_addr = SocketAddr::new(pri_ip, port).to_string();
-
-    let me_pub_ip = public_ip::addr().await;
-    info!("server pulic ip: {}, private ip: {}",&host.pub_ip, &host.pri_ip );
-    if me_pub_ip.is_some() {
-        info!("current public ip: {}",me_pub_ip.unwrap().to_string())
-    };
-    let server_name = ServerName::try_from(pri_addr.clone()).unwrap();
-    let pri_tls = ClientConnection::new(
-        config.clone(),
-        server_name
-    );
-
-    let tls = if pri_tls.is_ok() {
-        info!("trying private ip: {:?}",&pri_addr);
-        pri_tls.unwrap()
-
-    } else {
-        debug!("faild to connect to private");
-        info!("trying public ip: {:?}", &pub_addr);
-
-        let server_name = ServerName::try_from(pub_addr).unwrap();
-        ClientConnection::new(
-            config,
-            server_name
-        ).expect("could not connect to public ip")
-
-    };
-    
-
-    
-    Ok(tls)
-
-    
-} 
 
 async fn get_stream(
     host: &SqliteHost,
@@ -127,12 +79,12 @@ async fn get_stream(
     let pub_addr = SocketAddr::new(pub_ip, port);
     let pri_addr = SocketAddr::new(pri_ip, port);
     let addr: SocketAddr;
-    let me_pub_ip = public_ip::addr().await;
+    let dur = Duration::from_secs_f32(0.25);
+    let me_pub_ip = timeout(dur, public_ip::addr()).await.unwrap();
     info!("server pulic ip: {}, private ip: {}",&host.pub_ip, &host.pri_ip );
     if me_pub_ip.is_some() {
         info!("current public ip: {}",me_pub_ip.unwrap().to_string())
     };
-    let dur = Duration::from_secs_f32(0.25);
     let pri_s = timeout(dur, TcpStream::connect(pri_addr)).await.unwrap();
     let stream = if pri_s.is_ok() {
         info!("trying private ip: {:?}",&pri_addr);
