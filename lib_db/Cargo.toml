@@ -1,0 +1,28 @@
+[package]
+name = "lib_db"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sha256 = "1.5.0"
+sqlx = { version = "0.8.2", features = [
+  "postgres",
+  "runtime-tokio-rustls",
+  "sqlite",
+  "chrono",
+  "macros",
+] }
+common_lib = { path = "../common_lib/" }
+jsonwebtoken = "9.3.0"
+serde = { version = "1.0", features = ["derive"] }
+
+tokio = { version = "1.43.0", features = ["fs", "rt-multi-thread"] }
+
+[dependencies.uuid]
+version = "1.11.0"
+features = [
+  "v4",                # Lets you generate random UUIDs
+  "fast-rng",          # Use a faster (but still sufficiently random) RNG
+  "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+]
+

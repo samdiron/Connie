@@ -1,0 +1,42 @@
+[package]
+name = "cie"
+version = "0.2.0"
+edition = "2021"
+
+[profile.dev]
+opt-level = 2
+debug = true
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = "fat"
+
+[profile.client]
+inherits = "release"
+opt-level = "s"
+strip = "debuginfo"
+codegen-units = 1
+lto = "fat"
+
+
+[workspace]
+resolver = "1"
+members = [
+  "common_lib",
+  "lib_db",
+  "lib_start",
+  "tcp",
+]
+
+[dependencies]
+tokio = "1.40.0"
+tcp = { path = "./tcp/" }
+lib_db = { path = "./lib_db/" }
+lib_start = { path = "./lib_start/" }
+common_lib = { path = "./common_lib/" }
+
+clap = { version = "4.5.27", features = ["derive"] }
+serde = { version = "1.0.217", features = ["derive"] }
+
+env_logger = "0.11.6"

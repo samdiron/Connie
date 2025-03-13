@@ -1,0 +1,14 @@
+[Unit] 
+Description=Connie Server (cie)
+After=network-online.target
+
+
+[Service]
+Type=Net-Server
+ExecStart=/opt/Connie/bin/cie -v 1 bind -d true
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+
