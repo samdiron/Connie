@@ -24,7 +24,7 @@ use clap::Parser;
 //in the /Connie/etc/db_conn; file
 
 #[derive(Debug,Parser)]
-#[command(version = "v0.2beta", about = "a web server in rust for more info visit https://github.com/samdiron/Connie")]
+#[command(version = "v0.3", about = "a web server in rust for more info visit https://github.com/samdiron/Connie")]
 #[command(disable_help_flag = true)]
 struct Cli {
     
