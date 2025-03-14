@@ -23,41 +23,15 @@ else
   echo "will have to exit :("
   exit 1
 fi
-sudo mkdir /opt/Connie
-echo "created opt/Connie/"
-chown -c  -R $USER /opt/Connie
-mkdir /opt/Connie/metadata
-echo "created: /opt/Connie/metadata"
 
-mkdir /opt/Connie/tmp
-echo "created: /opt/Connie/tmp/"
+./create-dirs.sh
 
-mkdir /opt/Connie/logs
-echo "created: /opt/Connie/logs"
-
-mkdir /opt/Connie/bin
-echo "created: /opt/Connie/bin"
-
-mkdir /opt/Connie/conf
-echo "created: /opt/Connie/conf"
-
-mkdir /opt/Connie/conf/certs/
-
-cp openssl_script.sh /opt/Connie/bin/
-chmod +x /opt/Connie/bin/openssl_script.sh
-
-touch /opt/Connie/conf/.connieDB.sqlite
-touch /opt/Connie/conf/server_ident.toml
-touch /opt/Connie/conf/certs/key.pem
-touch /opt/Connie/conf/certs/cert.pem
 
 read -p "do you want to install connie.service file to start with systemctl or systemd(y/n): " service
 if [ $service == "y" ] || [ $service == "Y" ] || [ $service == "yes"] ; then 
   sudo cp ./connie.service /etc/systemd/system/
 else 
   echo "will not create a connie.service file ";
-# cp ./connie.service /lib/systemd/system/connie.service
-# echo "created /lib/systemd/system/connie.service"
 
 if [ $type == "S" ] || [ $type == "s" ] ; then 
   cp ./target/client/Connie /opt/Connie/bin/cie
