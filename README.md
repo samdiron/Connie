@@ -21,8 +21,10 @@ A user-frendly server/client that makes it easy and cheap to transfer data betwe
 
 # Prerequisites for client 
 - a computer
-- internet access 
-there're 2 ways in witch you can install Connie
+- internet access
+
+
+**there're 2 ways in witch you can install Connie**
 
 # First(user-frendly)
 1. download the latest release( for the client congrats you have installed connie for the server side will have to do more)
