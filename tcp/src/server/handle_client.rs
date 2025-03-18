@@ -186,7 +186,7 @@ pub async fn handle(
             let is_val = request.validate(&pool).await.unwrap();
             if is_val {
 
-                let data: Vec<Smedia> = media::fetch::get_user_files(request.cpid, &pool).await.unwrap();
+                let data: Vec<Smedia> = media::fetch::get_user_files(request.cpid, sqlite_host.cpid, &pool).await.unwrap();
                 stream.write_u16(data.len() as u16).await?;
                 for d in data {
                     let vec = bincode::serialize(&d).unwrap();
