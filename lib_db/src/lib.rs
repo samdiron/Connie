@@ -7,6 +7,11 @@ pub mod server;
 pub mod user;
 
 
+pub(crate) fn escape_user_input(s: &String) -> String{
+    let ns = s.replace("'", "");
+    ns
+}
+
 /// this lib provides a sqlite db for the client to make it easer for 
 /// non technical users
 pub mod sqlite;

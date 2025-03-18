@@ -1,7 +1,7 @@
 
 use sqlx::{PgPool,Row , Result};
 use super::checksum::get_size;
-
+use crate::escape_user_input;
 
 
 pub struct Media {
@@ -25,11 +25,17 @@ pub async fn check_if_media_exist(
 ) -> bool {
     let sql = format!("
 SELECT count(1) FROM media
-WHERE name = '{name}' 
-AND size = {size} 
-AND in_host = '{host}' 
-AND type = '{type_}'
-AND cpid = '{cpid}';");
+WHERE name = '{}' 
+AND size = {} 
+AND in_host = '{}' 
+AND type = '{}'
+AND cpid = '{}';",
+        escape_user_input(name),
+        size,
+        escape_user_input(host),
+        escape_user_input(type_),
+        escape_user_input(cpid),
+);
      let _count = sqlx::query(&sql).fetch_one(pool).await;
     if _count.is_err() {return false}else {
     let count: i64 = _count.unwrap().get("count");
@@ -42,6 +48,17 @@ AND cpid = '{cpid}';");
 
 }
 
+pub async fn delete(s: Media, pool: &PgPool) -> Result<u64> {
+    let sql = format!(
+        "DELETE FROM media WHERE checksum = '{}' AND cpid = '{}' AND in_host = '{}'",
+        escape_user_input(&s.checksum),
+        escape_user_input(&s.cpid),
+        escape_user_input(&s.in_host),
+    );
+    let res = sqlx::query(&sql).execute(pool).await?;
+    let rows = res.rows_affected();
+    Ok(rows)
+}
 
 
 impl Media {
@@ -103,4 +120,5 @@ impl Media {
         };
         Ok(media)
     }
+
 }
