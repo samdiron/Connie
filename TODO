@@ -4,7 +4,8 @@ replace surrealdb with for the db unit mysql and sqlite for normal units
 
 postgresql
 
-//TODO: create a install.sh file create a Connie.service create a root dir instead of a user home 
+//TODO: create a gzip functions
+
 
 error codes {
 4 int 
@@ -68,20 +69,17 @@ protocols {
         encryiption,
         packetizer,
         handshake,
-        port 4442 connie_db_unit,
+        port 442 connie_db_unit,
         tls,
     },
-    port 4443 tcp{
+    port 443 tcp{
         get,
-        send,
+        post,
+        delete,
     }
     port 4445rtmp{
         get stream,
         send stream,
-    }
-    https4444{
-        tokens,
-        login info,
     }
 }
 
