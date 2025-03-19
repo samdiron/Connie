@@ -79,7 +79,12 @@ pub async fn bind(pool: PgPool, ident: Server) {
                 let stream = (tls, addr);
                 task::spawn(async move {
                     match handle(stream, inner_p, inner_allow_new_users, sqlite_host).await {
-                        Ok(..) => {info!("a client was handled")},
+                        Ok(res) => {
+                            if res == 0 {info!("a client was handled")}
+                            else if res == 1 {
+                                info!("client was lost");
+                            }
+                        },
                         Err(_) => {debug!("a cleint request faild")},
                     }
                 });

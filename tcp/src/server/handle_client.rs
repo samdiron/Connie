@@ -53,7 +53,7 @@ pub async fn handle(
     pool: PgPool,
     allow_new_users: bool,
     sqlite_host: SqliteHost,
-) -> Result<()> {
+) -> Result<u8> {
     
     let mut stream = st.0;
     let addr = st.1;
@@ -66,7 +66,7 @@ pub async fn handle(
     ).await?;
     if is_correct_addres == 1 {
         debug!("a client was lost");
-        return Ok(())
+        return Ok(1)
     }if is_correct_addres == SIGNIN_CRED {
         
         debug!("SERVER: signin request");
@@ -200,5 +200,5 @@ pub async fn handle(
     }
 
     
-    Ok(())
+    Ok(0)
 }
