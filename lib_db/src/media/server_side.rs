@@ -1,6 +1,23 @@
+use std::{path::PathBuf, str::FromStr};
+
 use sqlx::{PgPool, Row};
 
-pub async fn in_storage(pool: &PgPool, host_cpid: &String) -> u64 {
+
+pub async fn in_storage_files(pool: &PgPool, host_cpid: &String) -> Vec<PathBuf> {
+    let sql = format!("SELECT (path) FROM media WHERE in_host = {:?}", host_cpid);
+    let _res = sqlx::query(&sql).fetch_all(pool).await;
+    let mut files: Vec<PathBuf> = vec![];
+    if _res.is_ok() {
+        for row in _res.unwrap() {
+            let s: String = row.get("path");
+            let path = PathBuf::from_str(&s).unwrap();
+            files.push(path);
+        }
+    }
+    return files;
+}
+
+pub async fn in_storage_size(pool: &PgPool, host_cpid: &String) -> u64 {
     let sql = format!("SELECT (size) FROM media WHERE in_host = {:?}", host_cpid);
     let _res = sqlx::query(&sql).fetch_all(pool).await;
     if _res.is_ok() {

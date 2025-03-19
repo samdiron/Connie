@@ -1,9 +1,37 @@
-use common_lib::log::{debug, error};
-use lib_db::{database::get_conn, server::host::get_host_info};
-use lib_start::tcp::server_config::{ALL_AV_NET, PRI_NET};
-use tcp::{consts::{NET_STATUS, NEW_USERS, PORT, PRIVATE_STATUS, USE_IP, USE_PORT}, server::listener::bind};
+use std::{path::PathBuf, str::FromStr};
 
-use crate::{get_pass, Commands};
+use common_lib::{log::{debug, error}, path::DATA_DIR};
+use lib_db::{
+    database::get_conn,
+    media::server_side::{
+        in_storage_files,
+        in_storage_size
+    },
+    server::host::get_host_info
+};
+use lib_start::{
+    file_checker,
+    tcp::server_config::{
+        ALL_AV_NET,
+        PRI_NET
+    }
+};
+use tcp::{
+    consts::{
+        NET_STATUS,
+        NEW_USERS,
+        PORT,
+        PRIVATE_STATUS,
+        USE_IP,
+        USE_PORT
+    },
+    server::listener::bind
+};
+
+use crate::{
+    get_pass, 
+    Commands
+};
 
 pub async fn handle_cli_bind(command: Commands) {
     match command {
@@ -47,6 +75,16 @@ pub async fn handle_cli_bind(command: Commands) {
                 let ip_status = *USE_IP.lock().unwrap();
                 let port = *USE_PORT.lock().unwrap();
                 debug!("ip status {ip_status}, port status {port}");
+                let files_size = in_storage_size(
+                    &pool,
+                    &config.default_server.cpid
+                ).await;
+                let files_path = in_storage_files(
+                    &pool,
+                    &config.default_server.cpid
+                ).await;
+                let dir = PathBuf::from_str(DATA_DIR).unwrap();
+                file_checker(&dir, &files_path, files_size).await;
                 bind(pool, config.default_server).await
                 
             } else if server.is_some() {
