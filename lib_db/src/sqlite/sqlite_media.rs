@@ -2,9 +2,11 @@ use common_lib::log::debug;
 use serde::{Deserialize, Serialize};
 use sqlx::{Result, Row, SqlitePool};
 
+use crate::escape_user_input;
 
 
-#[derive(Serialize, Deserialize, Clone)]
+
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
 pub struct SqliteMedia {
     pub name: String,
     pub cpid: String,
@@ -37,11 +39,26 @@ pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{
 }
 
 
+pub async fn fetch_all_media_from_host_number(
+    host: &String,
+    user: &String,
+    pool: &SqlitePool
+) -> u64 {
+    let user = escape_user_input(&user);
+    let host = escape_user_input(&host);
+    let sql = format!("SELECT count(*) FROM media WHERE cpid = '{user}' AND host = '{host}' ;");
+    let res = sqlx::query(&sql).fetch_one(pool).await.unwrap();
+    let count: i64 =res.get(0usize) ;
+    return count as u64
+}
+    
 pub async fn fetch_all_media_from_host(
     host: &String,
     user: &String,
     pool: &SqlitePool
 ) -> Result<Vec<SqliteMedia>> {
+    let user = escape_user_input(&user);
+    let host = escape_user_input(&host);
     let sql = format!("SELECT * FROM media WHERE cpid = '{user}' AND host = '{host}' ;");
     let rows = sqlx::query(&sql).fetch_all(pool).await?;
     let mut media_vec: Vec<SqliteMedia> = Vec::new();
@@ -126,6 +143,14 @@ VALUES ('{}', '{}', '{}', '{}', '{}', '{}', {}, {});",
         Ok(())
 
     }
-
+    pub async fn delete(s: &Self, pool: &SqlitePool) {
+        let host = &s.host;
+        let name = &s.name;
+        let checksum = &s.checksum;
+        let cpid = &s.cpid;
+        let sql = format!("DELETE FROM media WHERE cpid = '{cpid}' AND name = '{name}' AND checksum = '{checksum}' AND host = '{host}'");
+        let _res = sqlx::query(&sql).execute(pool).await.unwrap();
+    }
+  
 
 }

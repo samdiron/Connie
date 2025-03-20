@@ -4,7 +4,10 @@ use sqlx::{PgPool, Row};
 
 
 pub async fn in_storage_files(pool: &PgPool, host_cpid: &String) -> Vec<PathBuf> {
-    let sql = format!("SELECT (path) FROM media WHERE in_host = {:?}", host_cpid);
+    let sql = format!(
+        "SELECT path FROM media WHERE in_host = '{}';",
+        host_cpid
+    );
     let _res = sqlx::query(&sql).fetch_all(pool).await;
     let mut files: Vec<PathBuf> = vec![];
     if _res.is_ok() {
@@ -18,7 +21,10 @@ pub async fn in_storage_files(pool: &PgPool, host_cpid: &String) -> Vec<PathBuf>
 }
 
 pub async fn in_storage_size(pool: &PgPool, host_cpid: &String) -> u64 {
-    let sql = format!("SELECT (size) FROM media WHERE in_host = {:?}", host_cpid);
+    let sql = format!(
+        "SELECT size FROM media WHERE in_host = '{}' ; ",
+        host_cpid
+    );
     let _res = sqlx::query(&sql).fetch_all(pool).await;
     if _res.is_ok() {
         let mut  in_storage = 0i64;

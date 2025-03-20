@@ -108,7 +108,7 @@ pub async fn handle_cli_request(command: Commands) {
                 }else {IpAddr::from_str(&server.pub_ip).unwrap()};
                 let host_cpid = server.cpid.clone();
                 let user_cpid = usr.cpid.clone();
-                let mut server_media = fetcher::get_files(
+                let server_media = fetcher::get_files(
                     usr,
                     server,
                     jwt,

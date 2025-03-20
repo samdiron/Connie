@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use common_lib::{
     log::{debug, info},
     sysinfo,
-    tokio::fs::remove_file
+    // tokio::fs::remove_file
 };
 
 pub mod init;
@@ -16,14 +16,17 @@ pub(crate) mod checks;
 
 pub async fn file_checker(dir: &PathBuf, files: &Vec<PathBuf>, size: u64)  {
     let (current_files, ..) = get_files_in_storage(dir);
+    debug!("FILE_CHECKER: found {} files in {:#?}",current_files.len(), dir);
     let mut files_removed = 0;
-    for i in 0usize..current_files.len() {
-        if !files.contains(&current_files[i]) {
-            remove_file(&current_files[i])
-                .await
-                .expect("could not remove file");
-            debug!("FILE_CHECKER: removed file {:#?}", current_files[i]);
-            files_removed+=1;
+    if files.len() > 0usize {
+        for i in 0usize..current_files.len() {
+            if !files.contains(&current_files[i]) {
+                // remove_file(&current_files[i])
+                //     .await
+                //     .expect("could not remove file");
+                debug!("FILE_CHECKER: removed file {:#?}", current_files[i]);
+                files_removed+=1;
+            }
         }
     }
     let (.., nsize) = get_files_in_storage(&dir);

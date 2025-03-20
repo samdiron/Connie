@@ -1,3 +1,4 @@
+
 use std::{path::PathBuf, str::FromStr};
 
 use common_lib::{log::{debug, error}, path::DATA_DIR};
@@ -9,13 +10,10 @@ use lib_db::{
     },
     server::host::get_host_info
 };
-use lib_start::{
-    file_checker,
-    tcp::server_config::{
+use lib_start::{file_checker, tcp::server_config::{
         ALL_AV_NET,
         PRI_NET
-    }
-};
+    }};
 use tcp::{
     consts::{
         NET_STATUS,
@@ -83,6 +81,7 @@ pub async fn handle_cli_bind(command: Commands) {
                     &pool,
                     &config.default_server.cpid
                 ).await;
+                debug!("should be files: {}",files_path.len());
                 let dir = PathBuf::from_str(DATA_DIR).unwrap();
                 file_checker(&dir, &files_path, files_size).await;
                 bind(pool, config.default_server).await
