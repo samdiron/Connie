@@ -28,9 +28,6 @@ use clap::Parser;
 #[command(disable_help_flag = true)]
 struct Cli {
     
-    #[arg(long)]
-    db: Option<String>,
-
     #[command(subcommand)]
     config: Option<Commands>,
 

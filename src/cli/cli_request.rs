@@ -20,8 +20,7 @@ use lib_db::sqlite::{
     sqlite_host::fetch_server,
     sqlite_jwt::delete_expd_jwt,
     sqlite_media::{
-        fetch_all_media_from_host,
-        SqliteMedia
+        fetch_all_media_from_host, SqliteMedia
     },
     sqlite_user::fetch_sqlite_user_with_server_cpid
 };
@@ -34,7 +33,7 @@ use tcp::{
 
 use crate::Commands;
 
-
+#[allow(unused_assignments)]
 pub async fn handle_cli_request(command: Commands) {
     match command {
 
@@ -107,13 +106,35 @@ pub async fn handle_cli_request(command: Commands) {
                     me_pub_ip.unwrap().to_string() == server.pub_ip {
                     IpAddr::from_str(&server.pri_ip).unwrap()
                 }else {IpAddr::from_str(&server.pub_ip).unwrap()};
-                fetcher::get_files(
+                let host_cpid = server.cpid.clone();
+                let user_cpid = usr.cpid.clone();
+                let mut server_media = fetcher::get_files(
                     usr,
                     server,
                     jwt,
+                    pool
                 ).await.unwrap();
+                if server_media.len() == 0usize {
+                    info!("you don't have any files on that server");
+                    exit(0)
+                };
+                let should_be_files = server_media.len() as u64;
+                let db_media = fetch_all_media_from_host(
+                    &host_cpid,
+                    &user_cpid,
+                    pool
+                ).await.unwrap();
+                for m in db_media {
+                    SqliteMedia::delete(&m, pool).await;
+                } 
+                for m in server_media {
+                    SqliteMedia::add_media(m, pool).await.unwrap();
+                }
+                info!("done");
+                
+                
+
             } else if post.is_some() { 
-              
                 debug!("creating a checksum: {checksum}");
                 let request: RQM = RQM::create(
                     post.unwrap(),

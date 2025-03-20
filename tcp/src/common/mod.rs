@@ -141,7 +141,7 @@ pub(crate) mod handshakes {
 pub(crate) mod util {
     pub mod client {
             
-        use std::time;
+        use std::time::{self, Duration, Instant};
 
         use common_lib::{log::{debug, info}, tokio::{
             fs::File,
@@ -232,12 +232,13 @@ pub(crate) mod util {
             s.flush().await?;
             s.write_u64(_size).await?;
             s.flush().await?;
-            
+
             info!("tol: {tol}, size: {_size}");
+            let standard_wait = Duration::from_secs(2);
             if verbose {
 
                 for i in 0..tol {
-                    let mut _when_to_print: u8 = 0;
+                    let mut _when_to_print = Instant::now();
                     if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
                         info!("end tol");
                         let buf_size = _usize - sent;
@@ -257,12 +258,11 @@ pub(crate) mod util {
                         s.write_all(&nbuf).await?;
                         sent+=PACKET_SIZE
                     };
-                    if _when_to_print == 3 {_when_to_print=0};
-                    if _when_to_print == 0 {
+                    if _when_to_print.elapsed() >= standard_wait {
+                        _when_to_print+=standard_wait;
                         let percent = (i as f64 / tol as f64) * 100.0;
                         info!("upload: {:.2}%", percent);
                     };
-                    _when_to_print+=1;
                 }
             }
             else {
@@ -320,9 +320,9 @@ pub(crate) mod util {
             let tol = s.read_u16().await?;
             let s_all = s.read_u64().await? as usize;
             let mut i = 0u16;
-            
+            let standard_wait = Duration::from_secs(2);
             if i < tol && tol != 1 && verbose {
-                let mut when_to_print:u8 = 0;
+                let mut when_to_print = Instant::now();
                 loop {
                     if i == tol || i == tol-1 || (recvd+PACKET_SIZE) > s_all {
                         debug!("last loop");break 
@@ -331,15 +331,12 @@ pub(crate) mod util {
                     writer.write_all(&buf).await?;
                     writer.flush().await?;
                     i+=1;
-                    if when_to_print == 3 {
-                        when_to_print = 0;
-                    }
-
-                    if when_to_print == 0 {
+                  
+                    if when_to_print.elapsed() >= standard_wait {
+                        when_to_print+=standard_wait;
                         let percent = (i as f64 / tol as f64) * 100.0;
                         info!("download: {:.2}%", percent);
                     };
-                    when_to_print+=1;
                 }
             };
             if i < tol && tol != 1 && !verbose {

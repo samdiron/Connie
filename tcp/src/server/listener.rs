@@ -1,14 +1,16 @@
 use std::io;
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
+use std::time::{Duration, Instant};
 use common_lib::cheat_sheet::{LOCAL_IP, TCP_MAIN_PORT};
 use common_lib::public_ip;
 use lib_db::server::server_struct::Server;
 use lib_db::sqlite::sqlite_host::SqliteHost;
 use lib_db::types::PgPool;
-use common_lib::log::{debug, info, warn};
+use common_lib::log::{debug, error, info, warn};
 use common_lib::tokio::{net::TcpListener, task};
 use tokio::net::TcpStream;
+use tokio::task::JoinHandle;
 use tokio_rustls::server::TlsStream;
 use tokio_rustls::TlsAcceptor;
 use crate::consts::{NET_STATUS, NEW_USERS, PORT, USE_IP, USE_PORT};
@@ -65,7 +67,22 @@ pub async fn bind(pool: PgPool, ident: Server) {
     };
     let config = make_config();
     let acceptor = TlsAcceptor::from(config);
+    let mut handles: Vec<JoinHandle<()>> = vec![];
+    let mut time_for_request_handle = Instant::now();
+    let standard_wait = Duration::from_secs(5760);
     loop {
+        if time_for_request_handle.elapsed() >= standard_wait && handles.len() > 0usize {
+            time_for_request_handle+=standard_wait;
+            for i in 0usize..handles.len() {
+                if handles[i].is_finished() {
+                    let handle = handles.remove(i);
+                    match handle.await {
+                        Ok(..) => {debug!("a task was finished")}
+                        Err(e) => {error!("while trying to join a task {:?}", e)}
+                    }
+                }
+            }
+        };
         match socket.accept().await {
             Ok(stream) => {
                 info!("client: {}", &stream.1);
@@ -77,7 +94,7 @@ pub async fn bind(pool: PgPool, ident: Server) {
                     .await
                     .expect("could not accsept tls");
                 let stream = (tls, addr);
-                task::spawn(async move {
+                let handle = task::spawn(async move {
                     match handle(stream, inner_p, inner_allow_new_users, sqlite_host).await {
                         Ok(res) => {
                             if res == 0 {info!("a client was handled")}
@@ -85,9 +102,10 @@ pub async fn bind(pool: PgPool, ident: Server) {
                                 info!("client was lost");
                             }
                         },
-                        Err(_) => {debug!("a cleint request faild")},
+                        Err(e) => {debug!("a cleint request faild: {:#?}", e)},
                     }
                 });
+                handles.push(handle);
             }Err(e) => {
                 warn!("there was an err while accepting a client : {:#?}", e)
             }
