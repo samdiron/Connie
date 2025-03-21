@@ -77,12 +77,12 @@ pub async fn bind(pool: PgPool, ident: Server) {
     let mut impropertls: u32 = 0;
     loop {
         if time_for_request_handle.elapsed() >= standard_wait && handles.len() > 0usize {
-            info!("TASKCLEANER: {} tasks to check", handles.len());
+            let total_tasks = handles.len(); 
+            info!("TASKCLEANER: {} tasks to check", total_tasks);
             let mut faild_tasks:u64 = 0;
             let mut succesful_tasks:u64 = 0;
             time_for_request_handle+=standard_wait;
             let mut items_to_remove: Vec<usize>= vec![];
-            let total_tasks = handles.len(); 
             for i in 0usize..total_tasks {
                 if handles[i].is_finished() {
                     items_to_remove.push(i);
@@ -90,7 +90,7 @@ pub async fn bind(pool: PgPool, ident: Server) {
             }
             let total_items_to_remove = items_to_remove.len();
             if total_items_to_remove > 0usize {
-                for i in 1usize..total_items_to_remove {
+                for i in 1usize..total_items_to_remove+1usize {
                     let index = items_to_remove.remove(total_items_to_remove-i);
                     let handle = handles.remove(index);
                     match handle.await {
@@ -130,7 +130,7 @@ pub async fn bind(pool: PgPool, ident: Server) {
                                 info!("client was lost");
                             }
                         },
-                        Err(e) => {debug!("a cleint request faild: {:#?}", e)},
+                        Err(e) => {debug!("a client request faild: {:#?}", e)},
                     }
                     });
                 handles.push(handle);

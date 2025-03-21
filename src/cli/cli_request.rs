@@ -135,7 +135,7 @@ pub async fn handle_cli_request(command: Commands) {
             };
             let checksum = if checksum.is_some() {
                 checksum.unwrap()
-            }else {true};
+            }else {false};
 
             
             let usr = fetch_sqlite_user_with_server_cpid(
@@ -278,7 +278,7 @@ pub async fn handle_cli_request(command: Commands) {
                         _pool.clone(),
                         usr.clone(),
                         server.clone(),
-                        Some(checksum).clone(),
+                        Some(checksum),
                         request.clone()
                     ).await.unwrap();
                     let res = if res == 8 {

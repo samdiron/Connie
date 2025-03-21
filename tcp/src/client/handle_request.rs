@@ -105,14 +105,20 @@ pub async fn handle_client_request(
                     stream.write_u8(DATA_NOT_MATCH).await?;
                     stream.flush().await?;
                     error!("DATA SERVER SENT DOES NOT MATCH WHAT it's supposed to be");
-                }else if check_for_sum.is_some() && check_for_sum.unwrap() {
-                    debug!("GET:request:Check_CORRECT_DATA");
+                }else if check_for_sum.unwrap() {
+                    debug!("GET:CHECKSUM");
                     let local_sum = get_fsum(&path).await?;
                     if local_sum != request.chcksum {
-                    stream.write_u8(DATA_NOT_MATCH).await?;
-                    stream.flush().await?;
-                    error!("DATA SERVER SENT DOES NOT MATCH WHAT it's supposed to be");
-                    }else {assert_eq!(local_sum, request.chcksum)};
+                        stream.write_u8(DATA_NOT_MATCH).await?;
+                        stream.flush().await?;
+                        error!("DATA SERVER SENT DOES NOT MATCH WHAT it's supposed to be");
+                    }
+                        else {
+                            stream.write_u8(SUCCESFUL).await?;
+                            stream.flush().await?;
+                            info!("SUCCESFUL:GET f: {}",&path);
+                            assert_eq!(local_sum, request.chcksum)
+                        };
                 }else {
                     stream.write_u8(SUCCESFUL).await?;
                     stream.flush().await?;
