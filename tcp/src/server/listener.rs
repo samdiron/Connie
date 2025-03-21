@@ -1,9 +1,10 @@
-use std::io;
+use std::{io, thread};
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 use std::time::{Duration, Instant};
 use common_lib::cheat_sheet::{LOCAL_IP, TCP_MAIN_PORT};
 use common_lib::public_ip;
+use lib_db::jwt::DURATION;
 use lib_db::server::server_struct::Server;
 use lib_db::sqlite::sqlite_host::SqliteHost;
 use lib_db::types::PgPool;
@@ -70,21 +71,45 @@ pub async fn bind(pool: PgPool, ident: Server) {
     let acceptor = TlsAcceptor::from(config);
     let mut handles: Vec<JoinHandle<()>> = vec![];
     let mut time_for_request_handle = Instant::now();
-    let standard_wait = Duration::from_secs(5760);
+    let standard_clean_up_tls_dur = Instant::now();
+    let wait1day =  Duration::from_secs(DURATION); // DURATION == 1 day
+    let standard_wait = Duration::from_secs(60);
+    let mut impropertls: u32 = 0;
     loop {
         if time_for_request_handle.elapsed() >= standard_wait && handles.len() > 0usize {
+            info!("TASKCLEANER: {} tasks to check", handles.len());
+            let mut faild_tasks:u64 = 0;
+            let mut succesful_tasks:u64 = 0;
             time_for_request_handle+=standard_wait;
-            for mut i in 0usize..handles.len() {
+            let mut items_to_remove: Vec<usize>= vec![];
+            let total_tasks = handles.len(); 
+            for i in 0usize..total_tasks {
                 if handles[i].is_finished() {
-                    let handle = handles.remove(i);
-                    i-=1usize;
-                    match handle.await {
-                        Ok(..) => {debug!("a task was finished")}
-                        Err(..) => {}
-                    }
+                    items_to_remove.push(i);
                 }
             }
-        };
+            let total_items_to_remove = items_to_remove.len();
+            if total_items_to_remove > 0usize {
+                for i in 1usize..total_items_to_remove {
+                    let index = items_to_remove.remove(total_items_to_remove-i);
+                    let handle = handles.remove(index);
+                    match handle.await {
+                        Ok(..) => {succesful_tasks+=1;}
+                        Err(..) => {faild_tasks+=1;}
+                    }
+                }
+                info!("TASKCLEANER: total tasks {total_tasks}/ finished tasks {total_items_to_remove} / succesful tasks {succesful_tasks} / faild tasks {faild_tasks}");
+            };
+            if standard_clean_up_tls_dur.elapsed() >= wait1day {
+                impropertls=0
+            }
+
+        }; if impropertls ==  1000_000 {
+            warn!("you are being DDoSed i will sleep for until the standard_clean_up_tls_dur ends");
+            let now = Instant::now();
+            let dur = standard_clean_up_tls_dur - now;
+            thread::sleep(dur);
+        }
         match socket.accept().await {
             Ok(stream) => {
                 info!("client: {}", &stream.1);
@@ -93,10 +118,10 @@ pub async fn bind(pool: PgPool, ident: Server) {
                 let sqlite_host = sqlite_host.clone();
                 let addr = stream.1;
                 let inner_acceptor = acceptor.clone();
+                let tls = tls_acceptor(inner_acceptor, stream.0).await;
+                if tls.is_ok() {
                 let handle = task::spawn(async move {
-                    let tls = tls_acceptor(inner_acceptor, stream.0)
-                        .await
-                        .expect("could not accsept tls");
+                    let tls = tls.unwrap();
                     let stream = (tls, addr);
                     match handle(stream, inner_p, inner_allow_new_users, sqlite_host).await {
                         Ok(res) => {
@@ -107,8 +132,12 @@ pub async fn bind(pool: PgPool, ident: Server) {
                         },
                         Err(e) => {debug!("a cleint request faild: {:#?}", e)},
                     }
-                });
+                    });
                 handles.push(handle);
+                } else {
+                    warn!("client with improper tls");
+                    impropertls+=1;
+                }
             }Err(e) => {
                 warn!("there was an err while accepting a client : {:#?}", e)
             }
