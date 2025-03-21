@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use common_lib::{
     log::{debug, info},
-    sysinfo,
+    sysinfo, tokio::fs::remove_file,
     // tokio::fs::remove_file
 };
 
@@ -21,9 +21,9 @@ pub async fn file_checker(dir: &PathBuf, files: &Vec<PathBuf>, size: u64)  {
     if files.len() > 0usize {
         for i in 0usize..current_files.len() {
             if !files.contains(&current_files[i]) {
-                // remove_file(&current_files[i])
-                //     .await
-                //     .expect("could not remove file");
+                remove_file(&current_files[i])
+                    .await
+                    .expect("could not remove file");
                 debug!("FILE_CHECKER: removed file {:#?}", current_files[i]);
                 files_removed+=1;
             }

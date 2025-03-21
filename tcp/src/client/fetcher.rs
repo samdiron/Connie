@@ -34,7 +34,7 @@ pub async fn get_files(
     jwt: String,
     pool: &SqlitePool
 ) -> Result<Vec<Smedia>> {
-  let port = server.port;
+    let port = server.port;
     let me_pub_ip = public_ip::addr().await;
     let ip: IpAddr;
         let addr = if me_pub_ip.is_some() && me_pub_ip.unwrap().to_string() != server.pub_ip {
@@ -47,6 +47,7 @@ pub async fn get_files(
     let stream = TcpStream::connect(&addr).await?;
     let server_name = ServerName::from(ip);
     let mut stream = get_tlstream(server_name, stream).await?;
+    debug!("tls connected");
     // get request ready before handshake
     let head = Chead {
         jwt,
@@ -63,6 +64,7 @@ pub async fn get_files(
     if is_who_server != 0 {
         exit(1);
     };
+    debug!("handshake done");
 
 
     let request = head.sz().unwrap(); 

@@ -7,7 +7,7 @@ use common_lib::public_ip;
 use lib_db::server::server_struct::Server;
 use lib_db::sqlite::sqlite_host::SqliteHost;
 use lib_db::types::PgPool;
-use common_lib::log::{debug, error, info, warn};
+use common_lib::log::{debug, info, warn};
 use common_lib::tokio::{net::TcpListener, task};
 use tokio::net::TcpStream;
 use tokio::task::JoinHandle;
@@ -80,7 +80,7 @@ pub async fn bind(pool: PgPool, ident: Server) {
                     i-=1usize;
                     match handle.await {
                         Ok(..) => {debug!("a task was finished")}
-                        Err(e) => {error!("while trying to join a task {:?}", e)}
+                        Err(..) => {}
                     }
                 }
             }
@@ -92,11 +92,12 @@ pub async fn bind(pool: PgPool, ident: Server) {
                 let inner_allow_new_users = allow_new_users.clone();
                 let sqlite_host = sqlite_host.clone();
                 let addr = stream.1;
-                let tls = tls_acceptor(acceptor.clone(), stream.0)
-                    .await
-                    .expect("could not accsept tls");
-                let stream = (tls, addr);
+                let inner_acceptor = acceptor.clone();
                 let handle = task::spawn(async move {
+                    let tls = tls_acceptor(inner_acceptor, stream.0)
+                        .await
+                        .expect("could not accsept tls");
+                    let stream = (tls, addr);
                     match handle(stream, inner_p, inner_allow_new_users, sqlite_host).await {
                         Ok(res) => {
                             if res == 0 {info!("a client was handled")}
