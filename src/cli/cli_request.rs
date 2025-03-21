@@ -15,14 +15,22 @@ use common_lib::{
     path::SQLITEDB_PATH,
     public_ip
 };
-use lib_db::sqlite::{
-    self,
-    sqlite_host::fetch_server,
-    sqlite_jwt::delete_expd_jwt,
-    sqlite_media::{
-        fetch_all_media_from_host, SqliteMedia
+use lib_db::{
+    jwt::get_current_timestamp,
+    media::fetch::Smedia, sqlite::{
+        self,
+        sqlite_host::fetch_server,
+        sqlite_jwt::delete_expd_jwt,
+        sqlite_media::{
+                fetch_all_media_from_host,
+                fetch_all_media_from_host_smedia,
+                sqlite_delete_media,
+                sqlite_media_exists,
+                SqliteMedia
+        },
+        sqlite_user::fetch_sqlite_user_with_server_cpid
     },
-    sqlite_user::fetch_sqlite_user_with_server_cpid
+    types::SqlitePool
 };
 use tcp::{
     client::{
@@ -32,6 +40,49 @@ use tcp::{
     types::{GET, POST, RQM}};
 
 use crate::Commands;
+
+
+async fn file_checker(
+    db_files: Vec<Smedia>,
+    server_files: Vec<Smedia>,
+    host: String,
+    cpid: String,
+    pool: &SqlitePool
+) {
+    let mut deleted = 0;
+    let mut added = 0;
+    // deleteing local sqlite media that is deleted from the server
+    for df in db_files {
+        if !server_files.contains(&df) {
+            sqlite_delete_media(
+                &host,
+                &cpid,
+                &df.checksum,
+                pool
+            ).await;
+            deleted+=1;
+        };
+    }
+    // adding new fils from server
+    for sf in server_files {
+        if !sqlite_media_exists(&host, &cpid, &sf.checksum, pool).await {
+            let media = SqliteMedia {
+                name: sf.name,
+                checksum: sf.checksum,
+                cpid: cpid.clone(),
+                host: host.clone(),
+                size: sf.size,
+                type_: sf.type_,
+                date: get_current_timestamp() as i64,
+                path: "./".to_string()
+            };
+            SqliteMedia::add_media(media, pool).await.unwrap();
+            added+=1;
+        };
+    }
+    info!("FILECHECKER: added {added} files from server");
+    info!("FILECHECKER: deleted {deleted} files server");
+}
 
 #[allow(unused_assignments)]
 pub async fn handle_cli_request(command: Commands) {
@@ -49,7 +100,10 @@ pub async fn handle_cli_request(command: Commands) {
             fetch_files, 
             user
         } => {
-            if post.is_some() && get.is_some() {println!("you can't enter a get and post command");exit(1)}
+            if post.is_some() && get.is_some() {
+                println!("you can't enter a get and post command");
+                exit(1)
+            }
             let db_path = if db.is_some() {
                 let path = db
                     .unwrap()
@@ -84,9 +138,11 @@ pub async fn handle_cli_request(command: Commands) {
             }else {true};
 
             
-            let usr = fetch_sqlite_user_with_server_cpid(&user, &server.cpid, pool)
-                    .await
-                    .expect("could not fetch user");
+            let usr = fetch_sqlite_user_with_server_cpid(
+                &user,
+                &server.cpid,
+                pool
+            ).await.expect("could not fetch user");
 
             if fetch_files.is_some(){
                 debug!("fetching files");
@@ -109,8 +165,8 @@ pub async fn handle_cli_request(command: Commands) {
                 let host_cpid = server.cpid.clone();
                 let user_cpid = usr.cpid.clone();
                 let server_media = fetcher::get_files(
-                    usr,
-                    server,
+                    &usr,
+                    &server,
                     jwt,
                     pool
                 ).await.unwrap();
@@ -119,17 +175,18 @@ pub async fn handle_cli_request(command: Commands) {
                     exit(0)
                 };
                 let should_be_files = server_media.len() as u64;
-                let db_media = fetch_all_media_from_host(
+                let db_media = fetch_all_media_from_host_smedia(
                     &host_cpid,
                     &user_cpid,
                     pool
                 ).await.unwrap();
-                for m in db_media {
-                    SqliteMedia::delete(&m, pool).await;
-                } 
-                for m in server_media {
-                    SqliteMedia::add_media(m, pool).await.unwrap();
-                }
+                file_checker(
+                    db_media,
+                    server_media,
+                    host_cpid,
+                    user_cpid,
+                    pool
+                ).await;
                 info!("done");
                 
                 
@@ -142,7 +199,11 @@ pub async fn handle_cli_request(command: Commands) {
                     usr.cpid.clone(),
                     checksum
                 ).await.unwrap();
-                let usr = fetch_sqlite_user_with_server_cpid(&user, &server.cpid, pool).await.unwrap();
+                let usr = fetch_sqlite_user_with_server_cpid(
+                    &user,
+                    &server.cpid,
+                    pool
+                ).await.unwrap();
                 let res = client_process(
                     _pool,
                     usr,
@@ -152,7 +213,11 @@ pub async fn handle_cli_request(command: Commands) {
                 ).await.unwrap();
                 println!("done {}", res);
             } else if get.is_some() {
-                let _media_vec = fetch_all_media_from_host(&server.cpid, &usr.cpid, pool).await;
+                let _media_vec = fetch_all_media_from_host(
+                    &server.cpid,
+                    &usr.cpid,
+                    pool
+                ).await;
                 if _media_vec.is_err() {
                     let e = _media_vec.err().unwrap();
                     error!("database error: {}",e.to_string());

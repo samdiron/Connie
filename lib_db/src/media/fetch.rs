@@ -6,13 +6,12 @@ use crate::escape_user_input;
 
 
 /// the s stand for short 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq)]
 pub struct Smedia {
     pub name: String,
     pub type_: String,
     pub checksum: String,
     pub size: i64,
-    pub path: String,
 }
 
 pub async fn get_user_files(
@@ -33,9 +32,8 @@ pub async fn get_user_files(
         let type_ = row.get("type");
         let checksum = row.get("checksum");
         let size = row.get("size");
-        let path = row.get("path");
 
-        let media = Smedia { name, type_, checksum, size, path };
+        let media = Smedia { name, type_, checksum, size };
         media_v.push(media);
     } 
     Ok(media_v)

@@ -48,9 +48,11 @@ AND cpid = '{}';",
 
 }
 
-pub async fn delete(s: Media, pool: &PgPool) -> Result<u64> {
-    let sql = format!(
-        "DELETE FROM media WHERE checksum = '{}' AND cpid = '{}' AND in_host = '{}'",
+pub async fn delete_media(s: Media, pool: &PgPool) -> Result<u64> {
+    let sql = format!(r#"
+    DELETE
+    FROM media WHERE checksum = '{}' AND cpid = '{}' AND in_host = '{}'; 
+    "#,
         escape_user_input(&s.checksum),
         escape_user_input(&s.cpid),
         escape_user_input(&s.in_host),

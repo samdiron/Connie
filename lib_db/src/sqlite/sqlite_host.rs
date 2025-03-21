@@ -19,7 +19,9 @@ CREATE TABLE host(
     port INT
 );"#;
 
-pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{
+pub(in crate::sqlite) async fn create_table(
+    pool: &SqlitePool
+) -> Result<()> {
     debug!("SQLITE: {SQL}");
     sqlx::query(SQL).execute(pool).await?;
     Ok(())
@@ -39,7 +41,11 @@ pub async fn get_host_ip(
     host: &String,
     pool: &SqlitePool
 ) -> Result<(IpAddr, IpAddr), sqlx::Error > {
-    let sql = format!("SELECT (pri_ip, pub_ip) FROM host WHERE name = '{name}' AND host = '{host}' ;");
+    let sql = format!(r#"
+    SELECT (pri_ip, pub_ip)
+    FROM host
+    WHERE name = '{name}' AND host = '{host}' ;
+    "#);
     let res = sqlx::query(&sql).fetch_one(pool).await?;
     let pub_ip:String = res.get("pub_ip");
     let pri_ip:String = res.get("pri_ip");

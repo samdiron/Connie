@@ -1,8 +1,8 @@
 use std::{io::Result, net::{IpAddr, SocketAddr}, process::exit};
 
 use lib_db::{
-    jwt::get_current_timestamp, media::fetch::Smedia, sqlite::{
-        sqlite_host::SqliteHost, sqlite_media::SqliteMedia, sqlite_user::SqliteUser
+    media::fetch::Smedia, sqlite::{
+        sqlite_host::SqliteHost, sqlite_user::SqliteUser
     }, types::SqlitePool
 };
 use common_lib::{
@@ -18,16 +18,22 @@ use common_lib::{
 };
 use tokio_rustls::rustls::pki_types::ServerName;
 use crate::{
-    client::connector::get_tlstream, common::{handshakes, request::FETCH, util::client::rvfs}, server::req_format::Chead
+    client::connector::get_tlstream,
+    common::{
+        handshakes,
+        request::FETCH,
+        util::client::rvfs
+    },
+    server::req_format::Chead
 };
 
 
 pub async fn get_files(
-    u: SqliteUser,
-    server: SqliteHost,
+    u: &SqliteUser,
+    server: &SqliteHost,
     jwt: String,
     pool: &SqlitePool
-) -> Result<Vec<SqliteMedia>> {
+) -> Result<Vec<Smedia>> {
   let port = server.port;
     let me_pub_ip = public_ip::addr().await;
     let ip: IpAddr;
@@ -65,23 +71,18 @@ pub async fn get_files(
     debug!("sent {}",request.len());
     stream.flush().await?;
     let items = stream.read_u16().await.unwrap();
-    let mut media_from_server: Vec<SqliteMedia> = vec![];
+    let mut media_from_server: Vec<Smedia> = vec![];
 
     println!("media");
-    for _i in 1..items {
+    for _i in 0..items {
         
         let buf = rvfs(&mut stream).await?;
         let media: Smedia = Smedia::dz(buf).unwrap();
-        println!("{_i}: name: {},\n size: {}, checksum: {} ;",media.name, media.size, media.checksum);
-        let sqlitem = SqliteMedia {
+        let sqlitem = Smedia {
             name: media.name,
-            cpid: u.cpid.clone(),
-            host: server.cpid.clone(),
             type_: media.type_,
             checksum: media.checksum,
             size: media.size,
-            path: media.path,
-            date: get_current_timestamp() as i64
         };
 
         media_from_server.push(sqlitem);

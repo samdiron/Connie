@@ -2,7 +2,11 @@ use std::io::Result;
 use std::fs::metadata;
 use std::path::PathBuf;
 use lib_db::media::checksum::{get_fsum, get_size};
-use lib_db::media::media::{check_if_media_exist, Media};
+use lib_db::media::media::{
+    check_if_media_exist,
+    delete_media,
+    Media
+};
 use lib_db::types::PgPool;
 use common_lib::log::{debug, error, info};
 use common_lib::tokio::io::AsyncWriteExt;
@@ -12,6 +16,8 @@ use tokio::io::{AsyncReadExt, BufReader};
 use crate::common::request::{
     DATA_NOT_MATCH,
     GET,
+    DELETE,
+    POST,
     MEDIA_ALREADY_EXISTS,
     NOT_FOUND,
     NO_VAL,
@@ -21,7 +27,7 @@ use crate::common::request::{
 };
 use crate::common::util::server::{wffb, wifb, wvts};
 use crate::common::ServerTlsStreams;
-use crate::types::{POST, RQM};
+use crate::types::RQM;
 use common_lib::path::DATA_DIR;
 
 
@@ -120,6 +126,39 @@ pub async  fn handle_server_request(
                         } else {debug!("UNSUCCESFUL:GET");return Ok(1)}
                     }
                 }
+            } else {
+                stream.write_u8(NOT_FOUND).await?;
+                stream.flush().await?;
+                return Ok(NOT_FOUND);
+            }
+        }
+        DELETE => {
+            if check_if_media_exist(
+                &request.cpid,
+                host_cpid,
+                &request.name,
+                &request.type_,
+                request.size,
+                pool
+            ).await {
+                let name = request.name;
+                let cpid = request.cpid;
+                let in_host = host_cpid.clone();
+                let type_ = request.type_;
+                let size = request.size;
+                let checksum = request.chcksum;
+                let path = String::new();
+                let media = Media {
+                    name,
+                    cpid,
+                    size,
+                    type_,
+                    in_host,
+                    checksum,
+                    path
+                };
+                let rows = delete_media(media, pool).await.unwrap();
+                assert!(rows < 2);
             } else {
                 stream.write_u8(NOT_FOUND).await?;
                 stream.flush().await?;

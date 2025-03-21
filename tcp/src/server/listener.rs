@@ -33,6 +33,7 @@ async fn tls_acceptor(
 
 
 
+#[allow(unused_assignments)]
 pub async fn bind(pool: PgPool, ident: Server) {
     let ip = if *USE_IP.lock().unwrap() == NET_STATUS {
         debug!("server will listen on a custom ip");
@@ -73,9 +74,10 @@ pub async fn bind(pool: PgPool, ident: Server) {
     loop {
         if time_for_request_handle.elapsed() >= standard_wait && handles.len() > 0usize {
             time_for_request_handle+=standard_wait;
-            for i in 0usize..handles.len() {
+            for mut i in 0usize..handles.len() {
                 if handles[i].is_finished() {
                     let handle = handles.remove(i);
+                    i-=1usize;
                     match handle.await {
                         Ok(..) => {debug!("a task was finished")}
                         Err(e) => {error!("while trying to join a task {:?}", e)}

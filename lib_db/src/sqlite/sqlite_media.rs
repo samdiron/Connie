@@ -2,7 +2,7 @@ use common_lib::log::debug;
 use serde::{Deserialize, Serialize};
 use sqlx::{Result, Row, SqlitePool};
 
-use crate::escape_user_input;
+use crate::{escape_user_input, media::fetch::Smedia};
 
 
 
@@ -32,7 +32,8 @@ CREATE TABLE media(
     date INT
 );";
 
-pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{
+pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) 
+-> Result<()>{
     debug!("SQLITE: {SQL}");
     sqlx::query(SQL).execute(pool).await?;
     Ok(())
@@ -46,11 +47,47 @@ pub async fn fetch_all_media_from_host_number(
 ) -> u64 {
     let user = escape_user_input(&user);
     let host = escape_user_input(&host);
-    let sql = format!("SELECT count(*) FROM media WHERE cpid = '{user}' AND host = '{host}' ;");
+    let sql = format!(r#"
+    SELECT
+    count(*) FROM media WHERE cpid = '{user}' AND host = '{host}' ;
+    "#);
     let res = sqlx::query(&sql).fetch_one(pool).await.unwrap();
     let count: i64 =res.get(0usize) ;
     return count as u64
 }
+
+
+pub async fn fetch_all_media_from_host_smedia(
+    host: &String,
+    user: &String,
+    pool: &SqlitePool
+) -> Result<Vec<Smedia>> {
+    let user = escape_user_input(&user);
+    let host = escape_user_input(&host);
+    let sql = format!(r#"
+    SELECT * FROM media WHERE cpid = '{user}' AND host = '{host}' ;
+    "#);
+    let rows = sqlx::query(&sql).fetch_all(pool).await?;
+    let mut media_vec: Vec<Smedia> = Vec::new();
+    for row in rows {
+        let name: String = row.get("name");
+        let type_: String = row.get("type");
+        let checksum: String = row.get("checksum");
+        let size: i64 = row.get("size");
+        let local_struct = Smedia {
+            name,
+            type_,
+            checksum,
+            size,
+        };
+        media_vec.push(local_struct);
+
+    }
+    Ok(media_vec)
+    
+}
+
+
     
 pub async fn fetch_all_media_from_host(
     host: &String,
@@ -59,7 +96,9 @@ pub async fn fetch_all_media_from_host(
 ) -> Result<Vec<SqliteMedia>> {
     let user = escape_user_input(&user);
     let host = escape_user_input(&host);
-    let sql = format!("SELECT * FROM media WHERE cpid = '{user}' AND host = '{host}' ;");
+    let sql = format!(r#"
+    SELECT * FROM media WHERE cpid = '{user}' AND host = '{host}';
+    "#);
     let rows = sqlx::query(&sql).fetch_all(pool).await?;
     let mut media_vec: Vec<SqliteMedia> = Vec::new();
     for row in rows {
@@ -92,7 +131,8 @@ pub async fn fetch_all_media(
     user: &String,
     pool: &SqlitePool
 ) -> Result<Vec<SqliteMedia>> {
-    let sql = format!("SELECT * FROM media WHERE cpid = '{user}';");
+    let cpid = escape_user_input(user);
+    let sql = format!("SELECT * FROM media WHERE cpid = '{cpid}';");
     let rows = sqlx::query(&sql).fetch_all(pool).await?;
     let mut media_vec: Vec<SqliteMedia> = Vec::new();
     for row in rows {
@@ -120,6 +160,45 @@ pub async fn fetch_all_media(
     Ok(media_vec)
     
 }
+pub async fn sqlite_delete_media(
+    host: &String,
+    cpid: &String,
+    checksum: &String,
+    pool: &SqlitePool
+) {
+    let host = escape_user_input(host);
+    let cpid = escape_user_input(cpid);
+    let checksum = escape_user_input(checksum);
+    let sql = format!(r#"
+    DELETE FROM media WHERE cpid = '{}' AND checksum = '{}' AND host = '{}';
+    "#,
+        cpid,
+        checksum,
+        host
+    );
+    let _res = sqlx::query(&sql).execute(pool).await.unwrap();
+}
+
+pub async fn sqlite_media_exists(
+    host: &String,
+    cpid: &String,
+    checksum: &String,
+    pool: &SqlitePool
+) -> bool {
+    let sql = format!(r#"
+    SELECT
+    count(*) FROM media 
+    WHERE checksum = '{}' AND cpid = '{}' AND host = '{}';
+    "#,
+        escape_user_input(checksum),
+        escape_user_input(cpid),
+        escape_user_input(host),
+    );
+    let res = sqlx::query(&sql).fetch_one(pool).await.unwrap();
+    let count: i64 = res.get(0usize);
+    return count == 1;
+
+    }
 
 
 impl SqliteMedia {
@@ -143,14 +222,20 @@ VALUES ('{}', '{}', '{}', '{}', '{}', '{}', {}, {});",
         Ok(())
 
     }
-    pub async fn delete(s: &Self, pool: &SqlitePool) {
-        let host = &s.host;
-        let name = &s.name;
-        let checksum = &s.checksum;
-        let cpid = &s.cpid;
-        let sql = format!("DELETE FROM media WHERE cpid = '{cpid}' AND name = '{name}' AND checksum = '{checksum}' AND host = '{host}'");
-        let _res = sqlx::query(&sql).execute(pool).await.unwrap();
-    }
-  
+    pub async fn exists(s: &Self, pool: &SqlitePool) -> bool {
+        let sql = format!(r#"
+        SELECT count(*)
+        FROM media 
+        WHERE checksum = '{}' AND cpid = '{}' AND host = '{}' ;
+        "#,
+        escape_user_input(&s.checksum),
+        escape_user_input(&s.cpid),
+        escape_user_input(&s.host),
+    );
+        let res = sqlx::query(&sql).fetch_one(pool).await.unwrap();
+        let count: i64 = res.get(0usize);
+        return count == 1;
 
+    } 
+    
 }
