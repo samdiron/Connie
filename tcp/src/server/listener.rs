@@ -73,7 +73,7 @@ pub async fn bind(pool: PgPool, ident: Server) {
     let mut time_for_request_handle = Instant::now();
     let standard_clean_up_tls_dur = Instant::now();
     let wait1day =  Duration::from_secs(DURATION); // DURATION == 1 day
-    let standard_wait = Duration::from_secs(60);
+    let standard_wait = Duration::from_secs(600); // 10 min
     let mut impropertls: u32 = 0;
     loop {
         if time_for_request_handle.elapsed() >= standard_wait && handles.len() > 0usize {
