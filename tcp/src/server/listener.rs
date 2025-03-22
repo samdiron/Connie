@@ -105,9 +105,9 @@ pub async fn bind(pool: PgPool, ident: Server) {
             }
 
         }; if impropertls ==  1000_000 {
-            warn!("you are being DDoSed i will sleep for until the standard_clean_up_tls_dur ends");
             let now = Instant::now();
             let dur = standard_clean_up_tls_dur - now;
+            warn!("you are being DDoSed and i don't wanna deal with this i will sleep for {}s. goodnight (っ- ‸ - ς)",dur.as_secs());
             thread::sleep(dur);
         }
         match socket.accept().await {
