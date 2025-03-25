@@ -107,13 +107,12 @@ async fn main() {
                     .parse_filters("DEBUG")
                     .init();
             }
-            3 => {
+            _ => {
                 env_logger::Builder::new()
                     .parse_filters("trace")
                     .init();
 
         }
-            _ => {}
         }
 
     }
