@@ -112,7 +112,6 @@ pub async fn bind(pool: PgPool, ident: Server) {
         }
         match socket.accept().await {
             Ok(stream) => {
-                info!("client: {}", &stream.1);
                 let inner_p = pool.clone();
                 let inner_allow_new_users = allow_new_users.clone();
                 let sqlite_host = sqlite_host.clone();
@@ -123,6 +122,7 @@ pub async fn bind(pool: PgPool, ident: Server) {
                 let handle = task::spawn(async move {
                     let tls = tls.unwrap();
                     let stream = (tls, addr);
+                    info!("client: {}", &addr);
                     match handle(stream, inner_p, inner_allow_new_users, sqlite_host).await {
                         Ok(res) => {
                             if res == 0 {info!("a client was handled")}
@@ -135,7 +135,7 @@ pub async fn bind(pool: PgPool, ident: Server) {
                     });
                 handles.push(handle);
                 } else {
-                    warn!("client with improper tls");
+                    warn!("client with improper tls addres: {addr}");
                     impropertls+=1;
                 }
             }Err(e) => {
