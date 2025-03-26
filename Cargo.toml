@@ -27,6 +27,7 @@ members = [
   "lib_db",
   "lib_start",
   "tcp",
+  "tui",
 ]
 
 [dependencies]
