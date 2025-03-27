@@ -1,5 +1,5 @@
-use std::
-    io::Result
+use std::{
+    io::Result, net::IpAddr}
 ;
 
 use lib_db::{
@@ -20,6 +20,8 @@ pub(crate) struct Connection {
     pub jwt: Option<String>,
     pub user: SqliteUser,
     pub server: SqliteHost,
+    pub ip: Option<IpAddr>,
+    pub port: Option<u16>,
 }
 
 pub use crate::client::connector::signup_process;
@@ -44,6 +46,8 @@ pub async fn client_process(
     pool: SqlitePool,
     usr: SqliteUser,
     server: SqliteHost,
+    port: Option<u16>,
+    ip: Option<IpAddr>,
     check_for_sum: Option<bool>,
     request: RQM,
 
@@ -55,6 +59,8 @@ pub async fn client_process(
         let conn = Connection {
             jwt,
             user: usr,
+            ip,
+            port,
             server
         };
         conn
@@ -62,10 +68,12 @@ pub async fn client_process(
         Connection {
             jwt: None,
             user: usr,
+            ip,
+            port,
             server,
         }
     };
-    state = connect_tcp(&pool, conn, check_for_sum,request).await.unwrap();
+    state = connect_tcp(&pool, conn, check_for_sum, request).await.unwrap();
     Ok(state)
 
 } 

@@ -1,4 +1,3 @@
-
 use std::{path::PathBuf, str::FromStr};
 
 use common_lib::{log::{debug, error}, path::DATA_DIR};
@@ -18,10 +17,8 @@ use tcp::{
     consts::{
         NET_STATUS,
         NEW_USERS,
-        PORT,
         PRIVATE_STATUS,
         USE_IP,
-        USE_PORT
     },
     server::listener::bind
 };
@@ -56,6 +53,11 @@ pub async fn handle_cli_bind(command: Commands) {
                     let mut new = NEW_USERS.lock().unwrap();
                     *new = 1
                 };
+                let port = if port.is_some() {
+                    port.unwrap()
+                } else {
+                    0
+                };
                 match config.default_network.as_str() {
                     ALL_AV_NET => {
                         let mut _use_it = USE_IP.lock()
@@ -70,21 +72,25 @@ pub async fn handle_cli_bind(command: Commands) {
                     }
                     _=> {error!("unexpected network from config")}
                 }
-                let ip_status = *USE_IP.lock().unwrap();
-                let port = *USE_PORT.lock().unwrap();
-                debug!("ip status {ip_status}, port status {port}");
                 let files_size = in_storage_size(
                     &pool,
                     &config.default_server.cpid
                 ).await;
+
                 let files_path = in_storage_files(
                     &pool,
                     &config.default_server.cpid
                 ).await;
+
                 debug!("should be files: {}",files_path.len());
                 let dir = PathBuf::from_str(DATA_DIR).unwrap();
                 file_checker(&dir, &files_path, files_size).await;
-                bind(pool, config.default_server).await
+                let port = if port == 0 {
+                    config.default_port
+                }else {
+                    port
+                };
+                bind(pool, config.default_server, port).await
                 
             } else if server.is_some() {
                 let _pool =  get_conn().await.unwrap();
@@ -100,20 +106,15 @@ pub async fn handle_cli_bind(command: Commands) {
 
                 if let Some(ip) = ip {
                     let mut _use_it = *USE_IP.lock()
-                        .expect("could nto lock port");
+                        .expect("could not lock ip");
                     _use_it = NET_STATUS
                     
                 }
-                if let Some(port) = port {
-                    let mut _port_mutex = *PORT.lock()
-                        .expect("could not lock port");
-                    _port_mutex = port;
-
-                    let mut _use_it = *USE_PORT.lock()
-                        .expect("could nto lock port");
-                    _use_it = 1
-                    
-                }
+                let port = if port.is_some() {
+                   port.unwrap()
+                } else {
+                    0
+                };
                 if let Some(secret) = secret {
                     let mut _word_mutex = *lib_db::jwt::MUTEX_SECRET_WORD
                         .lock().unwrap();
@@ -121,7 +122,7 @@ pub async fn handle_cli_bind(command: Commands) {
                 }
 
                 
-                bind(_pool, _res.unwrap()).await;
+                bind(_pool, _res.unwrap(), port).await;
             }
         }
 

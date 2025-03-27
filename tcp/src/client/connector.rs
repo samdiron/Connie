@@ -91,8 +91,11 @@ pub(in crate::client) async fn get_tlstream(
 
 async fn get_stream(
     host: &SqliteHost,
+    port: Option<u16>,
+    ip: Option<IpAddr>,
 ) -> Result<(TcpStream, ServerName<'static>)> {
-    let port = host.port;
+    let port = if port.is_some(){port.unwrap()} else {host.port};
+    
     let pub_ip: IpAddr = host.pub_ip.parse().unwrap();
     let pri_ip: IpAddr = host.pri_ip.parse().unwrap();
     
@@ -104,6 +107,7 @@ async fn get_stream(
     if me_pub_ip.is_some() {
         info!("current public ip: {}",me_pub_ip.unwrap().to_string())
     };
+    if ip.is_none() {
     let dur = Duration::from_secs_f32(0.40);
     let pri_s = timeout(dur, TcpStream::connect(pri_addr)).await;
     let stream = if pri_s.is_ok() {
@@ -125,6 +129,16 @@ async fn get_stream(
 
     
     Ok((stream, addr))
+    } else {
+        let ip = ip.unwrap();
+        let addr = ServerName::from(ip.clone());
+        let socket_addr = SocketAddr::new(ip, port);
+        debug!("will use custom ip: {}", &socket_addr);
+        let stream = TcpStream::connect(&socket_addr)
+            .await
+            .expect("could not connect to custom ip");
+        Ok((stream, addr))
+    }
 } 
 
 pub async fn connect_tcp(
@@ -148,7 +162,7 @@ pub async fn connect_tcp(
             &name, &cpid, &paswd
         );
         let request = req.sz().unwrap();
-        let (stream, _addr) = get_stream(&conn.server).await?;
+        let (stream, _addr) = get_stream(&conn.server, conn.port, conn.ip).await?;
         let mut stream = get_tlstream(_addr, stream)
             .await
             .expect("could not connect tls");
@@ -214,7 +228,7 @@ pub async fn connect_tcp(
         let (
             stream,
             tls_server_name
-        ) = get_stream(&conn.server).await?;
+        ) = get_stream(&conn.server, conn.port, conn.ip).await?;
         let mut stream = get_tlstream(tls_server_name, stream).await?;
          
         let is_who_server = handshakes::client(

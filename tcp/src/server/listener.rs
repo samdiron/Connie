@@ -14,7 +14,7 @@ use tokio::net::TcpStream;
 use tokio::task::JoinHandle;
 use tokio_rustls::server::TlsStream;
 use tokio_rustls::TlsAcceptor;
-use crate::consts::{NET_STATUS, NEW_USERS, PORT, USE_IP, USE_PORT};
+use crate::consts::{NET_STATUS, NEW_USERS, USE_IP};
 use crate::server::config::make_config;
 use crate::server::handle_client::handle;
 
@@ -35,7 +35,8 @@ async fn tls_acceptor(
 
 
 #[allow(unused_assignments)]
-pub async fn bind(pool: PgPool, ident: Server) {
+pub async fn bind(pool: PgPool, ident: Server, port: u16) {
+
     let ip = if *USE_IP.lock().unwrap() == NET_STATUS {
         debug!("server will listen on a custom ip");
         let ip = "0.0.0.0";
@@ -46,18 +47,23 @@ pub async fn bind(pool: PgPool, ident: Server) {
         let pri = LOCAL_IP.clone();
         pri
     };
-    let port = if *USE_PORT.lock().unwrap() == 1 {
-        let port = *PORT.lock().unwrap();
-        port
+
+    let port = if port == 0 {
+        TCP_MAIN_PORT
     } else {
-        TCP_MAIN_PORT.clone()
+        port
     };
     let addr = SocketAddr::new(ip, port);
     let socket = TcpListener::bind(&addr).await.unwrap();
     info!("listener on {:?}", addr);
+
     let allow_new_users = if *NEW_USERS.lock().unwrap() == 1 {
+        debug!("new users will be allowed");
         true
-    }else {false};
+    }else {
+        debug!("new users will not be allowed");
+        false
+    };
     let me_pub_ip = public_ip::addr().await.unwrap();
     let sqlite_host = SqliteHost {
         name: ident.name,
