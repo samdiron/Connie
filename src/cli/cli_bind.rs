@@ -35,7 +35,9 @@ pub async fn handle_cli_bind(command: Commands) {
             ip,
             secret,
             port,
-            server
+            server,
+            new_users,
+            users,
         } => {
             if default.is_some() && default.unwrap() {
                 let config = lib_start::tcp::server_config::get_server_config()
@@ -48,15 +50,17 @@ pub async fn handle_cli_bind(command: Commands) {
                     &config.default_server.password,
                     &pool
                 ).await;
-
-                if config.new_users {
+                if new_users.is_some() && new_users.unwrap(){
+                     let mut new = NEW_USERS.lock().unwrap();
+                    *new = 1
+                } else if config.new_users {
                     let mut new = NEW_USERS.lock().unwrap();
                     *new = 1
                 };
                 let port = if port.is_some() {
                     port.unwrap()
                 } else {
-                    0
+                    config.default_port
                 };
                 match config.default_network.as_str() {
                     ALL_AV_NET => {
@@ -85,11 +89,6 @@ pub async fn handle_cli_bind(command: Commands) {
                 debug!("should be files: {}",files_path.len());
                 let dir = PathBuf::from_str(DATA_DIR).unwrap();
                 file_checker(&dir, &files_path, files_size).await;
-                let port = if port == 0 {
-                    config.default_port
-                }else {
-                    port
-                };
                 bind(pool, config.default_server, port).await
                 
             } else if server.is_some() {
@@ -110,6 +109,10 @@ pub async fn handle_cli_bind(command: Commands) {
                     _use_it = NET_STATUS
                     
                 }
+                if new_users.is_some() && new_users.unwrap() {
+                    let mut new = NEW_USERS.lock().unwrap();
+                    *new = 1
+                };
                 let port = if port.is_some() {
                    port.unwrap()
                 } else {

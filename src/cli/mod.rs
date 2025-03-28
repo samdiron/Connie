@@ -37,6 +37,12 @@ pub enum Commands {
 
         #[arg(long, short)]
         ip: Option<String>,
+
+        #[arg(long, short)]
+        new_users: Option<bool>,
+
+        #[arg(long, short)]
+        users: Option<u64>,
         
         #[arg(long, short)]
         server: Option<String>,
