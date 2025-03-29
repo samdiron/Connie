@@ -13,6 +13,10 @@ if [ $type == "a" ] ; then
   cargo build --target=x86_64-pc-windows-gnu --release
   echo "done"
   
+  echo "building windows client now"
+  cargo build --target=x86_64-pc-windows-gnu --profile client
+  echo "done"
+
   echo "building client"
   cargo build  --profile client
   echo "done"
@@ -26,6 +30,7 @@ if [ $type == "a" ] ; then
   ls -lh ./target/client/cie
   ls -lh ./target/release/cie
   ls -lh ./target/x86_64-pc-windows-gnu/release/cie.exe
+  ls -lh ./target/x86_64-pc-windows-gnu/client/cie.exe
 elif [ $type == "r" ] ; then 
   echo "building release"
   cargo build --release
@@ -42,10 +47,15 @@ elif [ $type == "d" ] ; then
   clear
   ls -lh ./target/debug/cie
 elif [ $type == "w" ] ; then 
-  echo "building windows now"
+  echo "building windows release now"
   cargo build --target=x86_64-pc-windows-gnu --release
   clear
+
+  echo "building windows client now"
+  cargo build --target=x86_64-pc-windows-gnu --profile client
+  clear
   ls -lh ./target/x86_64-pc-windows-gnu/release/cie.exe
+  ls -lh ./target/x86_64-pc-windows-gnu/client/cie.exe
 else 
   echo "please enter a valid argument. "
   exit 1
