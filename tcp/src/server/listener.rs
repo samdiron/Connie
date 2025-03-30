@@ -82,7 +82,7 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
     let standard_wait = Duration::from_secs(600); // 10 min
     let mut impropertls: u32 = 0;
     loop {
-        if time_for_request_handle.elapsed() >= standard_wait && handles.len() > 0usize {
+        if time_for_request_handle.elapsed() >= standard_wait && handles.len() > 0usize || handles.len() > 5usize{
             let total_tasks = handles.len(); 
             info!("TASKCLEANER: {} tasks to check", total_tasks);
             let mut faild_tasks:u64 = 0;

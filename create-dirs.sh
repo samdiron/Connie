@@ -24,8 +24,8 @@ mkdir /opt/Connie/conf/certs/
 cp openssl_script.sh /opt/Connie/bin/
 chmod +x /opt/Connie/bin/openssl_script.sh
 
-touch /opt/Connie/conf/.connieDB.sqlite
-touch /opt/Connie/conf/server_ident.toml
-touch /opt/Connie/conf/certs/key.pem
-touch /opt/Connie/conf/certs/cert.pem
+sudo touch /opt/Connie/conf/.connieDB.sqlite
+sudo touch /opt/Connie/conf/server_ident.toml
+sudo touch /opt/Connie/conf/certs/key.pem
+sudo touch /opt/Connie/conf/certs/cert.pem
 
