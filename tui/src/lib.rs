@@ -1,7 +1,12 @@
+pub mod loading_gauge;
+
+
+
+
+
 use std::io::Stdout;
 
 use ratatui::{self, prelude::CrosstermBackend, Terminal};
-
 
 
 pub fn init() -> Terminal<CrosstermBackend<Stdout>> {
