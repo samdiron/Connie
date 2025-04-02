@@ -121,8 +121,9 @@ async fn main() {
     if let Some(command) = _cli.config {
         config_handle(command).await;
     }else {
-        println!("not now");
+        todo!()
     }
+    exit(0);
     
     
 

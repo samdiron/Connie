@@ -153,6 +153,7 @@ pub(crate) mod util {
                 Result
             },
         }};
+        use tui::loading_gauge::{create_title_with_filename, LoadingGauge, DOWNLOAD_STR};
         use crate::common::ClientTlsStreams;
 
         use crate::common::request::PACKET_SIZE;
@@ -321,7 +322,13 @@ pub(crate) mod util {
             let s_all = s.read_u64().await? as usize;
             let mut i = 0u16;
             let standard_wait = Duration::from_secs(2);
+
             if i < tol && tol != 1 && verbose {
+                let tty = tui::init();
+                let file = "File".to_owned();
+                let stats = DOWNLOAD_STR.to_owned();
+                let title = create_title_with_filename(&file, &stats);
+                let gauge_sender = LoadingGauge::new(title, tty);
                 let mut when_to_print = Instant::now();
                 loop {
                     if i == tol || i == tol-1 || (recvd+PACKET_SIZE) > s_all {
@@ -335,9 +342,13 @@ pub(crate) mod util {
                     if when_to_print.elapsed() >= standard_wait {
                         when_to_print+=standard_wait;
                         let percent = (i as f64 / tol as f64) * 100.0;
-                        info!("download: {:.2}%", percent);
+                        gauge_sender
+                            .send(percent)
+                            .expect("could not send percent to the gauge thread ");
+                        // info!("download: {:.2}%", percent);
                     };
                 }
+                tui::restore_terminal();
             };
             if i < tol && tol != 1 && !verbose {
                 loop {
