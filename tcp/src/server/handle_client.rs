@@ -3,14 +3,21 @@ use lib_db::{
     sqlite::{
         sqlite_host::{self, SqliteHost},
         sqlite_user::{ShortUser, SqliteUser}
-    }, types::PgPool, user::user_struct
+    },
+    types::PgPool,
+    user::user_struct
 };
-use common_lib::{gethostname::gethostname, log::{debug, info, warn}};
+
+use common_lib::bincode;
+use common_lib::{
+    gethostname::gethostname,
+    log::{debug, info, warn}
+};
 use common_lib::tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream
 };
-use common_lib::bincode;
+
 use tokio_rustls::server::TlsStream;
 use std::{
     io::{Error, ErrorKind, Result},
@@ -20,8 +27,13 @@ use std::{
 use crate::{
     common::{
         handshakes, request::{
-            FETCH, JWT_AUTH, LOGIN_CRED, SIGNIN_CRED, UNAUTHORIZED
-        }, util::server::{read_stream, rvfs, wvts}
+            FETCH,
+            JWT_AUTH,
+            LOGIN_CRED,
+            SIGNIN_CRED,
+            UNAUTHORIZED
+        },
+        util::server::{read_stream, rvfs, wvts}
     }, server::{
         req_format::{
             Chead,

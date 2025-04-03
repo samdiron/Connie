@@ -1,5 +1,3 @@
-
-
 #[allow(dead_code)]
 pub(crate) mod request;
 
@@ -20,8 +18,9 @@ pub(crate) mod handshakes {
     use std::io;
 
     use common_lib::log::{debug, warn};
+    use common_lib::tokio::io::{AsyncReadExt, AsyncWriteExt};
+    
     use lib_db::{sqlite::sqlite_host::SqliteHost, types::SqlitePool};
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
     
     use crate::common::{request::SIGNIN_CRED, util};
 
@@ -143,7 +142,9 @@ pub(crate) mod util {
             
         use std::time::{self, Duration, Instant};
 
-        use common_lib::{log::{debug, info}, tokio::{
+        use common_lib::{
+            log::{debug, info},
+            tokio::{
             fs::File,
             io::{
                 AsyncReadExt,
@@ -153,9 +154,13 @@ pub(crate) mod util {
                 Result
             },
         }};
-        use tui::loading_gauge::{create_title_with_filename, LoadingGauge, DOWNLOAD_STR};
-        use crate::common::ClientTlsStreams;
+        use tui::loading_gauge::{
+            create_title_with_filename,
+            LoadingGauge,
+            DOWNLOAD_STR
+        };
 
+        use crate::common::ClientTlsStreams;
         use crate::common::request::PACKET_SIZE;
         // reads the amount of b from a stream and returns the data read in a Vec<u8>
         // this function is made only for small reads it will not work as expected with larg buffers

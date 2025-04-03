@@ -1,9 +1,15 @@
-use std::{io::Result, net::{IpAddr, SocketAddr}, process::exit};
+use std::{
+    io::Result,
+    net::{IpAddr, SocketAddr},
+    process::exit
+};
 
 use lib_db::{
     media::fetch::Smedia, sqlite::{
-        sqlite_host::SqliteHost, sqlite_user::SqliteUser
-    }, types::SqlitePool
+        sqlite_host::SqliteHost,
+        sqlite_user::SqliteUser
+    },
+    types::SqlitePool
 };
 use common_lib::{
     log::debug,
@@ -19,12 +25,12 @@ use common_lib::{
 use tokio_rustls::rustls::pki_types::ServerName;
 use crate::{
     client::connector::get_tlstream,
-    common::{
-        handshakes,
-        request::FETCH,
-        util::client::rvfs
-    },
     server::req_format::Chead
+};
+use crate::common::{
+    handshakes,
+    request::FETCH,
+    util::client::rvfs
 };
 
 
@@ -37,7 +43,8 @@ pub async fn get_files(
     let port = server.port;
     let me_pub_ip = public_ip::addr().await;
     let ip: IpAddr;
-        let addr = if me_pub_ip.is_some() && me_pub_ip.unwrap().to_string() != server.pub_ip {
+        let addr = if me_pub_ip.is_some() 
+        && me_pub_ip.unwrap().to_string() != server.pub_ip {
             ip = server.pub_ip.parse().unwrap();
             SocketAddr::new(server.pub_ip.parse().unwrap(), port)
         } else {

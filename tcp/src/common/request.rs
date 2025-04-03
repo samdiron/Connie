@@ -56,7 +56,12 @@ pub struct RQM {
 
 
 impl RQM {
-    pub async fn create(path: PathBuf, header: String, cpid: String, create_checksum: bool) -> std::io::Result<Self> {
+    pub async fn create(
+        path: PathBuf,
+        header: String,
+        cpid: String,
+        create_checksum: bool
+    ) -> std::io::Result<Self> {
         let data = metadata(&path)?;
         let size = data.len() as i64;
 

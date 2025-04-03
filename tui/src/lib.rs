@@ -3,10 +3,7 @@ pub mod loading_gauge;
 
 
 
-
-
 use std::io::Stdout;
-
 use ratatui::{self, prelude::CrosstermBackend, Terminal};
 
 
@@ -22,6 +19,7 @@ pub fn restore_terminal() {
 #[cfg(test)]
 mod test {
     
+    use common_lib::tokio;
     use crate::loading_gauge::create_title_with_filename;
     use crate::loading_gauge::LoadingGauge;
     use crate::loading_gauge::DOWNLOAD_STR;

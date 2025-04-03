@@ -1,6 +1,7 @@
 use std::{
-    io::Result, net::IpAddr}
-;
+    io::Result,
+    net::IpAddr
+};
 
 use lib_db::{
     sqlite::{
@@ -10,11 +11,14 @@ use lib_db::{
     },
     types::SqlitePool
 };
-// use common_lib::log::{debug, warn};
+
+use tokio_rustls::rustls::ClientConnection;
 
 use crate::common::request::RQM;
 
 use super::connector::connect_tcp;
+
+
 #[allow(dead_code)]
 pub(crate) struct Connection {
     pub jwt: Option<String>,
@@ -29,7 +33,6 @@ pub use crate::client::connector::signup_process;
 
 
 
-use tokio_rustls::rustls::ClientConnection;
 
 
 pub struct Client {

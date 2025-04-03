@@ -1,8 +1,9 @@
-use std::sync::mpsc::channel;
-use std::sync::Arc;
-use std::sync::Mutex;
-use std::sync::mpsc::Receiver;
-use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
+use std::sync::mpsc::{
+    Receiver,
+    Sender,
+    channel
+};
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::Constraint::Ratio;
@@ -18,10 +19,12 @@ use ratatui::widgets::Widget;
 use ratatui::DefaultTerminal;
 use ratatui::Frame;
 
- pub const DOWNLOAD: Color = tailwind::LIME.c600;
- pub const UPLOAD: Color = tailwind::VIOLET.c600;
- pub const DOWNLOAD_STR: &str = "Downloading";
- pub const UPLOAD_STR: &str = "Uploading";
+use common_lib::tokio;
+
+pub const DOWNLOAD: Color = tailwind::LIME.c600;
+pub const UPLOAD: Color = tailwind::VIOLET.c600;
+pub const DOWNLOAD_STR: &str = "Downloading";
+pub const UPLOAD_STR: &str = "Uploading";
 
 
 pub fn create_title_with_filename(

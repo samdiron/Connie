@@ -2,14 +2,14 @@ use std::sync::Arc;
 
 use tokio_rustls::rustls::{
     self,
-    crypto::{
-        aws_lc_rs as provider,
-        ring::DEFAULT_CIPHER_SUITES,
-        CryptoProvider
-    },
     ClientConfig,
     RootCertStore,
     DEFAULT_VERSIONS
+};
+use tokio_rustls::rustls::crypto::{
+        aws_lc_rs as provider,
+        ring::DEFAULT_CIPHER_SUITES,
+        CryptoProvider
 };
 
 

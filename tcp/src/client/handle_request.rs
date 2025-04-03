@@ -1,13 +1,27 @@
 use std::io::Result;
 use std::process::exit;
 
-use common_lib::log::{debug, error, info, warn};
-use common_lib::tokio::{fs::File, io::{AsyncReadExt, BufReader}};
+use common_lib::log::{
+    debug,
+    error,
+    info,
+    warn
+};
+use common_lib::tokio::{
+    fs::File,
+    io::{
+        AsyncReadExt,
+        BufReader,
+        AsyncWriteExt,
+        BufWriter,
+    },
+};
+
 use lib_db::jwt::get_current_timestamp;
 use lib_db::media::checksum::{get_fsum, get_size};
 use lib_db::sqlite::sqlite_media::SqliteMedia;
 use lib_db::types::SqlitePool;
-use tokio::io::{AsyncWriteExt, BufWriter};
+
 use crate::common::request::{
     CLIENT_SIDE_ERR,
     DATA_NOT_MATCH,
@@ -22,7 +36,8 @@ use crate::common::ClientTlsStreams;
 use crate::{
     common::
     request::{POST, GET, READY_STATUS},
-    types::RQM};
+    types::RQM
+};
 
 
 /// this function take only the raw request and does not send it you have to send the full request
@@ -46,12 +61,18 @@ pub async fn handle_client_request(
         let ready = stream.read_u8().await?;
         if ready == READY_STATUS {
             debug!("ready to send file");
-            let _size = wffb(stream, request.size as u64 , &mut reader, true).await?;
+            let _size = wffb(
+                    stream,
+                    request.size as u64,
+                    &mut reader,
+                    true
+            ).await?;
             debug!("witing for server confirm ~ ");
             let checksum = if &request.chcksum == NO_VAL {
                 debug!("waiting for server to send checksum");
                 let checksum_vector = rvfs(stream).await?;
-                let string_chscksum = String::from_utf8(checksum_vector).unwrap();
+                let string_chscksum = String::from_utf8(checksum_vector)
+                        .unwrap();
                 string_chscksum
             } else {
                 request.chcksum

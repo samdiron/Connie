@@ -2,18 +2,23 @@ use std::{io, thread};
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 use std::time::{Duration, Instant};
-use common_lib::cheat_sheet::{LOCAL_IP, TCP_MAIN_PORT};
-use common_lib::public_ip;
+
 use lib_db::jwt::DURATION;
 use lib_db::server::server_struct::Server;
 use lib_db::sqlite::sqlite_host::SqliteHost;
 use lib_db::types::PgPool;
+
 use common_lib::log::{debug, info, warn};
 use common_lib::tokio::{net::TcpListener, task};
+use common_lib::cheat_sheet::{LOCAL_IP, TCP_MAIN_PORT};
+use common_lib::public_ip;
+
 use tokio::net::TcpStream;
 use tokio::task::JoinHandle;
+
 use tokio_rustls::server::TlsStream;
 use tokio_rustls::TlsAcceptor;
+
 use crate::consts::{NET_STATUS, NEW_USERS, USE_IP};
 use crate::server::config::make_config;
 use crate::server::handle_client::handle;
@@ -79,12 +84,13 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
     let mut time_for_request_handle = Instant::now();
     let standard_clean_up_tls_dur = Instant::now();
     let wait1day =  Duration::from_secs(DURATION); // DURATION == 1 day
-    let standard_wait = Duration::from_secs(600); // 10 min
+    let standard_wait = Duration::from_secs(300); // 5 min
     let mut impropertls: u32 = 0;
     loop {
-        if time_for_request_handle.elapsed() >= standard_wait && handles.len() > 0usize || handles.len() > 5usize{
+        if time_for_request_handle.elapsed() >= standard_wait && handles.len() > 0usize || handles.len() >= 5usize{
+            let start = Instant::now();
             let total_tasks = handles.len(); 
-            info!("TASKCLEANER: {} tasks to check", total_tasks);
+            debug!("TASKCLEANER: {} tasks to check", total_tasks);
             let mut faild_tasks:u64 = 0;
             let mut succesful_tasks:u64 = 0;
             time_for_request_handle+=standard_wait;
@@ -104,13 +110,15 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
                         Err(..) => {faild_tasks+=1;}
                     }
                 }
-                info!("TASKCLEANER: total tasks {total_tasks}/ finished tasks {total_items_to_remove} / succesful tasks {succesful_tasks} / faild tasks {faild_tasks}");
+                debug!("TASKCLEANER: total tasks {total_tasks}/ finished tasks {total_items_to_remove} / succesful tasks {succesful_tasks} / faild tasks {faild_tasks}");
             };
             if standard_clean_up_tls_dur.elapsed() >= wait1day {
                 impropertls=0
             }
+            let end = start.elapsed();
+            debug!("TASKCLEANER: took {} ms", end.as_millis());
 
-        }; if impropertls ==  1000_000 {
+        }; if impropertls ==  100_000 {
             let now = Instant::now();
             let dur = standard_clean_up_tls_dur - now;
             warn!("you are being DDoSed and i don't wanna deal with this i will sleep for {}s. goodnight (っ- ‸ - ς)",dur.as_secs());
@@ -129,11 +137,16 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
                     let tls = tls.unwrap();
                     let stream = (tls, addr);
                     info!("client: {}", &addr);
-                    match handle(stream, inner_p, inner_allow_new_users, sqlite_host).await {
+                    match handle(
+                            stream,
+                            inner_p,
+                            inner_allow_new_users,
+                            sqlite_host
+                        ).await {
                         Ok(res) => {
                             if res == 0 {info!("a client was handled")}
                             else if res == 1 {
-                                info!("client was lost");
+                                info!("a client was lost");
                             }
                         },
                         Err(e) => {debug!("a client request faild: {:#?}", e)},
