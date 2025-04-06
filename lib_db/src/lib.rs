@@ -6,6 +6,8 @@ mod migrations;
 pub mod server;
 pub mod user;
 
+#[allow(unused_imports)]
+pub(crate) use common_lib::sha256;
 
 pub(crate) fn escape_user_input(s: &String) -> String{
     let ns = s.replace("'", "");

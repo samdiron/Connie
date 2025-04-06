@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sha256::digest;
+use crate::sha256::digest;
 use sqlx::{Error, PgPool, Row};
 use uuid::Uuid;
 

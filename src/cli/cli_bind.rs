@@ -48,7 +48,8 @@ pub async fn handle_cli_bind(command: Commands) {
                 let _res = get_host_info(
                     &config.default_server.name,
                     &config.default_server.password,
-                    &pool
+                    &pool,
+                    true
                 ).await;
                 if new_users.is_some() && new_users.unwrap(){
                      let mut new = NEW_USERS.lock().unwrap();
@@ -98,7 +99,7 @@ pub async fn handle_cli_bind(command: Commands) {
                 let server = server.unwrap();
                 get_pass(&mut passwd, &server);
 
-                let _res = get_host_info(&server, &passwd, pool).await;
+                let _res = get_host_info(&server, &passwd, pool, false).await;
                 if _res.is_err() {
                     panic!("not a valid server");
                 }

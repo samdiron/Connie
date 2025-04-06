@@ -47,6 +47,7 @@ pub async fn get_host_ip(
     WHERE name = '{name}' AND host = '{host}' ;
     "#);
     let res = sqlx::query(&sql).fetch_one(pool).await?;
+    drop(sql);
     let pub_ip:String = res.get("pub_ip");
     let pri_ip:String = res.get("pri_ip");
     let pri =  IpAddr::from_str(&pri_ip).unwrap();
@@ -67,6 +68,7 @@ pub async fn fetch_server(
         format!("SELECT * FROM host WHERE name = '{name}';")
     };
     let _res = sqlx::query(&sql).fetch_one(pool).await.unwrap();
+    drop(sql);
     let name: String = _res.get("name");
     let cpid: String = _res.get("cpid");
     let host: String = _res.get("host");
@@ -102,6 +104,7 @@ impl SqliteHost {
             WHERE cpid = '{}';", &s.cpid
         );
         sqlx::query(&sql).execute(pool).await?;
+        drop(sql);
         Ok(())
     }
     pub async fn update_pri_ip(s: &Self, ip: IpAddr, pool: &SqlitePool) -> Result<()> {
@@ -112,6 +115,7 @@ impl SqliteHost {
             WHERE cpid = '{}';", &s.cpid
         );
         sqlx::query(&sql).execute(pool).await?;
+        drop(sql);
         Ok(())
     }
     /// note this function takes into account that host is OsStr aka 'host'
@@ -125,8 +129,8 @@ impl SqliteHost {
             s.pub_ip,
             s.pri_ip,
         );
-        debug!("exec sql: {}", &sql);
         let _res = sqlx::query(&sql).execute(pool).await.unwrap();
+        drop(sql);
         debug!("sqlite lines af: {} ",_res.rows_affected())
     }
     pub async fn delete(s: Self, pool: &SqlitePool) {
@@ -140,6 +144,7 @@ impl SqliteHost {
             .await
             .expect("could not delete host")
         ;
+        drop(sql);
         debug!("sqlite db rows affected: {}", _res.rows_affected());
     }
 

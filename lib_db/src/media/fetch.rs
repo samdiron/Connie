@@ -1,4 +1,4 @@
-use common_lib::{bincode, log::debug};
+use common_lib::bincode;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Result, Row};
 
@@ -24,8 +24,8 @@ pub async fn get_user_files(
         escape_user_input(&cpid),
         host
     );
-    debug!("sql: {}",&sql);
     let _res = sqlx::query(&sql).fetch_all(pool).await?;
+    drop(sql);
     let mut media_v: Vec<Smedia> = Vec::new();
     for row in _res {
         let name = row.get("name");

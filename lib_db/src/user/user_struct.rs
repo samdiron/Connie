@@ -1,7 +1,7 @@
-use sha256::digest;
 use sqlx::{PgPool, Result, Row};
 use uuid::Uuid;
 
+use crate::sha256::digest;
 use crate::escape_user_input;
 
 pub struct User {
@@ -19,7 +19,9 @@ pub async fn validate_claim_wcpid(
 ) -> sqlx::Result<bool> {
     let table = r#" "user" "#;
     let sql = format!(
-        "SELECT count(1) FROM {table} WHERE cpid = '{}' AND password = '{}' ;",
+"SELECT count(1) 
+FROM {table} 
+WHERE cpid = '{}' AND password = '{}' ;",
         escape_user_input(&cpid),
         escape_user_input(&paswd)
     );
@@ -39,8 +41,9 @@ pub async fn validate_claim(
 ) -> sqlx::Result<bool> {
     let table = r#" "user" "#;
     let sql = format!(
-        "SELECT count(1) FROM {} WHERE name = '{}' AND password = '{}' ;",
-        table,
+"SELECT count(1) 
+FROM {table} 
+WHERE name = '{}' AND password = '{}' ;",
         escape_user_input(&name),
         escape_user_input(&paswd),
     );
@@ -61,8 +64,10 @@ pub async fn fetch_wcpid(
     pool: &PgPool,
 ) -> sqlx::Result<User, sqlx::Error> {
     let table = r#" "user" "#;
-    let sql = format!(
-        "SELECT * FROM {table} WHERE cpid = '{}' AND password = '{}';",
+    let sql = format!("
+SELECT * 
+FROM {table} 
+WHERE cpid = '{}' AND password = '{}';",
         escape_user_input(&cpid),
         escape_user_input(&_password)
     );
@@ -88,9 +93,11 @@ pub async fn fetch(
     pool: &PgPool,
 ) -> sqlx::Result<User, sqlx::Error> {
     let table = r#" "user" "#;
-    let password = sha256::digest(_password);
-    let sql = format!(
-        "SELECT * FROM {table} WHERE name = '{}' AND password = '{}' ;",
+    let password = digest(_password);
+    let sql = format!("
+SELECT * 
+FROM {table} 
+WHERE name = '{}' AND password = '{}' ;",
         escape_user_input(&name),
         escape_user_input(&password)
     );
@@ -115,10 +122,10 @@ impl User {
 
 
         let table = r#" "user" "#;
-        let sql = format!(
-            "INSERT INTO {table}
-            (cpid, name, username, host, email, password)
-            VALUES ('{}', '{}', '{}', '{}', '{}', '{}');",
+        let sql = format!("
+INSERT INTO {table} 
+(cpid, name, username, host, email, password)
+VALUES ('{}', '{}', '{}', '{}', '{}', '{}');",
             escape_user_input(&cpid),
             escape_user_input(&self.name),
             escape_user_input(&self.username),

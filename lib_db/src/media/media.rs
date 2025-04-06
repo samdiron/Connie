@@ -37,6 +37,7 @@ AND cpid = '{}';",
         escape_user_input(cpid),
 );
      let _count = sqlx::query(&sql).fetch_one(pool).await;
+    drop(sql);
     if _count.is_err() {return false}else {
     let count: i64 = _count.unwrap().get("count");
     if count == 1 {
@@ -50,14 +51,16 @@ AND cpid = '{}';",
 
 pub async fn delete_media(s: Media, pool: &PgPool) -> Result<u64> {
     let sql = format!(r#"
-    DELETE
-    FROM media WHERE checksum = '{}' AND cpid = '{}' AND in_host = '{}'; 
+DELETE
+FROM media 
+WHERE checksum = '{}' AND cpid = '{}' AND in_host = '{}'; 
     "#,
         escape_user_input(&s.checksum),
         escape_user_input(&s.cpid),
         escape_user_input(&s.in_host),
     );
     let res = sqlx::query(&sql).execute(pool).await?;
+    drop(sql);
     let rows = res.rows_affected();
     Ok(rows)
 }
@@ -66,22 +69,32 @@ pub async fn delete_media(s: Media, pool: &PgPool) -> Result<u64> {
 impl Media {
 
     pub async fn post(self, pool: &PgPool) -> Result<u8> {
-        let sql = r#"
-            INSERT INTO media(name, cpid, path, checksum, in_host, type, size)
-            VALUES ($1, $2, $3, $4, $5, $6, $7);
-        "#;
         let size = get_size(self.path.as_str()).await?;
-        let _res = sqlx::query(sql)
-            .bind(self.name)
-            .bind(self.cpid)
-            .bind(self.path)
-            .bind(self.checksum)
-            .bind(self.in_host)
-            .bind(self.type_)
-            .bind(size)
+        let sql = format!("
+INSERT INTO media(
+    name,
+    cpid,
+    path,
+    checksum,
+    in_host,
+    type,
+    size
+) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', {});
+        ",
+        escape_user_input(&self.name),
+        escape_user_input(&self.cpid),
+        escape_user_input(&self.path),
+        self.checksum,
+        escape_user_input(&self.in_host),
+        escape_user_input(&self.type_),
+        size,
+        );
+        let _res = sqlx::query(&sql)
             .execute(pool)
             .await?
         ;
+        drop(sql);
+        drop(self);
         Ok(0)
     }
     
@@ -91,18 +104,24 @@ impl Media {
         sum: &String,
         pool: &PgPool
     ) -> Result<Media> {
-        let sql = r#"
-            SELECT * 
-            FROM media WHERE in_host = $1 AND cpid = $2 AND checksum = $3;
-        "#;
+        let sql = format!("
+SELECT * 
+FROM media
+WHERE in_host = '{}' AND cpid = '{}' AND checksum = '{}';
+        ",
+            escape_user_input(host_cpid),
+            escape_user_input(cpid),
+            escape_user_input(sum)
+        );
 
-        let _res = sqlx::query(sql)
+        let _res = sqlx::query(&sql)
             .bind(host_cpid)
             .bind(cpid)
             .bind(sum)
             .fetch_one(pool).await?
             
         ;
+        drop(sql);
         let name: String = _res.get("name");
         let size: i64 = _res.get("size");
         let path: String = _res.get("path");

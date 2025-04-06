@@ -52,6 +52,7 @@ pub async fn fetch_all_media_from_host_number(
     count(*) FROM media WHERE cpid = '{user}' AND host = '{host}' ;
     "#);
     let res = sqlx::query(&sql).fetch_one(pool).await.unwrap();
+    drop(sql);
     let count: i64 =res.get(0usize) ;
     return count as u64
 }
@@ -68,6 +69,7 @@ pub async fn fetch_all_media_from_host_smedia(
     SELECT * FROM media WHERE cpid = '{user}' AND host = '{host}' ;
     "#);
     let rows = sqlx::query(&sql).fetch_all(pool).await?;
+    drop(sql);
     let mut media_vec: Vec<Smedia> = Vec::new();
     for row in rows {
         let name: String = row.get("name");
@@ -100,6 +102,7 @@ pub async fn fetch_all_media_from_host(
     SELECT * FROM media WHERE cpid = '{user}' AND host = '{host}';
     "#);
     let rows = sqlx::query(&sql).fetch_all(pool).await?;
+    drop(sql);
     let mut media_vec: Vec<SqliteMedia> = Vec::new();
     for row in rows {
         let name: String = row.get("name");
@@ -134,6 +137,7 @@ pub async fn fetch_all_media(
     let cpid = escape_user_input(user);
     let sql = format!("SELECT * FROM media WHERE cpid = '{cpid}';");
     let rows = sqlx::query(&sql).fetch_all(pool).await?;
+    drop(sql);
     let mut media_vec: Vec<SqliteMedia> = Vec::new();
     for row in rows {
         let name: String = row.get("name");
@@ -177,6 +181,7 @@ pub async fn sqlite_delete_media(
         host
     );
     let _res = sqlx::query(&sql).execute(pool).await.unwrap();
+    drop(sql);
 }
 
 pub async fn sqlite_media_exists(
@@ -195,6 +200,7 @@ pub async fn sqlite_media_exists(
         escape_user_input(host),
     );
     let res = sqlx::query(&sql).fetch_one(pool).await.unwrap();
+    drop(sql);
     let count: i64 = res.get(0usize);
     return count == 1;
 
@@ -219,6 +225,7 @@ VALUES ('{}', '{}', '{}', '{}', '{}', '{}', {}, {});",
             s.date,
         );
         sqlx::query(&sql).execute(pool).await?;
+        drop(sql);
         Ok(())
 
     }
@@ -233,6 +240,7 @@ VALUES ('{}', '{}', '{}', '{}', '{}', '{}', {}, {});",
         escape_user_input(&s.host),
     );
         let res = sqlx::query(&sql).fetch_one(pool).await.unwrap();
+        drop(sql);
         let count: i64 = res.get(0usize);
         return count == 1;
 

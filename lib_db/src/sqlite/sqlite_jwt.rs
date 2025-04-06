@@ -37,6 +37,7 @@ pub async fn get_jwt(
     FROM jwt 
     WHERE host = '{host}' AND exp > {now} AND cpid = '{cpid}' ;"#);
     let _res = sqlx::query(&sql).fetch_one(pool).await;
+    drop(sql);
     if _res.is_ok() {
         let _res= _res.unwrap();
         let token: String = _res.get("token");
@@ -48,6 +49,7 @@ pub async fn get_jwt(
 pub async fn delete_jwt(token: &String, pool: &SqlitePool) -> Result<()>{
     let sql = format!("DELETE FROM jwt WHERE token = '{token}' ;");
     let res = sqlx::query(&sql).execute(pool).await?;
+    drop(sql);
     debug!("rows affected: {}", res.rows_affected());
     Ok(())
 }
@@ -63,6 +65,7 @@ pub async fn add_jwt(
     VALUES('{host_cpid}', '{user_cpid}', {exp},'{token}');
     "#);
     let res = sqlx::query(&sql).execute(pool).await;
+    drop(sql);
     if res.is_ok() {
         debug!("jwt added");
     }else {
@@ -74,6 +77,7 @@ pub async fn delete_expd_jwt(pool: &SqlitePool) {
     let now = get_current_timestamp();
     let sql = format!("DELETE FROM jwt WHERE exp < {now} ;");
     let res = sqlx::query(&sql).execute(pool).await;
+    drop(sql);
     if res.is_ok(){
         debug!("DELETED {} jwts from db", res.unwrap().rows_affected())
     } else {

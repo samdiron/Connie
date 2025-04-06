@@ -1,9 +1,10 @@
 use common_lib::bincode;
 use common_lib::log::{debug, error};
 use serde::{Deserialize, Serialize};
-// use sha256::digest;
 use sqlx::Row;
 use sqlx::{Result, SqlitePool};
+
+use crate::escape_user_input;
 
 #[derive(Serialize, Deserialize)]
 pub struct ShortUser {
@@ -59,8 +60,15 @@ pub async fn fetch_sqlite_user_with_server_cpid(
     cpid: &String,
     pool: &SqlitePool
 ) -> Result<SqliteUser> {
-    let sql = format!("SELECT * from user WHERE usrname = '{username}' AND host = '{cpid}';");
+    let sql = format!("
+SELECT * 
+from user 
+WHERE usrname = '{}' AND host = '{}';",
+    escape_user_input(username),
+    escape_user_input(cpid),
+    );
     let _res = sqlx::query(&sql).fetch_one(pool).await;
+    drop(sql);
     if _res.is_ok() {
         let res = _res.unwrap();
         let name: String = res.get("name");
@@ -90,8 +98,16 @@ pub async fn fetch_sqlite_user(
     password: &String,
     pool: &SqlitePool
 ) -> Result<SqliteUser> {
-    let sql = format!("SELECT * from user WHERE usrname = '{username}' AND paswd = '{password}';");
+    let sql = format!("
+SELECT * 
+from user 
+WHERE usrname = '{}' AND paswd = '{}';",
+    escape_user_input(username),
+    escape_user_input(password),
+    
+    );
     let _res = sqlx::query(&sql).fetch_one(pool).await;
+    drop(sql);
     if _res.is_ok() {
         let res = _res.unwrap();
         let name: String = res.get("name");
