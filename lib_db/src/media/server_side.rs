@@ -22,7 +22,7 @@ pub async fn in_storage_files(pool: &PgPool, host_cpid: &String) -> Vec<PathBuf>
 
 pub async fn in_storage_size(pool: &PgPool, host_cpid: &String) -> u64 {
     let sql = format!(
-        "SELECT SUM(size) FROM media WHERE in_host = '{}' ; ",
+        "SELECT CAST(SUM(size) AS INT8) FROM media WHERE in_host = '{}' ; ",
         host_cpid
     );
     let _res = sqlx::query(&sql).fetch_one(pool).await;
