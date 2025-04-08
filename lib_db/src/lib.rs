@@ -53,11 +53,20 @@ pub mod jwt {
     use crate::user::user_struct::validate_claim_wcpid;
     use serde::{Deserialize, Serialize};
     // the user may chose the word 
-    pub static MUTEX_SECRET_WORD: Mutex<&str> = Mutex::new("Lorem ipsum dolor sit amet quis");
+    pub static MUTEX_SECRET_WORD: Mutex<LazyLock<Mutex<String>>> = Mutex::new(
+            LazyLock::new( ||  
+                {
+                    Mutex::new(String::from("Lorem ipsum dolor sit amet quis"))
+                }
+            )
+    );
 
     fn get_secret() -> String {
-        let mutex_word = *MUTEX_SECRET_WORD.lock().unwrap();
-        let str = mutex_word.to_string();
+        let mutex_word = MUTEX_SECRET_WORD
+            .lock().unwrap()
+            .lock().unwrap()
+            .clone();
+        let str = mutex_word;
         str
     }
 

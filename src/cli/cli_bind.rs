@@ -1,18 +1,28 @@
-use std::{path::PathBuf, str::FromStr};
+use std::{
+    path::PathBuf,
+    str::FromStr
+};
 
-use common_lib::{log::{debug, error}, path::DATA_DIR};
+use common_lib::{
+    log::{debug, error},
+    path::DATA_DIR
+};
 use lib_db::{
     database::get_conn,
+    jwt::MUTEX_SECRET_WORD,
+    server::host::get_host_info,
     media::server_side::{
         in_storage_files,
         in_storage_size
     },
-    server::host::get_host_info
 };
-use lib_start::{file_checker, tcp::server_config::{
+use lib_start::{
+    file_checker,
+    tcp::server_config::{
         ALL_AV_NET,
         PRI_NET
-    }};
+    }
+};
 use tcp::{
     consts::{
         NET_STATUS,
@@ -39,11 +49,29 @@ pub async fn handle_cli_bind(command: Commands) {
             new_users,
             users,
         } => {
+
+            if secret.is_some() {
+                *MUTEX_SECRET_WORD.lock().unwrap().lock().unwrap() = secret.unwrap();
+            }
+
+            if let Some(ip) = ip {
+                    let mut _use_it = *USE_IP.lock()
+                        .expect("could not lock ip");
+                _use_it = NET_STATUS
+                
+            }
+            if new_users.is_some() && new_users.unwrap() {
+                let mut new = NEW_USERS.lock().unwrap();
+                *new = 1
+            };
+
+
+
             if default.is_some() && default.unwrap() {
                 let config = lib_start::tcp::server_config::get_server_config()
                     .await
                     .unwrap();
-                
+                 
                 let pool =  get_conn().await.unwrap();
                 let _res = get_host_info(
                     &config.default_server.name,
@@ -51,10 +79,8 @@ pub async fn handle_cli_bind(command: Commands) {
                     &pool,
                     true
                 ).await;
-                if new_users.is_some() && new_users.unwrap(){
-                     let mut new = NEW_USERS.lock().unwrap();
-                    *new = 1
-                } else if config.new_users {
+
+                if config.new_users {
                     let mut new = NEW_USERS.lock().unwrap();
                     *new = 1
                 };
@@ -99,32 +125,18 @@ pub async fn handle_cli_bind(command: Commands) {
                 let server = server.unwrap();
                 get_pass(&mut passwd, &server);
 
+                let port = if port.is_some() {
+                    port.unwrap()
+                } else {
+                    0
+                };
+
                 let _res = get_host_info(&server, &passwd, pool, false).await;
                 if _res.is_err() {
                     panic!("not a valid server");
                 }
 
-                if let Some(ip) = ip {
-                    let mut _use_it = *USE_IP.lock()
-                        .expect("could not lock ip");
-                    _use_it = NET_STATUS
-                    
-                }
-                if new_users.is_some() && new_users.unwrap() {
-                    let mut new = NEW_USERS.lock().unwrap();
-                    *new = 1
-                };
-                let port = if port.is_some() {
-                   port.unwrap()
-                } else {
-                    0
-                };
-                if let Some(secret) = secret {
-                    let mut _word_mutex = *lib_db::jwt::MUTEX_SECRET_WORD
-                        .lock().unwrap();
-                    _word_mutex = secret.as_str()
-                }
-
+                
                 
                 bind(_pool, _res.unwrap(), port).await;
             }

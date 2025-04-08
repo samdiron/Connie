@@ -4,7 +4,12 @@ pub mod loading_gauge;
 
 
 use std::io::Stdout;
-use ratatui::{self, prelude::CrosstermBackend, Terminal};
+use common_lib::log::debug;
+use ratatui::{
+    self,
+    prelude::CrosstermBackend,
+    Terminal
+};
 
 
 pub fn init() -> Terminal<CrosstermBackend<Stdout>> {
@@ -13,7 +18,9 @@ pub fn init() -> Terminal<CrosstermBackend<Stdout>> {
 }
 
 pub fn restore_terminal() {
+
     ratatui::restore();
+    debug!("restoring termianl");
 }
 
 #[cfg(test)]

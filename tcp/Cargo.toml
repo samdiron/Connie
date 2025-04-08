@@ -4,10 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+
+tui = { path = "../tui/" }
+lib_db = { path = "../lib_db/" }
+lib_start = { path = "../lib_start/"}
+common_lib = { path = "../common_lib/" }
+
 tokio = { version = "1.43.0", features = ["macros", "net", "rt-multi-thread"] }
 serde = "1.0.217"
-common_lib = { path = "../common_lib/" }
-lib_db = { path = "../lib_db/" }
-tui = { path = "../tui/" }
+
 tokio-rustls = "0.26.1"
 webpki-roots = "0.26.8"

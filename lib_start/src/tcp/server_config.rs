@@ -47,6 +47,7 @@ impl ServerIdent{
             exit(1)
         }
         let tomled = toml::to_string(&s);
+        
         if tomled.is_ok() {
             let path = PathBuf::from(SERVER_IDENT);
             let toml = tomled.unwrap();

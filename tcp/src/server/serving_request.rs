@@ -41,7 +41,14 @@ pub async  fn handle_server_request(
 ) -> Result<u8> {
     match request.header.as_str() {
         POST => {
-            if check_if_media_exist(&request.cpid, host_cpid, &request.name, &request.type_, request.size, pool).await {
+            if check_if_media_exist(
+                &request.cpid,
+                host_cpid,
+                &request.name,
+                &request.type_,
+                request.size,
+                pool
+            ).await {
                 stream.write_u8(MEDIA_ALREADY_EXISTS).await?;
                 stream.flush().await?;
                 
@@ -61,7 +68,9 @@ pub async  fn handle_server_request(
             let local_size = get_size(spath).await?;
             if &request.chcksum == NO_VAL {
                 debug!("a client sent a file with no checksum");
-                wvts(stream, local_sum.as_bytes().to_vec()).await.unwrap();
+                wvts(stream, local_sum.as_bytes().to_vec())
+                        .await
+                        .unwrap();
             }else if request.chcksum != local_sum {
                 stream.write_u8(DATA_NOT_MATCH).await?;
                 stream.flush().await?;
@@ -124,7 +133,10 @@ pub async  fn handle_server_request(
                         let confirm = stream.read_u8().await?;
                         if confirm == SUCCESFUL {
                             info!("SUCCESFUL:GET");
-                        } else {debug!("UNSUCCESFUL:GET");return Ok(1)}
+                        } else {
+                            debug!("UNSUCCESFUL:GET");
+                            return Ok(1)
+                        }
                     }
                 }
             } else {

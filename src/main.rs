@@ -108,11 +108,11 @@ async fn main() {
                     .init();
             }
             _ => {
-                env_logger::Builder::new()
-                    .parse_filters("trace")
-                    .init();
+            env_logger::Builder::new()
+                .parse_filters("trace")
+                .init();
 
-        }
+            }
         }
 
     }

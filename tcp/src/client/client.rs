@@ -52,13 +52,24 @@ pub async fn client_process(
     port: Option<u16>,
     ip: Option<IpAddr>,
     check_for_sum: Option<bool>,
-    request: RQM,
+    request: Option<RQM>,
+    log_in: Option<bool>,
 
 ) -> Result<u8> {
     let state: u8;
     
     let jwt = get_jwt(&server.cpid, &usr.cpid, &pool).await.unwrap();
-    let conn = if jwt.is_some() {
+    let conn = if log_in.is_some() && log_in.unwrap(){
+        Connection {
+            jwt: None,
+            user: usr,
+            ip,
+            port,
+            server,
+        }
+
+    }
+    else if jwt.is_some() {
         let conn = Connection {
             jwt,
             user: usr,
@@ -75,6 +86,12 @@ pub async fn client_process(
             port,
             server,
         }
+    };
+    let request = if request.is_some() {
+        request
+    } else {
+        drop(request);
+        None
     };
     state = connect_tcp(&pool, conn, check_for_sum, request).await.unwrap();
     Ok(state)

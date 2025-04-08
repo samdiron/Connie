@@ -22,6 +22,7 @@ use tokio_rustls::TlsAcceptor;
 use crate::consts::{NET_STATUS, NEW_USERS, USE_IP};
 use crate::server::config::make_config;
 use crate::server::handle_client::handle;
+use crate::server::runtime::file_checks::clean_unfinished_files;
 
 
 
@@ -70,6 +71,7 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
         false
     };
     let me_pub_ip = public_ip::addr().await.unwrap();
+    let local_cpid = ident.cpid.clone();
     let sqlite_host = SqliteHost {
         name: ident.name,
         cpid: ident.cpid,
@@ -81,19 +83,23 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
     let config = make_config();
     let acceptor = TlsAcceptor::from(config);
     let mut handles: Vec<JoinHandle<()>> = vec![];
-    let mut time_for_request_handle = Instant::now();
+    // cleaning time
+    let mut ct = Instant::now();
     let standard_clean_up_tls_dur = Instant::now();
     let wait1day =  Duration::from_secs(DURATION); // DURATION == 1 day
     let standard_wait = Duration::from_secs(300); // 5 min
     let mut impropertls: u32 = 0;
     loop {
-        if time_for_request_handle.elapsed() >= standard_wait && handles.len() > 0usize || handles.len() >= 5usize{
+
+        // admin loop 
+        if (ct.elapsed() >= standard_wait && !handles.is_empty()) ||
+            handles.len() >= 5usize {
             let start = Instant::now();
             let total_tasks = handles.len(); 
             debug!("TASKCLEANER: {} tasks to check", total_tasks);
             let mut faild_tasks:u64 = 0;
             let mut succesful_tasks:u64 = 0;
-            time_for_request_handle+=standard_wait;
+            ct+=standard_wait;
             let mut items_to_remove: Vec<usize>= vec![];
             for i in 0usize..total_tasks {
                 if handles[i].is_finished() {
@@ -112,18 +118,27 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
                 }
                 debug!("TASKCLEANER: total tasks {total_tasks}/ finished tasks {total_items_to_remove} / succesful tasks {succesful_tasks} / faild tasks {faild_tasks}");
             };
+            if handles.is_empty() && faild_tasks > 0 {
+                clean_unfinished_files(&local_cpid, &pool).await;
+            }
             if standard_clean_up_tls_dur.elapsed() >= wait1day {
                 impropertls=0
             }
             let end = start.elapsed();
             debug!("TASKCLEANER: took {} ms", end.as_millis());
 
-        }; if impropertls ==  100_000 {
+        }; 
+
+        if impropertls ==  100_000 {
             let now = Instant::now();
             let dur = standard_clean_up_tls_dur - now;
             warn!("you are being DDoSed and i don't wanna deal with this i will sleep for {}s. goodnight (っ- ‸ - ς)",dur.as_secs());
             thread::sleep(dur);
         }
+
+
+
+        // listener
         match socket.accept().await {
             Ok(stream) => {
                 let inner_p = pool.clone();
@@ -133,7 +148,7 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
                 let inner_acceptor = acceptor.clone();
                 let tls = tls_acceptor(inner_acceptor, stream.0).await;
                 if tls.is_ok() {
-                let handle = task::spawn(async move {
+                let task_handle = task::spawn(async move {
                     let tls = tls.unwrap();
                     let stream = (tls, addr);
                     info!("client: {}", &addr);
@@ -152,7 +167,7 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
                         Err(e) => {debug!("a client request faild: {:#?}", e)},
                     }
                     });
-                handles.push(handle);
+                    handles.push(task_handle);
                 } else {
                     warn!("client with improper tls addres: {addr}");
                     impropertls+=1;

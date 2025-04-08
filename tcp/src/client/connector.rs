@@ -103,7 +103,11 @@ async fn get_stream(
     let pri_addr = SocketAddr::new(pri_ip, port);
     let addr: IpAddr;
     let me_pub_ip = public_ip::addr().await;
-    info!("server pulic ip: {}, private ip: {}",&host.pub_ip, &host.pri_ip );
+    info!(
+        "server pulic ip: {}, private ip: {}",
+        &host.pub_ip,
+        &host.pri_ip 
+    );
     if me_pub_ip.is_some() {
         info!("current public ip: {}",me_pub_ip.unwrap().to_string())
     };
@@ -145,7 +149,7 @@ pub async fn connect_tcp(
     pool: &SqlitePool,
     conn: Connection,
     check_for_sum: Option<bool>,
-    rqm: RQM
+    rqm: Option<RQM>
 ) -> Result<u8> {
     if conn.jwt.is_none(){
         debug!("no jwt will try to login ");
@@ -162,7 +166,11 @@ pub async fn connect_tcp(
             &name, &cpid, &paswd
         );
         let request = req.sz().unwrap();
-        let (stream, _addr) = get_stream(&conn.server, conn.port, conn.ip).await?;
+        let (stream, _addr) = get_stream(
+            &conn.server,
+            conn.port,
+            conn.ip
+        ).await?;
         let mut stream = get_tlstream(_addr, stream)
             .await
             .expect("could not connect tls");
@@ -215,7 +223,9 @@ pub async fn connect_tcp(
                 _ => {Ok(44)}
             }
         }
-    } else  {
+    } else {
+        assert_eq!(rqm.is_some(), true);
+        let rqm = rqm.unwrap();
         debug!("Will use jwt auth");
         let jwt = conn.jwt.unwrap();
         let req = JwtReq {

@@ -31,6 +31,4 @@ pub mod consts {
 
     pub static USE_PORT: Mutex<u8> = Mutex::new(0);
 
-
-
 }

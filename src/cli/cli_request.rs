@@ -98,7 +98,9 @@ pub async fn handle_cli_request(command: Commands) {
             post,
             create_checksum: checksum,
             fetch_files, 
-            user
+            user,
+            login,
+            all,
         } => {
             if post.is_some() && get.is_some() {
                 println!("you can't enter a get and post command");
@@ -202,6 +204,7 @@ pub async fn handle_cli_request(command: Commands) {
                     usr.cpid.clone(),
                     checksum
                 ).await.unwrap();
+                let request = Some(request);
                 let usr = fetch_sqlite_user_with_server_cpid(
                     &user,
                     &server.cpid,
@@ -214,7 +217,8 @@ pub async fn handle_cli_request(command: Commands) {
                     port,
                     ip,
                     None,
-                    request
+                    request,
+                    None
                 ).await.unwrap();
                 println!("done {}", res);
             } else if get.is_some() {
@@ -235,7 +239,7 @@ pub async fn handle_cli_request(command: Commands) {
 
                     for m in &mv {
                         i+=1;
-                        println!("{i}(name: {}\n type: {}\nsize: {:.2}MB checksum: {}\n)",
+                        println!("{i}(name: {}\n type: {}\nsize: {:.4}MB checksum: {}\n)",
                             m.name,
                             m.type_,
                             (m.size as f64 / 1000 as f64) / 1000 as f64,
@@ -279,6 +283,7 @@ pub async fn handle_cli_request(command: Commands) {
                         chcksum: m.checksum,
                         path: Some(path),
                     };
+                    let request = Some(request);
                     let res = client_process(
                         _pool.clone(),
                         usr.clone(),
@@ -286,7 +291,9 @@ pub async fn handle_cli_request(command: Commands) {
                         port,
                         ip,
                         Some(checksum),
-                        request.clone()
+                        request.clone(),
+                        None
+
                     ).await.unwrap();
                     let res = if res == 8 {
                         info!("will connect again");
@@ -297,11 +304,27 @@ pub async fn handle_cli_request(command: Commands) {
                             port,
                             ip,
                             Some(checksum),
-                            request
+                            request,
+                            None
                         ).await.unwrap()
 
                     }else {res};
                     info!("STATUS: {res}");
+                }
+            } else if login.is_some() && login.unwrap() {
+                if all.is_none() {
+                    client_process(
+                        _pool,
+                        usr,
+                        server,
+                        port,
+                        ip,
+                        None, // checksum
+                        None, // request
+                        Some(true) // the login request 
+                    ).await.unwrap();
+
+                    
                 }
             }
             else {

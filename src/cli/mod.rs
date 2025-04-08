@@ -75,6 +75,12 @@ pub enum Commands {
         #[arg(long, short)]
         fetch_files: Option<bool>,
 
+        #[arg(long, short)]
+        login: Option<bool>,
+
+        #[arg(long, short)]
+        all: Option<bool>,
+
         #[arg(short)]
         db: Option<PathBuf>,
 

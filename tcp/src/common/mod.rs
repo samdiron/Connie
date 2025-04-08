@@ -154,18 +154,13 @@ pub(crate) mod util {
                 Result
             },
         }};
-        use tui::loading_gauge::{
-            create_title_with_filename,
-            LoadingGauge,
-            DOWNLOAD_STR
-        };
-
         use crate::common::ClientTlsStreams;
         use crate::common::request::PACKET_SIZE;
         // reads the amount of b from a stream and returns the data read in a Vec<u8>
         // this function is made only for small reads it will not work as expected with larg buffers
         
         type UniTls = ClientTlsStreams;
+        const WAIT_FOR_UPDATE_PERCENTAGE: u16 = 1;
         pub async fn read_stream(
             s: &mut UniTls,
             b: u16
@@ -240,7 +235,7 @@ pub(crate) mod util {
             s.flush().await?;
 
             info!("tol: {tol}, size: {_size}");
-            let standard_wait = Duration::from_secs(2);
+            let standard_wait = Duration::from_secs(WAIT_FOR_UPDATE_PERCENTAGE.into());
             if verbose {
 
                 let mut _when_to_print = Instant::now();
@@ -296,19 +291,16 @@ pub(crate) mod util {
                 }
             }
             s.flush().await?;
-            let end = time::Instant::now();
             assert_eq!(_usize , sent);
             let mb = (sent as f64 / 1000 as f64) / 1000 as f64;
-            let dur = (end-start).as_secs_f64();
+            let dur = (start.elapsed()).as_secs_f64();
+            // sendin confirmation  
+            s.write_u8(0).await?;
+            //
             info!(
                 "RW: sent {:.2}MB in {:.2}s Average speed {:.2}Mb/s",
                 mb, dur, mb/dur
             );
-
-
-            info!("RW: waiting for confirm to end request");
-            s.write_u8(0).await?;
-            
             Ok(sent)
         }
         
@@ -326,17 +318,13 @@ pub(crate) mod util {
             let tol = s.read_u16().await?;
             let s_all = s.read_u64().await? as usize;
             let mut i = 0u16;
-            let standard_wait = Duration::from_secs(2);
+            let standard_wait = Duration::from_secs(WAIT_FOR_UPDATE_PERCENTAGE.into());
 
             if i < tol && tol != 1 && verbose {
-                let tty = tui::init();
-                let file = "File".to_owned();
-                let stats = DOWNLOAD_STR.to_owned();
-                let title = create_title_with_filename(&file, &stats);
-                let gauge_sender = LoadingGauge::new(title, tty);
                 let mut when_to_print = Instant::now();
                 loop {
                     if i == tol || i == tol-1 || (recvd+PACKET_SIZE) > s_all {
+                        tui::restore_terminal();
                         debug!("last loop");break 
                     }
                     s.read_exact(&mut buf).await?;
@@ -347,13 +335,12 @@ pub(crate) mod util {
                     if when_to_print.elapsed() >= standard_wait {
                         when_to_print+=standard_wait;
                         let percent = (i as f64 / tol as f64) * 100.0;
-                        gauge_sender
-                            .send(percent)
-                            .expect("could not send percent to the gauge thread ");
-                        // info!("download: {:.2}%", percent);
+                        // gauge_sender
+                        //     .send(percent)
+                        //     .expect("could not send percent to the gauge thread ");
+                        info!("download: {:.2}%", percent);
                     };
                 }
-                tui::restore_terminal();
             };
             if i < tol && tol != 1 && !verbose {
                 loop {
@@ -377,10 +364,11 @@ pub(crate) mod util {
                 wrote+=buf_size;
             };
             assert_eq!(wrote, recvd);
+            let dur = (start.elapsed()).as_secs_f64();
+            // server confirmation
             let status = s.read_u8().await?;
-            let end = time::Instant::now();
+            // 
             let mb = (s_all as f64 / 1000 as f64) / 1000 as f64;
-            let dur = (end-start).as_secs_f64();
             info!(
                 "RW: received {:.2}MB in {:.2}s Average speed {:.2}Mb/s",
                 mb, dur, mb/dur
@@ -540,10 +528,13 @@ pub(crate) mod util {
                 }
             }
             s.flush().await?;
-            let end = time::Instant::now();
             assert_eq!(_usize , sent);
             let mb = (sent as f64 / 1000 as f64) / 1000 as f64;
-            let dur = (end-start).as_secs_f64();
+            let dur = (start.elapsed()).as_secs_f64();
+
+            //sending confirmation
+            s.write_u8(0).await?;
+            // 
             info!(
                 "RW: sent {:.2}MB in {:.2}s Average speed {:.2}Mb/s",
                 mb, dur, mb/dur
@@ -551,8 +542,6 @@ pub(crate) mod util {
 
 
             info!("RW: waiting for confirm to end request");
-            s.write_u8(0).await?;
-            
             Ok(sent)
         }
         
@@ -613,10 +602,11 @@ pub(crate) mod util {
                 wrote+=buf_size;
             };
             assert_eq!(wrote, recvd);
+            let dur = (start.elapsed()).as_secs_f64();
+            // client confirmation 
             let status = s.read_u8().await?;
-            let end = time::Instant::now();
+            // 
             let mb = (s_all as f64 / 1000 as f64) / 1000 as f64;
-            let dur = (end-start).as_secs_f64();
             info!(
                 "RW: received {:.2}MB in {:.2}s Average speed {:.2}Mb/s",
                 mb, dur, mb/dur
