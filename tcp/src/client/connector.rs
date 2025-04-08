@@ -7,7 +7,7 @@ use common_lib::public_ip;
 use lib_db::sqlite::sqlite_host::SqliteHost;
 use lib_db::sqlite::sqlite_user::{ShortUser, SqliteUser};
 use lib_db::types::SqlitePool;
-use lib_db::sqlite::sqlite_jwt::{add_jwt, delete_jwt};
+use lib_db::sqlite::sqlite_jwt::{add_jwt, delete_jwt, delete_user_jwt};
 use common_lib::log::{debug, info, warn, error};
 use common_lib::tokio::io::{
     AsyncReadExt,
@@ -152,6 +152,8 @@ pub async fn connect_tcp(
     rqm: Option<RQM>
 ) -> Result<u8> {
     if conn.jwt.is_none(){
+        info!("deleting old jwts");
+        delete_user_jwt(pool, &conn.user.cpid).await;
         debug!("no jwt will try to login ");
         let name  = conn.user.usrname;
         let cpid = conn.user.cpid;
@@ -217,7 +219,7 @@ pub async fn connect_tcp(
                         check if you are an already a in the db used by the server 
                         will exit not with status of 1"
                     );
-                    exit(1)
+                    exit(1) 
                     
                 } 
                 _ => {Ok(44)}
@@ -259,7 +261,7 @@ pub async fn connect_tcp(
         let is_valid = stream.read_u8().await?;
         if is_valid != 0 {
             delete_jwt(&extra_jwt, pool).await.unwrap();
-            info!("there was an unexpected jwt change please run the same command again");
+            info!("there was an unexpected jwt change please run the same command again or use the login flag(-l or --login ) with true ");
             exit(UNAUTHORIZED as i32)
         };
         info!("sent full request with size: {:?}",size);

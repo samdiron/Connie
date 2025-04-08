@@ -99,7 +99,11 @@ pub mod jwt {
         Ok(token.claims)
     }
     pub async fn validate_jwt_claim(token: &String, pool: &PgPool) -> bool {
-        let c = decode_jwt(token).unwrap();
+        let c = decode_jwt(token);
+        if !c.is_ok(){
+            return false
+        }
+        let c = c.unwrap();
         let now = get_current_timestamp();
         let is_who = validate_claim_wcpid(c.cpid, c.paswd, pool).await.unwrap();
         let exp = c.exp;

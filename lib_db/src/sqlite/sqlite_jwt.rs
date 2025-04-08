@@ -73,6 +73,19 @@ pub async fn add_jwt(
     }
 }
 
+pub async fn delete_user_jwt(pool: &SqlitePool, cpid: &String) {
+    let sql = format!("DELETE FROM jwt WHERE cpid = '{}' ;", cpid);
+    let res = sqlx::query(&sql).execute(pool).await;
+    drop(sql); 
+    if res.is_ok(){
+        debug!("DELETED {} jwts from db", res.unwrap().rows_affected())
+    } else {
+        warn!("fn delete_expd: {:#?}", res.unwrap_err())
+    }
+
+
+}
+
 pub async fn delete_expd_jwt(pool: &SqlitePool) {
     let now = get_current_timestamp();
     let sql = format!("DELETE FROM jwt WHERE exp < {now} ;");
