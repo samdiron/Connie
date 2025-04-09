@@ -87,7 +87,7 @@ pub enum Commands {
         
         #[arg(long, short)]
         post: Option<PathBuf>,
-        #[arg(long, short, default_value="true")]
+        #[arg(long, short, default_value="false")]
         create_checksum: Option<bool>,
 
     },

@@ -141,12 +141,7 @@ pub async fn handle_cli_request(command: Commands) {
                 exit(1)
 
             };
-            let checksum = if checksum.is_some() {
-                checksum.unwrap()
-            }else {
-                debug!("checksum false");
-                false
-            };
+            let checksum = checksum.unwrap();
 
             
             let usr = fetch_sqlite_user_with_server_cpid(
