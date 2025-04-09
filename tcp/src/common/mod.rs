@@ -20,11 +20,17 @@ pub(crate) mod handshakes {
     use common_lib::log::{debug, warn};
     use common_lib::tokio::io::{AsyncReadExt, AsyncWriteExt};
     
-    use lib_db::{sqlite::sqlite_host::SqliteHost, types::SqlitePool};
+    use lib_db::{
+        sqlite::sqlite_host::SqliteHost,
+        types::SqlitePool
+    };
     
-    use crate::common::{request::SIGNIN_CRED, util};
+    use crate::common::{
+        request::SIGNIN_CRED,
+        util
+    };
 
-    use super::{ClientTlsStreams, ServerTlsStreams};
+    use crate::common::{ClientTlsStreams, ServerTlsStreams};
 
     /// makes sure the client is in the correct addres and takes the public ip of the server if
     /// it's correct and returns 0 if the server is correct if not 1
@@ -41,7 +47,10 @@ pub(crate) mod handshakes {
         let _res = wvts(stream, server_name.to_vec()).await?;
         debug!("sent server_name with {_res}");
         let server_confirm = stream.read_u8().await?;
-        if server_confirm != 0 {debug!("HANDSHAKE:FAILD:SERVER did not confirm");return Ok(1)};
+        if server_confirm != 0 {
+            debug!("HANDSHAKE:FAILD:SERVER did not confirm");
+            return Ok(1)
+        };
         debug!("MID:HANDSHAKE");
         let buf_cpid = rvfs(stream).await?;
         let buf_cpid = buf_cpid.to_vec();
@@ -57,7 +66,9 @@ pub(crate) mod handshakes {
             stream.flush().await?;
             if host == server.host {
                 warn!("the server on this addres is not {}, but it's ont he same machine: {}", server.name, host);
-            }else {warn!("the server on this addres is not {}", server.name);}
+            }else {
+                warn!("the server on this addres is not {}", server.name);
+            }
             return Ok(1)
         } else {
             debug!("END:HANDSHAKE");
@@ -92,7 +103,9 @@ pub(crate) mod handshakes {
         debug!("START:HANDSHAKE");
         let buf = rvfs(stream).await?;
         let lossy = buf.to_vec();
-        if lossy.len() == 1usize && lossy[0] == SIGNIN_CRED {return Ok(SIGNIN_CRED);}; 
+        if lossy.len() == 1usize && lossy[0] == SIGNIN_CRED {
+            return Ok(SIGNIN_CRED);
+        }; 
         let name = String::from_utf8_lossy(&lossy);
         if name != server.name {
             debug!("FAILD:HANDSHAKE: {name}");
@@ -140,7 +153,11 @@ pub(crate) mod handshakes {
 pub(crate) mod util {
     pub mod client {
             
-        use std::time::{self, Duration, Instant};
+        use std::time::{
+            self,
+            Instant,
+            Duration,
+        };
 
         use common_lib::{
             log::{debug, info},
@@ -382,7 +399,8 @@ pub(crate) mod util {
 
         use std::time::{self, Duration, Instant};
 
-        use common_lib::{log::{debug, info}, tokio::{
+        use common_lib::log::{debug, info};
+        use common_lib::tokio::{
             fs::File,
             io::{
                 AsyncReadExt,
@@ -391,9 +409,12 @@ pub(crate) mod util {
                 BufWriter,
                 Result
             },
-        }};
+        };
+
         use crate::common::{request::PACKET_SIZE, ServerTlsStreams};
+        
         type UniTls = ServerTlsStreams;
+        
         // reads the amount of b from a stream and returns the data read in a Vec<u8>
         // this function is made only for small reads it will not work as expected with larg buffer
         pub async fn read_stream(

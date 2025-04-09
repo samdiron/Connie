@@ -1,9 +1,18 @@
+
 use std::net::SocketAddr;
 
-use common_lib::{gethostname::gethostname, path::SQLITEDB_PATH};
-use lib_db::{database::get_conn, sqlite::{get_sqlite_conn, sqlite_user::ShortUser}, user::user_struct::User};
+use common_lib::{
+    path::SQLITEDB_PATH,
+    gethostname::gethostname, 
+};
+
+use lib_db::{
+    database::get_conn,
+    user::user_struct::User,
+    sqlite::{get_sqlite_conn, sqlite_user::ShortUser},
+};
+
 use tcp::client::client::signup_process;
-// use tcp::client::client::signup_process;
 
 use crate::{cli::Commands, get_new_pass};
 

@@ -3,19 +3,21 @@
 mod cli;
 
 use std::{
+    process::exit,
     io::{stdout, Write},
-    process::exit
 };
-use cli::config_handle;
+
+
 use env_logger;
 
-use crate::cli::Commands;
+use cli::Commands;
+use cli::config_handle;
 
-use lib_start::certs;
-use common_lib::rpassword::read_password;
 use clap::Parser;
 
+use lib_start::certs;
 
+use common_lib::rpassword::read_password;
 
 
 //NOTE: for this progrm to start you have to write your postgres connection url

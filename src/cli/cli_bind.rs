@@ -23,14 +23,16 @@ use lib_start::{
         PRI_NET
     }
 };
+
+use lib_start::tcp::server_config::get_server_config;
 use tcp::{
+    server::listener::bind,
     consts::{
         NET_STATUS,
         NEW_USERS,
         PRIVATE_STATUS,
         USE_IP,
     },
-    server::listener::bind
 };
 
 use crate::{
@@ -51,7 +53,11 @@ pub async fn handle_cli_bind(command: Commands) {
         } => {
 
             if secret.is_some() {
-                *MUTEX_SECRET_WORD.lock().unwrap().lock().unwrap() = secret.unwrap();
+                *MUTEX_SECRET_WORD
+                    .lock()
+                    .unwrap()
+                    .lock()
+                    .unwrap() = secret.unwrap();
             }
 
             if let Some(ip) = ip {
@@ -68,7 +74,7 @@ pub async fn handle_cli_bind(command: Commands) {
 
 
             if default.is_some() && default.unwrap() {
-                let config = lib_start::tcp::server_config::get_server_config()
+                let config = get_server_config()
                     .await
                     .unwrap();
                  
@@ -131,7 +137,12 @@ pub async fn handle_cli_bind(command: Commands) {
                     0
                 };
 
-                let _res = get_host_info(&server, &passwd, pool, false).await;
+                let _res = get_host_info(
+                    &server,
+                    &passwd,
+                    pool,
+                    false
+                ).await;
                 if _res.is_err() {
                     panic!("not a valid server");
                 }

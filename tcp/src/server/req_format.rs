@@ -1,16 +1,21 @@
-use crate::common::request::RQM;
+
+use lib_db::jwt::{
+    create,
+    exp_gen,
+    validate_jwt_claim,
+    Claim
+};
+
 use lib_db::{
-    jwt::{
-        create,
-        exp_gen,
-        validate_jwt_claim,
-        Claim
-    },
     types::{jwtE, sqlE, PgPool},
     user::user_struct::validate_claim_wcpid
 };
-use serde::{Deserialize, Serialize};
+
 use common_lib::bincode;
+use common_lib::serde::{Deserialize, Serialize};
+
+use crate::common::request::RQM;
+
 
 #[derive(Deserialize, Serialize)]
 pub struct Chead {
@@ -37,7 +42,10 @@ impl LoginReq {
         drop(self);
     }
 
-    pub(in crate::server) async fn validate(&self, pool: &PgPool) -> Result<bool, sqlE> {
+    pub(in crate::server) async fn validate(
+        &self,
+        pool: &PgPool
+    ) -> Result<bool, sqlE> {
         let paswd = self.paswd.clone();
         let cpid = self.cpid.clone();
         let res = validate_claim_wcpid(cpid, paswd, pool).await?;
@@ -45,7 +53,9 @@ impl LoginReq {
 
     } 
 
-    pub(in crate::server)  async fn token_gen(self) -> Result<String, jwtE> {
+    pub(in crate::server)  async fn token_gen(
+        self
+    ) -> Result<String, jwtE> {
         let cpid = self.cpid;
         let paswd = self.paswd;
 
@@ -82,7 +92,10 @@ impl JwtReq {
         drop(self);
     }
 
-    pub(in crate::server) async fn validate(&self, pool: &PgPool) -> Result<bool, sqlE> {
+    pub(in crate::server) async fn validate(
+        &self,
+        pool: &PgPool
+    ) -> Result<bool, sqlE> {
         let token = &self.jwt;
         let state = validate_jwt_claim(token, pool).await;
         Ok(state)
@@ -108,7 +121,10 @@ impl Chead {
         drop(self);
     }
     
-    pub(in crate::server) async fn validate(&self, pool: &PgPool) -> Result<bool, sqlE> {
+    pub(in crate::server) async fn validate(
+        &self,
+        pool: &PgPool
+    ) -> Result<bool, sqlE> {
         let token = &self.jwt;
         let state = validate_jwt_claim(token, pool).await;
         Ok(state)

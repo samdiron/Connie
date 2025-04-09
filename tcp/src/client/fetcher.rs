@@ -1,36 +1,39 @@
-use std::{
-    io::Result,
-    net::{IpAddr, SocketAddr},
-    process::exit
-};
+
+use std::io::Result;
+use std::process::exit;
+use std::net::{IpAddr, SocketAddr};
 
 use lib_db::{
-    media::fetch::Smedia, sqlite::{
-        sqlite_host::SqliteHost,
-        sqlite_user::SqliteUser
-    },
+    media::fetch::Smedia, 
     types::SqlitePool
 };
+use lib_db::sqlite::{
+        sqlite_host::SqliteHost,
+        sqlite_user::SqliteUser
+};
+
 use common_lib::{
     log::debug,
     public_ip,
-    tokio::{
+};
+use common_lib::tokio::{
         io::{
             AsyncReadExt,
             AsyncWriteExt
         },
         net::TcpStream
-    }
 };
+
 use tokio_rustls::rustls::pki_types::ServerName;
-use crate::{
-    client::connector::get_tlstream,
-    server::req_format::Chead
-};
+
 use crate::common::{
     handshakes,
     request::FETCH,
-    util::client::rvfs
+    util::client::rvfs,
+};
+use crate::{
+    server::req_format::Chead,
+    client::connector::get_tlstream,
 };
 
 

@@ -1,43 +1,49 @@
+
+use std::io::{
+    stdin,
+    Write,
+    stdout,
+};
 use std::{
-    io::{
-        stdin,
-        stdout,
-        Write
-    },
     net::IpAddr,
+    str::FromStr,
     path::PathBuf,
     process::exit,
-    str::FromStr
 };
 
 use common_lib::{
-    log::{debug, error, info},
+    public_ip,
     path::SQLITEDB_PATH,
-    public_ip
+    log::{debug, error, info},
 };
+
 use lib_db::{
+    types::SqlitePool,
+    media::fetch::Smedia,
     jwt::get_current_timestamp,
-    media::fetch::Smedia, sqlite::{
-        self,
-        sqlite_host::fetch_server,
-        sqlite_jwt::delete_expd_jwt,
-        sqlite_media::{
-                fetch_all_media_from_host,
-                fetch_all_media_from_host_smedia,
-                sqlite_delete_media,
-                sqlite_media_exists,
-                SqliteMedia
-        },
-        sqlite_user::fetch_sqlite_user_with_server_cpid
-    },
-    types::SqlitePool
 };
+
+use lib_db::sqlite::{
+    self,
+    sqlite_host::fetch_server,
+    sqlite_jwt::delete_expd_jwt,
+    sqlite_user::fetch_sqlite_user_with_server_cpid,
+};
+use lib_db::sqlite::sqlite_media::{
+    SqliteMedia,
+    sqlite_delete_media,
+    sqlite_media_exists,
+    fetch_all_media_from_host,
+    fetch_all_media_from_host_smedia,
+};
+
 use tcp::{
     client::{
+        fetcher,
         client::client_process,
-        fetcher
     },
-    types::{GET, POST, RQM}};
+    types::{GET, POST, RQM},
+};
 
 use crate::Commands;
 

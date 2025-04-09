@@ -1,33 +1,43 @@
-use std::io::Result;
-use std::net::{IpAddr, SocketAddr};
+
 use std::thread;
-use std::time::Duration;
+use std::io::Result;
 use std::process::exit;
-use common_lib::public_ip;
+use std::time::Duration;
+use std::net::{IpAddr, SocketAddr};
+
+use lib_db::types::SqlitePool;
 use lib_db::sqlite::sqlite_host::SqliteHost;
 use lib_db::sqlite::sqlite_user::{ShortUser, SqliteUser};
-use lib_db::types::SqlitePool;
-use lib_db::sqlite::sqlite_jwt::{add_jwt, delete_jwt, delete_user_jwt};
+use lib_db::sqlite::sqlite_jwt::{
+    add_jwt, delete_jwt,
+    delete_user_jwt
+};
+
+use common_lib::public_ip;
+use common_lib::tokio::time::timeout;
+use common_lib::tokio::net::TcpStream;
 use common_lib::log::{debug, info, warn, error};
 use common_lib::tokio::io::{
     AsyncReadExt,
     AsyncWriteExt
 };
-use common_lib::tokio::net::TcpStream;
-use common_lib::tokio::time::timeout;
-use tokio_rustls::rustls::pki_types::ServerName;
-use tokio_rustls::TlsConnector;
-use tokio_rustls::client;
 
-use crate::client::client::Connection;
-use crate::common::handshakes;
-use crate::common::request::req_format::{JwtReq, LoginReq};
-use crate::common::util::client::{rvfs, wvts};
+use tokio_rustls::client;
+use tokio_rustls::TlsConnector;
+use tokio_rustls::rustls::pki_types::ServerName;
+
 use crate::types::LOGIN_CRED;
-use super::config::make_config;
-use super::handle_request::handle_client_request;
+use crate::common::handshakes;
+use crate::client::config::make_config;
+use crate::client::client::Connection;
+use crate::common::util::client::{rvfs, wvts};
+use crate::client::handle_request::handle_client_request;
+use crate::common::request::req_format::{JwtReq, LoginReq};
 use crate::common::request::{
-    JWT_AUTH, RQM, SIGNIN_CRED, UNAUTHORIZED
+    JWT_AUTH,
+    RQM,
+    SIGNIN_CRED,
+    UNAUTHORIZED,
 };
 
 
@@ -153,7 +163,7 @@ pub async fn connect_tcp(
 ) -> Result<u8> {
     if conn.jwt.is_none(){
         info!("deleting old jwts");
-        delete_user_jwt(pool, &conn.user.cpid).await;
+        delete_user_jwt(pool, &conn.user.cpid, &conn.server.cpid).await;
         debug!("no jwt will try to login ");
         let name  = conn.user.usrname;
         let cpid = conn.user.cpid;

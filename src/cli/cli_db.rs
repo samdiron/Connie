@@ -1,8 +1,14 @@
-use std::{fs::remove_file, process::exit};
+
+use std::{
+    fs::remove_file,
+    process::exit
+};
+
+use lib_db::{database::get_conn, sqlite};
+
+use tokio::{fs::File, io::AsyncWriteExt};
 
 use common_lib::path::{DB_CONN, SQLITEDB_PATH};
-use lib_db::{database::get_conn, sqlite};
-use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::Commands;
 

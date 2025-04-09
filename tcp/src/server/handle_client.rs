@@ -1,11 +1,11 @@
-use lib_db::{
-    media::{self, fetch::Smedia},
-    sqlite::{
-        sqlite_host::{self, SqliteHost},
-        sqlite_user::{ShortUser, SqliteUser}
-    },
-    types::PgPool,
-    user::user_struct
+
+use lib_db::types::PgPool;
+use lib_db::user::user_struct;
+use lib_db::media::{self, fetch::Smedia};
+
+use lib_db::sqlite::{
+    sqlite_host::{self, SqliteHost},
+    sqlite_user::{ShortUser, SqliteUser}
 };
 
 use common_lib::bincode;
@@ -13,42 +13,47 @@ use common_lib::{
     gethostname::gethostname,
     log::{debug, info, warn}
 };
-use common_lib::tokio::{
+use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream
 };
 
 use tokio_rustls::server::TlsStream;
-use std::{
-    io::{Error, ErrorKind, Result},
-    net::SocketAddr
-};
 
-use crate::{
-    common::{
-        handshakes, request::{
-            FETCH,
-            JWT_AUTH,
-            LOGIN_CRED,
-            SIGNIN_CRED,
-            UNAUTHORIZED
-        },
-        util::server::{read_stream, rvfs, wvts}
-    }, server::{
+use std::net::SocketAddr;
+use std::io::{
+    Error,
+    Result,
+    ErrorKind,
+};
+use crate::common::{
+    handshakes, request::{
+        FETCH,
+        JWT_AUTH,
+        LOGIN_CRED,
+        SIGNIN_CRED,
+        UNAUTHORIZED
+    },
+    util::server::{read_stream, rvfs, wvts}
+};
+use crate::server::{
         req_format::{
             Chead,
             JwtReq,
             LoginReq
-        }, serving_request::handle_server_request
+        },
+        serving_request::handle_server_request
 
-    }
-};
+    };
 
     
 
 
 
-async fn login_create_jwt(pool: &PgPool, request: LoginReq) -> Result<String> {
+async fn login_create_jwt(
+    pool: &PgPool,
+    request: LoginReq
+) -> Result<String> {
     let is_val = request.validate(pool).await;
     if is_val.is_ok() && is_val.unwrap() == true {
             let jwt = request.token_gen().await.unwrap();
@@ -85,7 +90,9 @@ pub async fn handle(
         if allow_new_users {
             stream.write_u8(0).await?;
             stream.flush().await?;
-            let server_vector = sqlite_host::SqliteHost::sz(sqlite_host.clone()).unwrap();
+            let server_vector = sqlite_host::SqliteHost::sz(
+                sqlite_host.clone()
+            ).unwrap();
             debug!("server vector size: {}",server_vector.len());
             wvts(&mut stream, server_vector).await?;
             let confirm = stream.read_u8().await?;
@@ -175,7 +182,9 @@ pub async fn handle(
                 debug!("sent: {} bytes", jwt.len());
                 stream.flush().await?;
                 let confirm = stream.read_u8().await?;
-                if confirm  == 0 { debug!("SERVER: client login succsefully")};
+                if confirm  == 0 { 
+                    debug!("SERVER: client login succsefully")
+                };
                 drop(stream);
                 
                 debug!("SERVER: client logged in succsefully ");

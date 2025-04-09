@@ -4,7 +4,7 @@ use std::{
     fs::metadata,
     path::PathBuf, str::FromStr
 };
-use serde::{Deserialize, Serialize};
+use common_lib::serde::{Deserialize, Serialize};
 
 pub const READY_STATUS: u8 = 01;
 

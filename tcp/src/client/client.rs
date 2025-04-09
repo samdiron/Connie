@@ -3,20 +3,18 @@ use std::{
     net::IpAddr
 };
 
-use lib_db::{
-    sqlite::{
-        sqlite_host::SqliteHost,
+use lib_db::types::SqlitePool;
+use lib_db::sqlite::{
         sqlite_jwt::get_jwt,
-        sqlite_user::SqliteUser
-    },
-    types::SqlitePool
-};
+        sqlite_host::SqliteHost,
+        sqlite_user::SqliteUser,
+    }
+;
 
 use tokio_rustls::rustls::ClientConnection;
 
 use crate::common::request::RQM;
-
-use super::connector::connect_tcp;
+use crate::client::connector::connect_tcp;
 
 
 #[allow(dead_code)]

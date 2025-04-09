@@ -7,11 +7,11 @@ pub mod types {
     use crate::common::request;
     pub use request::RQM;
     pub use request::{
-        JWT_AUTH,
-        LOGIN_CRED,
         GET,
         POST,
         DELETE,
+        JWT_AUTH,
+        LOGIN_CRED,
         
     };
 }

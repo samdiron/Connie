@@ -6,19 +6,17 @@ pub(crate) mod cli_user;
 pub(crate) mod cli_server;
 pub(crate) mod cli_request;
 
-
-
-
-
-
-use std::{net::IpAddr, path::PathBuf};
+use std::{
+    net::IpAddr,
+    path::PathBuf,
+};
 
 use clap::Subcommand;
-use cli_bind::handle_cli_bind;
 use cli_db::handle_cli_db;
-use cli_request::handle_cli_request;
-use cli_server::handle_cli_server;
 use cli_user::handle_cli_user;
+use cli_bind::handle_cli_bind;
+use cli_server::handle_cli_server;
+use cli_request::handle_cli_request;
 
 #[derive(Debug,Subcommand)]
 pub enum Commands {

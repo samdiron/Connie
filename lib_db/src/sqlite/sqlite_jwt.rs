@@ -73,8 +73,11 @@ pub async fn add_jwt(
     }
 }
 
-pub async fn delete_user_jwt(pool: &SqlitePool, cpid: &String) {
-    let sql = format!("DELETE FROM jwt WHERE cpid = '{}' ;", cpid);
+pub async fn delete_user_jwt(pool: &SqlitePool, cpid: &String, host: &String) {
+    let sql = format!(
+        "DELETE FROM jwt WHERE cpid = '{}' AND host = '{}' ;",
+        cpid, host
+    );
     let res = sqlx::query(&sql).execute(pool).await;
     drop(sql); 
     if res.is_ok(){

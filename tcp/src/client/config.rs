@@ -7,9 +7,9 @@ use tokio_rustls::rustls::{
     DEFAULT_VERSIONS
 };
 use tokio_rustls::rustls::crypto::{
+        CryptoProvider,
         aws_lc_rs as provider,
         ring::DEFAULT_CIPHER_SUITES,
-        CryptoProvider
 };
 
 
@@ -17,8 +17,16 @@ mod danger {
     use tokio_rustls::rustls as rustls;
     use rustls::DigitallySignedStruct;
     use rustls::client::danger::HandshakeSignatureValid;
-    use rustls::crypto::{CryptoProvider, verify_tls12_signature, verify_tls13_signature};
-    use rustls::pki_types::{CertificateDer, ServerName, UnixTime};
+    use rustls::crypto::{
+        CryptoProvider,
+        verify_tls12_signature,
+        verify_tls13_signature
+    };
+    use rustls::pki_types::{
+        CertificateDer,
+        ServerName,
+        UnixTime
+    };
 
     #[derive(Debug)]
     pub struct NoCertificateVerification(CryptoProvider);
