@@ -153,10 +153,20 @@ pub enum Commands {
         delete_conn: Option<bool>,
 
         #[arg(long, short)]
-        migrations: Option<bool>,
+        connection: Option<String>,
 
         #[arg(long, short)]
-        connection: Option<String>,
+        path: Option<PathBuf>,
+
+        
+        #[arg(long, short)]
+        sqlite_migrations: Option<bool>,
+
+        
+        #[arg(long, short)]
+        postgres_migrations: Option<bool>,
+
+
 
     },
 
