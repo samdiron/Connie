@@ -189,9 +189,9 @@ pub enum Commands {
         
         #[arg(long, short)]
         signup: Option<bool>,
-        /// this is for when you are trying to enter your account from another machine  
-        // #[arg(long, short)]
-        // signin: Option<bool>,
+        
+        #[arg(long, short)]
+        db: Option<PathBuf>,
 
         #[arg(long)]
         admin: Option<bool>,

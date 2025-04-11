@@ -12,6 +12,38 @@ pub struct User {
     pub email: String,
     pub password: String,
 }
+
+pub async fn check_if_user_same_input(
+    user: &User,
+    pool: &PgPool
+) -> sqlx::Result<bool> {
+    let table = r#" "table" "#;
+    let sql = format!("
+SELECT count(1)
+FROM {table}
+WHERE name = '{}' AND 
+username = '{}' AND 
+email = '{}' AND
+host = '{}' ;
+",
+    escape_user_input(&user.name),
+    escape_user_input(&user.username),
+    escape_user_input(&user.email),
+    escape_user_input(&user.host),
+    );
+    let res = sqlx::query(&sql)
+        .fetch_one(pool)
+        .await?;
+    let num: i64 = res.get("count");
+    let status = if num >= 1 {
+        true
+    } else {
+        false
+    };
+
+    Ok(status)
+}
+
 pub async fn validate_claim_wcpid(
     cpid: String,
     paswd: String,

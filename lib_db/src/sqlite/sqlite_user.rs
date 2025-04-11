@@ -48,6 +48,26 @@ CREATE TABLE user(
 );";
 
 
+
+pub(crate) async fn check_server_users_num(
+    server_cpid: &String,
+    pool: &SqlitePool
+) -> Result<u64> {
+    let sql = format!("
+SELECT count(*)
+FROM user 
+where host = '{}' ;
+",
+    escape_user_input(server_cpid));
+    let res = sqlx::query(&sql)
+        .fetch_one(pool)
+        .await?;
+    let users: i64 = res.get(0usize);
+
+    Ok(users as u64)
+}
+
+
 pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{
     debug!("SQLITE: {SQL}");
     sqlx::query(SQL).execute(pool).await.unwrap();

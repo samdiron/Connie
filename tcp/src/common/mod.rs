@@ -101,6 +101,7 @@ pub(crate) mod handshakes {
     ) -> Result<u8, io::Error> {
         use util::server::{wvts, rvfs};
         debug!("START:HANDSHAKE");
+        
         let buf = rvfs(stream).await?;
         let lossy = buf.to_vec();
         if lossy.len() == 1usize && lossy[0] == SIGNIN_CRED {
@@ -446,7 +447,6 @@ pub(crate) mod util {
             let mut buf = vec![0; buf_size as usize];
             s.read(&mut buf).await?;
             s.write_u8(0).await.unwrap();
-            debug!("STREAMREAD: {buf_size}");
             Ok(buf)
             
         }

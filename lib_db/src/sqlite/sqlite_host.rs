@@ -3,11 +3,15 @@ use std::str::FromStr;
 
 use common_lib::bincode;
 use common_lib::log::debug;
+use common_lib::log::warn;
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Result;
 use sqlx::SqlitePool;
 use sqlx::Row;
+
+use crate::escape_user_input;
+use crate::sqlite::sqlite_user::check_server_users_num;
 
 const SQL: &str  = r#"
 CREATE TABLE host(
@@ -63,9 +67,9 @@ pub async fn fetch_server(
 ) -> SqliteHost {
     let sql = if let Some(host) = host {
         
-        format!("SELECT * FROM host WHERE name = '{name}' AND host = '{host}'")
+        format!("SELECT * FROM host WHERE name = '{name}' AND host = '{host}' ; ")
     }else  {
-        format!("SELECT * FROM host WHERE name = '{name}';")
+        format!("SELECT * FROM host WHERE name = '{name}' ;")
     };
     let _res = sqlx::query(&sql).fetch_one(pool).await.unwrap();
     drop(sql);
@@ -96,12 +100,42 @@ impl SqliteHost {
         drop(s);
         Ok(szd)
     }
-    pub async fn update_pub_ip(s: &Self, ip: IpAddr, pool: &SqlitePool) -> Result<()> {
+    pub async fn check_if_exists(
+        s: &Self,
+        pool: &SqlitePool
+    ) -> Result<bool> {
+        let sql = format!("
+SELECT count(*) 
+FROM host 
+WHERE name = '{}' AND cpid = '{}' ;
+        ",
+        escape_user_input(&s.name),
+        escape_user_input(&s.cpid)
+        );
+        let res = sqlx::query(&sql)
+            .fetch_one(pool)
+            .await?;
+        drop(sql);
+        let num:i64 = res.get(0usize);
+
+        let status = if num > 0 {
+            true
+        } else {
+            false
+        };
+        Ok(status)
+
+    }
+    pub async fn update_pub_ip(
+        s: &Self,
+        ip: IpAddr,
+        pool: &SqlitePool
+    ) -> Result<()> {
         let ip = ip.to_string();
         let sql = format!("
-            UPDATE host
-            SET pub_ip = '{ip}'
-            WHERE cpid = '{}';", &s.cpid
+UPDATE host
+SET pub_ip = '{ip}'
+WHERE cpid = '{}';", &s.cpid
         );
         sqlx::query(&sql).execute(pool).await?;
         drop(sql);
@@ -110,9 +144,9 @@ impl SqliteHost {
     pub async fn update_pri_ip(s: &Self, ip: IpAddr, pool: &SqlitePool) -> Result<()> {
         let ip = ip.to_string();
         let sql = format!("
-            UPDATE host
-            SET pri_ip = '{ip}'
-            WHERE cpid = '{}';", &s.cpid
+UPDATE host
+SET pri_ip = '{ip}'
+WHERE cpid = '{}';", &s.cpid
         );
         sqlx::query(&sql).execute(pool).await?;
         drop(sql);
@@ -120,8 +154,11 @@ impl SqliteHost {
     }
     /// note this function takes into account that host is OsStr aka 'host'
     pub async fn new(s: Self, pool: &SqlitePool) {
-        let sql = format!(
-            "INSERT INTO host(name, cpid, host, port, pub_ip, pri_ip) VALUES('{}','{}','{}', {}, '{}','{}');",
+        if check_server_users_num(&s.cpid, pool).await.unwrap() > 0  {
+            let sql = format!("
+INSERT INTO 
+host(name, cpid, host, port, pub_ip, pri_ip) 
+VALUES('{}','{}','{}', {}, '{}','{}');",
             s.name,
             s.cpid,
             s.host,
@@ -129,13 +166,19 @@ impl SqliteHost {
             s.pub_ip,
             s.pri_ip,
         );
+        
         let _res = sqlx::query(&sql).execute(pool).await.unwrap();
         drop(sql);
         debug!("sqlite lines af: {} ",_res.rows_affected())
+        };
     }
     pub async fn delete(s: Self, pool: &SqlitePool) {
-        let sql = format!(
-            "DELETE FROM host WHERE name = {} AND cpid = {}",
+        if check_server_users_num(&s.cpid, pool).await.unwrap() > 0 {
+            warn!("server will not be deleted due to users using this server");
+        }
+        let sql = format!("
+DELETE FROM host
+WHERE name = '{}' AND cpid = '{}' ; ",
             &s.name,
             &s.cpid,
         );
