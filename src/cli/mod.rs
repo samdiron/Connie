@@ -18,6 +18,7 @@ use cli_bind::handle_cli_bind;
 use cli_server::handle_cli_server;
 use cli_request::handle_cli_request;
 
+#[allow(non_snake_case)]
 #[derive(Debug,Subcommand)]
 pub enum Commands {
 
@@ -60,13 +61,17 @@ pub enum Commands {
         user: String,
 
         #[arg(long, short)]
-        ip: Option<IpAddr>,
+        Ip: Option<IpAddr>,
         
+        #[arg(long, short)]
+        Domain: Option<String>,
+
         #[arg(long)]
-        port: Option<u16>,
+        Port: Option<u16>,
 
         #[arg(long, short)]
         host: Option<String>,
+
         #[arg(long, short)]
         server_name: Option<String>,
         
@@ -87,6 +92,10 @@ pub enum Commands {
         
         #[arg(long, short)]
         post: Option<PathBuf>,
+
+        #[arg(long, short)]
+        Delete: Option<bool>,
+        
         #[arg(long, short, default_value="false")]
         create_checksum: Option<bool>,
 
