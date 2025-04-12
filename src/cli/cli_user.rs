@@ -19,17 +19,17 @@ use crate::{cli::Commands, get_new_pass};
 pub async fn handle_cli_user(command: Commands) {
     match command {
         Commands::User {
+            ip,
             db,
             new,
-            signup,
-            update,
+            name,
             host,
-            ip,
             port,
             admin,
-            name,
-            username,
             email,
+            signup,
+            update,
+            username,
         } => {
             let pool =  get_conn().await.unwrap();
             let pool = &pool;
@@ -58,20 +58,6 @@ pub async fn handle_cli_user(command: Commands) {
                 if admin.is_some() && admin.unwrap() {
                     // empty for now
                 }
-
-            // } else if signup.is_some() && signup.unwrap() && port.is_some() && ip.is_some() {
-            //     let mut password = String::new();
-            //     let pool = get_sqlite_conn(&SQLITEDB_PATH.to_string()).await.unwrap();
-            //     println!("you are creating a user for a host");
-            //     get_new_pass(&mut password, &name);
-            //     let user = ShortUser {
-            //         name,
-            //         username,
-            //         email,
-            //         password  
-            //     };
-            //     let addr = SocketAddr::new(ip.unwrap(), port.unwrap());
-            //     // signup_process(addr, user, &pool).await.unwrap();
             }else if signup.is_some() && signup.unwrap() && port.is_some() && ip.is_some() {
                 let mut password = String::new();
                 let path = if db.is_some() {

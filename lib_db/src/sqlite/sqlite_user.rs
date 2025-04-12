@@ -54,7 +54,7 @@ pub(crate) async fn check_server_users_num(
     pool: &SqlitePool
 ) -> Result<u64> {
     let sql = format!("
-SELECT count(*)
+SELECT count(*) 
 FROM user 
 where host = '{}' ;
 ",
@@ -83,7 +83,7 @@ pub async fn fetch_sqlite_user_with_server_cpid(
     let sql = format!("
 SELECT * 
 from user 
-WHERE usrname = '{}' AND host = '{}';",
+WHERE usrname = '{}' AND host = '{}' ;",
     escape_user_input(username),
     escape_user_input(cpid),
     );
@@ -157,9 +157,7 @@ impl SqliteUser {
         s: Self,
         pool: &SqlitePool
     ) -> Result<()> {
-        let sql = format!(
-"INSERT INTO user(name, host, cpid, email, paswd, usrname) 
-VALUES ('{}','{}','{}','{}','{}','{}'); ",
+        let sql = format!("INSERT INTO user(name, host, cpid, email, paswd, usrname) VALUES ('{}','{}','{}','{}','{}','{}'); ",
                 s.name,
                 s.host,
                 s.cpid,

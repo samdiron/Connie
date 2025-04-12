@@ -104,7 +104,7 @@ pub async fn handle_cli_request(command: Commands) {
             Port: port,
             post,
             login,
-            Delete,
+            // Delete,
             Domain,
             server_name,
             fetch_files, 
@@ -120,9 +120,9 @@ pub async fn handle_cli_request(command: Commands) {
             if fetch_files.is_some() {
                 command_vec.push(true);
             };
-            if Delete.is_some() {
-                command_vec.push(true);
-            };
+            // if Delete.is_some() {
+            //     command_vec.push(true);
+            // };
             if login.is_some() {
                 command_vec.push(true);
             }
@@ -140,16 +140,17 @@ pub async fn handle_cli_request(command: Commands) {
             };
 
 
-            let db_path = if db.is_some() {
-                let path = db
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .to_string();
+            let db_path = if db.is_none() {
+                debug!("using default sqliteDB ");
+                SQLITEDB_PATH.to_string()
+            } else {
+                let bind = db.unwrap();
+                let stred = bind.to_str().unwrap();
+                let path = stred.to_string();
                 debug!("using db path: {}",&path);
                 path
-            } else {SQLITEDB_PATH.to_string()};
-            let _pool = sqlite::get_sqlite_conn(&db_path)
+            };
+            let _pool = sqlite::get_sqlite_conn(&db_path.to_string())
                 .await
                 .unwrap();
             let pool = &_pool;
