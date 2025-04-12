@@ -84,7 +84,7 @@ pub async fn handle(
     if is_correct_addres == 1 {
         debug!("a client was lost");
         return Ok(1)
-    }if is_correct_addres == SIGNIN_CRED {
+    }else if is_correct_addres == SIGNIN_CRED {
         
         debug!("SERVER: signin request");
         if allow_new_users {
@@ -123,12 +123,15 @@ pub async fn handle(
 
                 stream.write_u8(0).await?;
                 stream.flush().await?;
-                } else {warn!("a user tried to signup then declind")}
             } else {
-                stream.write_u8(UNAUTHORIZED).await?;
-                stream.flush().await?;
+                warn!("a user tried to signup then declind");
             }
-    };
+        } else {
+            stream.write_u8(UNAUTHORIZED).await?;
+            stream.flush().await?;
+        }
+        stream.shutdown().await?;
+    } else {
     let auth_type = stream.read_u8().await?;
     info!("SERVER: C{addr} will auth with {auth_type}");
     match auth_type {
@@ -224,6 +227,6 @@ pub async fn handle(
         _=> {info!("client sent a invalid auth header: {auth_type}")}
     }
 
-    
+    } 
     Ok(0)
 }

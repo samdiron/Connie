@@ -48,12 +48,13 @@ pub async fn fetch_all_media_from_host_number(
     let user = escape_user_input(&user);
     let host = escape_user_input(&host);
     let sql = format!(r#"
-    SELECT
-    count(*) FROM media WHERE cpid = '{user}' AND host = '{host}' ;
+SELECT count(*)
+FROM media 
+WHERE cpid = '{user}' AND host = '{host}' ;
     "#);
     let res = sqlx::query(&sql).fetch_one(pool).await.unwrap();
     drop(sql);
-    let count: i64 =res.get(0usize) ;
+    let count: i64 =res.get(0usize);
     return count as u64
 }
 
@@ -66,7 +67,9 @@ pub async fn fetch_all_media_from_host_smedia(
     let user = escape_user_input(&user);
     let host = escape_user_input(&host);
     let sql = format!(r#"
-    SELECT * FROM media WHERE cpid = '{user}' AND host = '{host}' ;
+SELECT *
+FROM media
+WHERE cpid = '{user}' AND host = '{host}' ;
     "#);
     let rows = sqlx::query(&sql).fetch_all(pool).await?;
     drop(sql);
@@ -99,7 +102,9 @@ pub async fn fetch_all_media_from_host(
     let user = escape_user_input(&user);
     let host = escape_user_input(&host);
     let sql = format!(r#"
-    SELECT * FROM media WHERE cpid = '{user}' AND host = '{host}';
+SELECT * 
+FROM media 
+WHERE cpid = '{user}' AND host = '{host}';
     "#);
     let rows = sqlx::query(&sql).fetch_all(pool).await?;
     drop(sql);
@@ -135,7 +140,11 @@ pub async fn fetch_all_media(
     pool: &SqlitePool
 ) -> Result<Vec<SqliteMedia>> {
     let cpid = escape_user_input(user);
-    let sql = format!("SELECT * FROM media WHERE cpid = '{cpid}';");
+    let sql = format!("
+SELECT * 
+FROM media 
+WHERE cpid = '{cpid}';
+    ");
     let rows = sqlx::query(&sql).fetch_all(pool).await?;
     drop(sql);
     let mut media_vec: Vec<SqliteMedia> = Vec::new();
@@ -174,7 +183,8 @@ pub async fn sqlite_delete_media(
     let cpid = escape_user_input(cpid);
     let checksum = escape_user_input(checksum);
     let sql = format!(r#"
-    DELETE FROM media WHERE cpid = '{}' AND checksum = '{}' AND host = '{}';
+DELETE FROM media
+WHERE cpid = '{}' AND checksum = '{}' AND host = '{}';
     "#,
         cpid,
         checksum,

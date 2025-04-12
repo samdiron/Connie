@@ -48,6 +48,26 @@ CREATE TABLE user(
 );";
 
 
+
+pub(crate) async fn check_server_users_num(
+    server_cpid: &String,
+    pool: &SqlitePool
+) -> Result<u64> {
+    let sql = format!("
+SELECT count(*) 
+FROM user 
+where host = '{}' ;
+",
+    escape_user_input(server_cpid));
+    let res = sqlx::query(&sql)
+        .fetch_one(pool)
+        .await?;
+    let users: i64 = res.get(0usize);
+
+    Ok(users as u64)
+}
+
+
 pub(in crate::sqlite) async fn create_table(pool: &SqlitePool) -> Result<()>{
     debug!("SQLITE: {SQL}");
     sqlx::query(SQL).execute(pool).await.unwrap();
@@ -63,7 +83,7 @@ pub async fn fetch_sqlite_user_with_server_cpid(
     let sql = format!("
 SELECT * 
 from user 
-WHERE usrname = '{}' AND host = '{}';",
+WHERE usrname = '{}' AND host = '{}' ;",
     escape_user_input(username),
     escape_user_input(cpid),
     );
@@ -137,9 +157,7 @@ impl SqliteUser {
         s: Self,
         pool: &SqlitePool
     ) -> Result<()> {
-        let sql = format!(
-"INSERT INTO user(name, host, cpid, email, paswd, usrname) 
-VALUES ('{}','{}','{}','{}','{}','{}'); ",
+        let sql = format!("INSERT INTO user(name, host, cpid, email, paswd, usrname) VALUES ('{}','{}','{}','{}','{}','{}'); ",
                 s.name,
                 s.host,
                 s.cpid,

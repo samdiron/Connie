@@ -54,8 +54,8 @@ pub async fn signup_process(
     let mut stream = get_tlstream(server_name, stream)
         .await?;
     info!("Connected tls");
-    stream.write_u8(SIGNIN_CRED).await?;
-    stream.flush().await?;
+    let d: Vec<u8> = vec![SIGNIN_CRED];
+    wvts(&mut stream, d).await?;
     debug!("sent status to host {SIGNIN_CRED}");
     let will_allow = stream.read_u8().await?;
     if will_allow == 0 {
@@ -78,6 +78,9 @@ pub async fn signup_process(
         SqliteUser::add_user(user, pool).await.unwrap();
         SqliteHost::new(server, pool).await;
 
+        let status = stream.read_u8().await?;
+        assert_eq!(status, 0);
+        stream.shutdown().await?;
     }
     else {
         info!("server did not allow to signup");

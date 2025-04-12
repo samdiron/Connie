@@ -63,7 +63,7 @@ pub enum Commands {
         #[arg(long, short)]
         Ip: Option<IpAddr>,
         
-        #[arg(long, short)]
+        #[arg(long)]
         Domain: Option<String>,
 
         #[arg(long)]
@@ -84,7 +84,7 @@ pub enum Commands {
         #[arg(long, short)]
         all: Option<bool>,
 
-        #[arg(short)]
+        #[arg(short, long)]
         db: Option<PathBuf>,
 
         #[arg(long, short)]
@@ -92,9 +92,9 @@ pub enum Commands {
         
         #[arg(long, short)]
         post: Option<PathBuf>,
-
-        #[arg(long, short)]
-        Delete: Option<bool>,
+        //
+        // #[arg(long)]
+        // Delete: Option<bool>,
         
         #[arg(long, short, default_value="false")]
         create_checksum: Option<bool>,
@@ -158,7 +158,6 @@ pub enum Commands {
         #[arg(long, short)]
         path: Option<PathBuf>,
 
-        
         #[arg(long, short)]
         sqlite_migrations: Option<bool>,
 
@@ -172,7 +171,8 @@ pub enum Commands {
 
 
     User {
-        #[arg(long)]
+
+        #[arg(long, help="this flag creates a user on the postgres database it only works if ")]
         new: Option<bool>,
 
         #[arg(long)]
@@ -181,17 +181,17 @@ pub enum Commands {
         #[arg(long)]
         host: Option<String>,
 
-        #[arg(long)]
+        #[arg(long, help="this flag is for the host ip that you want to signun to ")]
         ip: Option<IpAddr>,
 
         #[arg(long)]
         port: Option<u16>,
         
-        #[arg(long, short)]
+        #[arg(long, short, help="this flag is for signun to a remote machine")]
         signup: Option<bool>,
-        /// this is for when you are trying to enter your account from another machine  
-        // #[arg(long, short)]
-        // signin: Option<bool>,
+        
+        #[arg(long, short,)]
+        db: Option<PathBuf>,
 
         #[arg(long)]
         admin: Option<bool>,
