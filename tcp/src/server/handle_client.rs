@@ -9,10 +9,8 @@ use lib_db::sqlite::{
 };
 
 use common_lib::bincode;
-use common_lib::{
-    gethostname::gethostname,
-    log::{debug, info, warn}
-};
+use common_lib::log::{debug, info, warn};
+
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream
@@ -26,6 +24,7 @@ use std::io::{
     Result,
     ErrorKind,
 };
+
 use crate::common::{
     handshakes, request::{
         FETCH,
@@ -37,24 +36,23 @@ use crate::common::{
     util::server::{read_stream, rvfs, wvts}
 };
 use crate::server::{
-        req_format::{
-            Chead,
-            JwtReq,
-            LoginReq
-        },
-        serving_request::handle_server_request
+    req_format::{
+        Chead,
+        JwtReq,
+        LoginReq
+    },
+    serving_request::handle_server_request
+};
 
-    };
-
-    
 
 
 
 async fn login_create_jwt(
+    request: LoginReq,
+    host_cpid: &String,
     pool: &PgPool,
-    request: LoginReq
 ) -> Result<String> {
-    let is_val = request.validate(pool).await;
+    let is_val = request.validate(host_cpid, pool).await;
     if is_val.is_ok() && is_val.unwrap() == true {
             let jwt = request.token_gen().await.unwrap();
             return Ok(jwt)
@@ -99,14 +97,13 @@ pub async fn handle(
             if confirm == 0 { 
                 let vector = rvfs(&mut stream).await?;
                 let short_user = ShortUser::dz(vector).unwrap();
-                let host = gethostname().to_str().unwrap().to_string();
                 let user = user_struct::User {
                     cpid: String::new(),
                     name: short_user.name,
                     username: short_user.username,
                     password: short_user.password,
                     email: short_user.email,
-                    host,
+                    host: sqlite_host.cpid,
                 };
                 let _user = user.create(&pool).await.unwrap();
                 let sqlite_user = SqliteUser {
@@ -144,7 +141,9 @@ pub async fn handle(
             debug!("SERVER: recved request with size: {}", buf.len());
             
             let jwtreq = JwtReq::dz(buf).expect("could not unwrap struct");
-            let is_valid = jwtreq.validate(&pool).await.unwrap();
+            let is_valid = jwtreq.validate(&sqlite_host.cpid, &pool)
+                    .await
+                    .unwrap();
             if  is_valid {
                 stream.write_u8(0).await?;
                 debug!("SERVER: valid jwt login");
@@ -176,7 +175,11 @@ pub async fn handle(
             let size = stream.read(&mut buf).await?;
             debug!("request size: {}",size);
             let request = LoginReq::dz(buf).expect("could not deserialze");
-            let is_jwt = login_create_jwt(&pool, request).await;
+            let is_jwt = login_create_jwt(
+                    request,
+                    &sqlite_host.cpid,
+                    &pool
+            ).await;
             if is_jwt.is_ok() {
                 let jwt = is_jwt?;
                 debug!("SERVER: login about to compleate");
@@ -207,7 +210,9 @@ pub async fn handle(
             let mut buf = vec![0;600];
             let _size = stream.read(&mut buf).await?;
             let request = Chead::dz(buf).expect("could not deserialze");
-            let is_val = request.validate(&pool).await.unwrap();
+            let is_val = request.validate(&sqlite_host.cpid, &pool)
+                    .await
+                    .unwrap();
             if is_val {
 
                 let data: Vec<Smedia> = media::fetch::get_user_files(

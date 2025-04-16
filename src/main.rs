@@ -1,4 +1,3 @@
-// #![allow(unused_assignments)]
 #![allow(unused_variables)]
 mod cli;
 

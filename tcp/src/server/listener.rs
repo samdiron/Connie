@@ -109,7 +109,8 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
             let total_items_to_remove = items_to_remove.len();
             if total_items_to_remove > 0usize {
                 for i in 1usize..total_items_to_remove+1usize {
-                    let index = items_to_remove.remove(total_items_to_remove-i);
+                    let index = items_to_remove
+                        .remove(total_items_to_remove-i);
                     let handle = handles.remove(index);
                     match handle.await {
                         Ok(..) => {succesful_tasks+=1;}

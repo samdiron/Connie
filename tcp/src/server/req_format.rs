@@ -8,7 +8,7 @@ use lib_db::jwt::{
 
 use lib_db::{
     types::{jwtE, sqlE, PgPool},
-    user::user_struct::validate_claim_wcpid
+    user::validation::validate_claim_wcpid
 };
 
 use common_lib::bincode;
@@ -44,11 +44,12 @@ impl LoginReq {
 
     pub(in crate::server) async fn validate(
         &self,
+        host_cpid: &String,
         pool: &PgPool
     ) -> Result<bool, sqlE> {
-        let paswd = self.paswd.clone();
-        let cpid = self.cpid.clone();
-        let res = validate_claim_wcpid(cpid, paswd, pool).await?;
+        let paswd = &self.paswd;
+        let cpid = &self.cpid;
+        let res = validate_claim_wcpid(cpid, paswd, host_cpid, pool).await?;
         Ok(res)
 
     } 
@@ -94,10 +95,11 @@ impl JwtReq {
 
     pub(in crate::server) async fn validate(
         &self,
+        host_cpid: &String,
         pool: &PgPool
     ) -> Result<bool, sqlE> {
         let token = &self.jwt;
-        let state = validate_jwt_claim(token, pool).await;
+        let state = validate_jwt_claim(token, host_cpid, pool).await;
         Ok(state)
     }
 
@@ -123,10 +125,11 @@ impl Chead {
     
     pub(in crate::server) async fn validate(
         &self,
+        host_cpid: &String,
         pool: &PgPool
     ) -> Result<bool, sqlE> {
         let token = &self.jwt;
-        let state = validate_jwt_claim(token, pool).await;
+        let state = validate_jwt_claim(token, host_cpid, pool).await;
         Ok(state)
     }
 
