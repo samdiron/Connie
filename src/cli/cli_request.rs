@@ -17,6 +17,7 @@ use common_lib::{
     log::{debug, error, info},
 };
 
+use lib_db::sqlite::sqlite_jwt::check_jwt_status;
 use lib_db::{
     types::SqlitePool,
     media::fetch::Smedia,
@@ -180,6 +181,11 @@ pub async fn handle_cli_request(command: Commands) {
             ).await.expect("could not fetch user");
 
             if fetch_files.is_some(){
+                let status = check_jwt_status(&usr.cpid, &server.cpid, pool).await;
+                if !status {
+                    error!("you have no available token please login first");
+                    exit(1)
+                };
                 debug!("fetching files");
                 let jwt = sqlite::sqlite_jwt::get_jwt(
                     &server.cpid,
@@ -235,7 +241,11 @@ pub async fn handle_cli_request(command: Commands) {
                 
 
             } else if post.is_some() { 
-
+                let status = check_jwt_status(&usr.cpid, &server.cpid, pool).await;
+                if !status {
+                    error!("you have no available token please login first");
+                    exit(1)
+                };
                 debug!("creating a checksum: {checksum}");
                 let request: RQM = RQM::create(
                     post.unwrap(),
@@ -264,6 +274,11 @@ pub async fn handle_cli_request(command: Commands) {
 
                 println!("done {}", res);
             } else if get.is_some() {
+                let status = check_jwt_status(&usr.cpid, &server.cpid, pool).await;
+                if !status {
+                    error!("you have no available token please login first");
+                    exit(1)
+                };
                 let _media_vec = fetch_all_media_from_host(
                     &server.cpid,
                     &usr.cpid,

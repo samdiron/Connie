@@ -85,7 +85,6 @@ pub async fn get_files(
     let items = stream.read_u16().await.unwrap();
     let mut media_from_server: Vec<Smedia> = vec![];
 
-    println!("media");
     for _i in 0..items {
         
         let buf = rvfs(&mut stream).await?;

@@ -67,7 +67,8 @@ pub async fn client_process(
         }
 
     }
-    else if jwt.is_some() {
+    else {
+        assert!(jwt.is_some());
         let conn = Connection {
             jwt,
             user: usr,
@@ -76,15 +77,7 @@ pub async fn client_process(
             server
         };
         conn
-    } else {
-        Connection {
-            jwt: None,
-            user: usr,
-            ip,
-            port,
-            server,
-        }
-    };
+    };  
     let request = if request.is_some() {
         request
     } else {
