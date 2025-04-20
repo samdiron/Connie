@@ -1,8 +1,7 @@
 use uuid::Uuid;
 use sqlx::{PgPool, Result};
 
-use crate::sha256::digest;
-use crate::escape_user_input;
+use crate::{escape_user_input, hash_passwords};
 
 pub struct User {
     pub cpid: String,
@@ -16,7 +15,7 @@ pub struct User {
 impl User {
     pub async fn create(self, pool: &PgPool) -> Result<User, sqlx::Error> {
         let cpid = Uuid::new_v4().to_string();
-        let pass = digest(self.password);
+        let pass = hash_passwords(self.password);
 
 
         let table = r#" "user" "#;

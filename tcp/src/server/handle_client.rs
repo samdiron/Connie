@@ -111,7 +111,6 @@ pub async fn handle(
                     name: _user.name,
                     host: _user.host,
                     email: _user.email,
-                    paswd: _user.password,
                     usrname: _user.username,
                 };
                 let user_vector = sqlite_user.sz().unwrap();

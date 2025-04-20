@@ -35,7 +35,7 @@ struct Cli {
     #[arg(long, short, default_value="false")]
     tui: Option<bool>,
 
-    #[arg(long, short, default_value="1")]
+    #[arg(long, short, default_value="2")]
     verbose: Option<u8>,
 
     #[arg(long, short, default_value = "false")]
@@ -88,19 +88,22 @@ async fn main() {
     if _cli.verbose.is_some() {
         match _cli.verbose.unwrap() {
             0 => {
+
+            }
+            1 => {
             env_logger::Builder::new()
                     .parse_filters("WARN")
                     .parse_filters("ERROR")
                     .init();
             }
-            1 => {
+            2 => {
             env_logger::Builder::new()
                     .parse_filters("WARN")
                     .parse_filters("ERROR")
                     .parse_filters("INFO")
                     .init();
             }
-            2 => {
+            3 => {
             env_logger::Builder::new()
                     .parse_filters("WARN")
                     .parse_filters("ERROR")
@@ -116,8 +119,7 @@ async fn main() {
             }
         }
 
-    }
-    
+    }   
     
     if let Some(command) = _cli.config {
         config_handle(command).await;

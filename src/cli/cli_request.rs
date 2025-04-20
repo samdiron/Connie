@@ -17,6 +17,7 @@ use common_lib::{
     log::{debug, error, info},
 };
 
+use lib_db::hash_passwords;
 use lib_db::sqlite::sqlite_jwt::check_jwt_status;
 use lib_db::{
     types::SqlitePool,
@@ -38,6 +39,7 @@ use lib_db::sqlite::sqlite_media::{
     fetch_all_media_from_host_smedia,
 };
 
+use tcp::client::client::client_login_process;
 use tcp::{
     client::{
         fetcher,
@@ -46,7 +48,7 @@ use tcp::{
     types::{GET, POST, RQM},
 };
 
-use crate::Commands;
+use crate::{get_pass, Commands};
 
 
 async fn file_checker(
@@ -269,7 +271,6 @@ pub async fn handle_cli_request(command: Commands) {
                     ip,
                     None,
                     request,
-                    None
                 ).await.unwrap();
 
                 println!("done {}", res);
@@ -355,7 +356,6 @@ pub async fn handle_cli_request(command: Commands) {
                         ip,
                         Some(checksum),
                         request.clone(),
-                        None
 
                     ).await.unwrap();
 
@@ -369,28 +369,23 @@ pub async fn handle_cli_request(command: Commands) {
                             ip,
                             Some(checksum),
                             request,
-                            None
                         ).await.unwrap()
 
                     }else {res};
                     info!("STATUS: {res}");
                 }
             } else if login.is_some() && login.unwrap() {
-
-                if all.is_none() {
-                    client_process(
-                        _pool,
-                        usr,
-                        server,
-                        port,
-                        ip,
-                        None, // checksum
-                        None, // request
-                        Some(true) // the login request 
-                    ).await.unwrap();
-
-                    
-                }
+                let mut passwd = String::new();
+                let pass = get_pass(&mut passwd, &usr.name);
+                let passwd = hash_passwords(passwd);
+                client_login_process(
+                    pool,
+                    usr,
+                    server,
+                    port,
+                    ip,
+                    passwd
+                ).await.unwrap();
             }
             else {
                 error!("you did not enter a command to execute")

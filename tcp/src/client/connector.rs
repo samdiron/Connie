@@ -158,142 +158,155 @@ async fn get_stream(
     }
 } 
 
+
+
+pub async fn login_request(
+    pool: &SqlitePool,
+    conn: Connection,
+    passwd: String,
+) -> Result<u8> {
+    assert!(conn.jwt.is_none());
+    info!("deleting old jwts");
+
+    delete_user_jwt(
+        pool,
+        &conn.user.cpid,
+        &conn.server.cpid
+    ).await;
+    let name  = conn.user.usrname;
+    let cpid = conn.user.cpid;
+    let req = LoginReq {
+        cpid: cpid.clone(),
+        name: name.clone(),
+        paswd: passwd,
+    };
+    debug!(
+        "login request name:{}, cpid:{} ;",
+        &name, &cpid
+    );
+    let request = req.sz().unwrap();
+    let (stream, _addr) = get_stream(
+        &conn.server,
+        conn.port,
+        conn.ip
+    ).await?;
+    let mut stream = get_tlstream(_addr, stream)
+        .await
+        .expect("could not connect tls");
+    let is_who_server = handshakes::client(
+        &mut stream,
+        &conn.server,
+        pool
+    ).await?;
+    if is_who_server != 0 {
+        exit(1);
+    };
+    
+    stream.write_u8(LOGIN_CRED).await?;
+
+    stream.flush().await?;
+    let reques_len = request.len();
+    debug!("login request size: {:?}", reques_len);
+    let size = stream.write(&request).await?;
+    stream.flush().await?;
+    debug!("request was sent: bytes sent {:?}",size);
+    assert_eq!(size, reques_len);
+    debug_assert_eq!(size, reques_len);
+    drop(request);
+
+    let what = stream.read_u8().await?;
+    debug!("SERVER: {}",what);
+    if what == 0 {
+        let mut jwt_buf = vec![0;500];
+        let size = stream.read(&mut jwt_buf).await.unwrap();
+        let jwt = String::from_utf8(
+            jwt_buf[..size]
+                .to_vec()
+        ).unwrap();
+        add_jwt(&conn.server.cpid, &jwt, &cpid, pool).await;
+        stream.write_u8(0).await?;
+        drop(stream);
+        return Ok(8)
+    }
+    else {
+        match what {
+            UNAUTHORIZED => {
+                error!(
+                "SERVER: you are not authorized to log in
+                    check if you are an already a in the db used by the server 
+                    will exit not with status of 1"
+                );
+                exit(1) 
+                
+            } 
+            _ => {Ok(44)}
+        }
+    }
+}
+
 pub async fn connect_tcp(
     pool: &SqlitePool,
     conn: Connection,
     check_for_sum: Option<bool>,
     rqm: Option<RQM>
 ) -> Result<u8> {
-    if conn.jwt.is_none(){
-        info!("deleting old jwts");
-        delete_user_jwt(pool, &conn.user.cpid, &conn.server.cpid).await;
-        debug!("no jwt will try to login ");
-        let name  = conn.user.usrname;
-        let cpid = conn.user.cpid;
-        let paswd = conn.user.paswd;
-        let req = LoginReq {
-            cpid: cpid.clone(),
-            name: name.clone(),
-            paswd: paswd.clone(),
-        };
-        debug!(
-            "login request name:{}, cpid:{}, password:{} ;",
-            &name, &cpid, &paswd
-        );
-        let request = req.sz().unwrap();
-        let (stream, _addr) = get_stream(
-            &conn.server,
-            conn.port,
-            conn.ip
-        ).await?;
-        let mut stream = get_tlstream(_addr, stream)
-            .await
-            .expect("could not connect tls");
-        let is_who_server = handshakes::client(
-            &mut stream,
-            &conn.server,
-            pool
-        ).await?;
-        if is_who_server != 0 {
-            exit(1);
-        };
+    debug!("Will use jwt auth");
+    assert!(rqm.is_some());
+    assert!(conn.jwt.is_some());
+
+    let rqm = rqm.unwrap();
+    let jwt = conn.jwt.unwrap();
+    let req = JwtReq {
+        jwt,
+        request: rqm.clone()
+    };
+    let extra_jwt = req.jwt.clone();
+    let request = req.sz().unwrap();
+
+    let (
+        stream,
+        tls_server_name
+    ) = get_stream(&conn.server, conn.port, conn.ip).await?;
+    let mut stream = get_tlstream(tls_server_name, stream).await?;
         
-        stream.write_u8(LOGIN_CRED).await?;
+    let is_who_server = handshakes::client(
+        &mut stream,
+        &conn.server,
+        pool
+    ).await?;
+    if is_who_server != 0 {
+        exit(1);
+    };
 
-        stream.flush().await?;
-        let reques_len = request.len();
-        debug!("login request size: {:?}", reques_len);
-        let size = stream.write(&request).await?;
-        stream.flush().await?;
-        debug!("request was sent: bytes sent {:?}",size);
-        assert_eq!(size, reques_len);
-        debug_assert_eq!(size, reques_len);
-        drop(request);
-
-        let what = stream.read_u8().await?;
-        debug!("SERVER: {}",what);
-        if what == 0 {
-            let mut jwt_buf = vec![0;500];
-            let size = stream.read(&mut jwt_buf).await.unwrap();
-            let jwt = String::from_utf8(
-                jwt_buf[..size]
-                    .to_vec()
-            ).unwrap();
-            add_jwt(&conn.server.cpid, &jwt, &cpid, pool).await;
-            stream.write_u8(0).await?;
-            drop(stream);
-            return Ok(8)
-        }
-        else {
-            match what {
-                UNAUTHORIZED => {
-                    error!(
-                    "SERVER: you are not authorized to log in
-                        check if you are an already a in the db used by the server 
-                        will exit not with status of 1"
-                    );
-                    exit(1) 
-                    
-                } 
-                _ => {Ok(44)}
-            }
-        }
-    } else {
-        assert_eq!(rqm.is_some(), true);
-        let rqm = rqm.unwrap();
-        debug!("Will use jwt auth");
-        let jwt = conn.jwt.unwrap();
-        let req = JwtReq {
-            jwt,
-            request: rqm.clone()
-        };
-        let extra_jwt = req.jwt.clone();
-        let request = req.sz().unwrap();
-
-        let (
-            stream,
-            tls_server_name
-        ) = get_stream(&conn.server, conn.port, conn.ip).await?;
-        let mut stream = get_tlstream(tls_server_name, stream).await?;
-         
-        let is_who_server = handshakes::client(
-            &mut stream,
-            &conn.server,
-            pool
-        ).await?;
-        if is_who_server != 0 {
-            exit(1);
-        };
-
-         
-        stream.write_u8(JWT_AUTH).await?;
-        stream.flush().await?;
-        debug!("sent auth state {}",JWT_AUTH);
-        let size = stream.write(&request).await?;
-        stream.flush().await?;
-        let is_valid = stream.read_u8().await?;
-        if is_valid != 0 {
-            delete_jwt(&extra_jwt, pool).await.unwrap();
-            info!("there was an unexpected jwt change please run the same command again or use the login flag(-l or --login ) with true ");
-            exit(UNAUTHORIZED as i32)
-        };
-        info!("sent full request with size: {:?}",size);
-        let state = handle_client_request(
-            &mut stream,
-            rqm,
-            conn.server.cpid,
-            check_for_sum,
-            pool
-        ).await.unwrap();
-        if state == 0 {
-            info!("request request was succesful");
-        }
-        else {
-            warn!("a request was unsuccesful");
-            println!("a request was unsuccesful");
-            return Ok(1);
-        }
         
-        Ok(0)
+    stream.write_u8(JWT_AUTH).await?;
+    stream.flush().await?;
+    debug!("sent auth state {}",JWT_AUTH);
+    let size = stream.write(&request).await?;
+    stream.flush().await?;
+    let is_valid = stream.read_u8().await?;
+    if is_valid != 0 {
+        delete_jwt(&extra_jwt, pool).await.unwrap();
+        info!("there was an unexpected jwt change please run the login request flag(-l or --login ) with true ");
+        exit(UNAUTHORIZED as i32)
+    };
+
+    info!("sent full request with size: {:?}",size);
+    let state = handle_client_request(
+        &mut stream,
+        rqm,
+        conn.server.cpid,
+        check_for_sum,
+        pool
+    ).await.unwrap();
+    if state == 0 {
+        info!("request request was succesful");
     }
+    else {
+        warn!("a request was unsuccesful");
+        println!("a request was unsuccesful");
+        return Ok(1);
+    }
+    
+    Ok(0)
 }

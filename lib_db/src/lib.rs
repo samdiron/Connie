@@ -8,11 +8,20 @@ pub mod user;
 
 #[allow(unused_imports)]
 pub(crate) use common_lib::sha256;
+use common_lib::sha256::digest;
 
 pub(crate) fn escape_user_input(s: &String) -> String{
     let ns = s.replace("'", "");
     ns
 }
+
+
+pub fn hash_passwords(s: String) -> String {
+    let hashed = digest(s);
+    hashed
+}
+
+
 
 /// this lib provides a sqlite db for the client to make it easer for 
 /// non technical users

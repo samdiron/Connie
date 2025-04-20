@@ -33,7 +33,6 @@ pub struct SqliteUser {
     pub host: String,
     pub cpid: String,
     pub email: String,
-    pub paswd: String,
     pub usrname: String,
 }
 
@@ -43,7 +42,6 @@ CREATE TABLE user(
     host TEXT,
     cpid TEXT,
     email TEXT,
-    paswd TEXT,
     usrname TEXT
 );";
 
@@ -95,14 +93,12 @@ WHERE usrname = '{}' AND host = '{}' ;",
         let host: String = res.get("host");
         let cpid: String = res.get("cpid");
         let email: String = res.get("email");
-        let paswd: String = res.get("paswd");
         let usrname: String = res.get("usrname");
         let user = SqliteUser {
             name,
             host,
             cpid,
             email,
-            paswd,
             usrname,
         };
         return Ok(user);
@@ -134,14 +130,12 @@ WHERE usrname = '{}' AND paswd = '{}';",
         let host: String = res.get("host");
         let cpid: String = res.get("cpid");
         let email: String = res.get("email");
-        let paswd: String = res.get("paswd");
         let usrname: String = res.get("usrname");
         let user = SqliteUser {
             name,
             host,
             cpid,
             email,
-            paswd,
             usrname,
         };
         return Ok(user);
@@ -157,12 +151,12 @@ impl SqliteUser {
         s: Self,
         pool: &SqlitePool
     ) -> Result<()> {
-        let sql = format!("INSERT INTO user(name, host, cpid, email, paswd, usrname) VALUES ('{}','{}','{}','{}','{}','{}'); ",
+        let sql = format!(
+            "INSERT INTO user(name, host, cpid, email, usrname) VALUES ('{}','{}','{}','{}','{}'); ",
                 s.name,
                 s.host,
                 s.cpid,
                 s.email,
-                s.paswd,
                 s.usrname,
         );
         sqlx::query(&sql).execute(pool).await?;
