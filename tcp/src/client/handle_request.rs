@@ -21,7 +21,7 @@ use common_lib::tokio::{
 use lib_db::types::SqlitePool;
 use lib_db::jwt::get_current_timestamp;
 use lib_db::media::checksum::{get_fsum, get_size};
-use lib_db::sqlite::sqlite_media::SqliteMedia;
+use lib_db::sqlite::sqlite_media::{sqlite_delete_media, SqliteMedia};
 
 use crate::types::RQM;
 use crate::common::ClientTlsStreams;
@@ -30,6 +30,7 @@ use crate::common::request::{
     GET,
     POST, 
     NO_VAL,
+    DELETE,
     SUCCESFUL,
     NOT_FOUND,
     READY_STATUS,
@@ -92,7 +93,10 @@ pub async fn handle_client_request(
                     path,
                 };
                 SqliteMedia::add_media(sqlitem, pool).await.unwrap();
-                info!("CLIENT: file sent succefully; size of file {}",request.size);
+                info!(
+                    "CLIENT: file sent succefully; size of file {}",
+                    request.size
+                );
             }else {
                 warn!("CLIENT:ERROR: server did not recv data the same");
             }
@@ -156,6 +160,20 @@ pub async fn handle_client_request(
                 error!("SERVER SIDE MEDIA NOT FOUND code:{NOT_FOUND}");
             }
                 _ => {}
+        }
+    }
+    DELETE => {
+        status = stream.read_u8().await?;
+        if status == NOT_FOUND {
+            error!("server sent not found status; \n did you refreash the list first ?");
+        }
+        if status == 0 {
+            sqlite_delete_media(
+                    &host_cpid,
+                    &request.cpid,
+                    &request.chcksum,
+                    pool
+            ).await;
         }
     }
        _ => {}

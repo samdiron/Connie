@@ -180,10 +180,6 @@ pub async fn login_request(
         name: name.clone(),
         paswd: passwd,
     };
-    debug!(
-        "login request name:{}, cpid:{} ;",
-        &name, &cpid
-    );
     let request = req.sz().unwrap();
     let (stream, _addr) = get_stream(
         &conn.server,
@@ -214,9 +210,9 @@ pub async fn login_request(
     debug_assert_eq!(size, reques_len);
     drop(request);
 
-    let what = stream.read_u8().await?;
-    debug!("SERVER: {}",what);
-    if what == 0 {
+    let confirm = stream.read_u8().await?;
+    debug!("SERVER: {}",confirm);
+    if confirm == 0 {
         let mut jwt_buf = vec![0;500];
         let size = stream.read(&mut jwt_buf).await.unwrap();
         let jwt = String::from_utf8(
@@ -226,10 +222,10 @@ pub async fn login_request(
         add_jwt(&conn.server.cpid, &jwt, &cpid, pool).await;
         stream.write_u8(0).await?;
         drop(stream);
-        return Ok(8)
+        return Ok(0)
     }
     else {
-        match what {
+        match confirm {
             UNAUTHORIZED => {
                 error!(
                 "SERVER: you are not authorized to log in

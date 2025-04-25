@@ -6,9 +6,7 @@ use std::path::PathBuf;
 use lib_db::types::PgPool;
 use lib_db::media::checksum::{get_fsum, get_size};
 use lib_db::media::media::{
-    check_if_media_exist,
-    delete_media,
-    Media
+    check_if_media_exist, check_if_media_exist_wchecksum, delete_media, Media
 };
 
 use common_lib::path::DATA_DIR;
@@ -149,32 +147,22 @@ pub async  fn handle_server_request(
             }
         }
         DELETE => {
-            if check_if_media_exist(
-                &request.cpid,
-                host_cpid,
-                &request.name,
-                &request.type_,
-                request.size,
+            let media = Media {
+                name: request.name,
+                size: request.size,
+                cpid: request.cpid,
+                type_: request.type_,
+                checksum: request.chcksum,
+                path: String::new(),
+                in_host: host_cpid.clone()
+            };
+            if check_if_media_exist_wchecksum(
+                &media,
                 pool
             ).await {
-                let name = request.name;
-                let cpid = request.cpid;
-                let in_host = host_cpid.clone();
-                let type_ = request.type_;
-                let size = request.size;
-                let checksum = request.chcksum;
-                let path = String::new();
-                let media = Media {
-                    name,
-                    cpid,
-                    size,
-                    type_,
-                    in_host,
-                    checksum,
-                    path
-                };
                 let rows = delete_media(media, pool).await.unwrap();
-                assert!(rows < 2);
+                assert!(rows == 1);
+
             } else {
                 stream.write_u8(NOT_FOUND).await?;
                 stream.flush().await?;

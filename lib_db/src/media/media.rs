@@ -15,6 +15,36 @@ pub struct Media {
 
 }
 
+
+pub async fn check_if_media_exist_wchecksum(
+    media: &Media,
+    pool: &PgPool
+) -> bool {
+    let sql = format!("
+SELECT count(1) FROM media
+WHERE size = {} 
+AND in_host = '{}' 
+AND cpid = '{}'
+AND checksum = '{}' ;",
+        media.size,
+        escape_user_input(&media.in_host),
+        escape_user_input(&media.cpid),
+        escape_user_input(&media.checksum),
+);
+     let _count = sqlx::query(&sql).fetch_one(pool).await;
+    drop(sql);
+    if _count.is_err() {return false}else {
+    let count: i64 = _count.unwrap().get("count");
+    if count == 1 {
+        return true
+    } else {
+        return false
+    }
+    }
+
+}
+
+
 pub async fn check_if_media_exist(
     cpid: &String,
     host: &String,

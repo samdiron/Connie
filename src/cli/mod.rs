@@ -92,10 +92,10 @@ pub enum Commands {
         
         #[arg(long, short)]
         post: Option<PathBuf>,
-        //
-        // #[arg(long)]
-        // Delete: Option<bool>,
-        
+
+        #[arg(long)]
+        Delete: Option<bool>,
+
         #[arg(long, short, default_value="false")]
         create_checksum: Option<bool>,
 

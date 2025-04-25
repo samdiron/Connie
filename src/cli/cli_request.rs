@@ -11,6 +11,7 @@ use std::{
     process::exit,
 };
 
+use common_lib::log::warn;
 use common_lib::{
     public_ip,
     path::SQLITEDB_PATH,
@@ -40,6 +41,7 @@ use lib_db::sqlite::sqlite_media::{
 };
 
 use tcp::client::client::client_login_process;
+use tcp::types::DELETE;
 use tcp::{
     client::{
         fetcher,
@@ -107,7 +109,7 @@ pub async fn handle_cli_request(command: Commands) {
             Port: port,
             post,
             login,
-            // Delete,
+            Delete,
             Domain,
             server_name,
             fetch_files, 
@@ -123,9 +125,9 @@ pub async fn handle_cli_request(command: Commands) {
             if fetch_files.is_some() {
                 command_vec.push(true);
             };
-            // if Delete.is_some() {
-            //     command_vec.push(true);
-            // };
+            if Delete.is_some() {
+                command_vec.push(true);
+            };
             if login.is_some() {
                 command_vec.push(true);
             }
@@ -183,7 +185,11 @@ pub async fn handle_cli_request(command: Commands) {
             ).await.expect("could not fetch user");
 
             if fetch_files.is_some(){
-                let status = check_jwt_status(&usr.cpid, &server.cpid, pool).await;
+                let status = check_jwt_status(
+                    &usr.cpid,
+                    &server.cpid,
+                    pool
+                ).await;
                 if !status {
                     error!("you have no available token please login first");
                     exit(1)
@@ -243,7 +249,11 @@ pub async fn handle_cli_request(command: Commands) {
                 
 
             } else if post.is_some() { 
-                let status = check_jwt_status(&usr.cpid, &server.cpid, pool).await;
+                let status = check_jwt_status(
+                    &usr.cpid,
+                    &server.cpid,
+                    pool
+                ).await;
                 if !status {
                     error!("you have no available token please login first");
                     exit(1)
@@ -274,8 +284,13 @@ pub async fn handle_cli_request(command: Commands) {
                 ).await.unwrap();
 
                 println!("done {}", res);
+                info!("STATUS: {res}");
             } else if get.is_some() {
-                let status = check_jwt_status(&usr.cpid, &server.cpid, pool).await;
+                let status = check_jwt_status(
+                    &usr.cpid,
+                    &server.cpid,
+                    pool
+                ).await;
                 if !status {
                     error!("you have no available token please login first");
                     exit(1)
@@ -291,94 +306,145 @@ pub async fn handle_cli_request(command: Commands) {
                     info!("you don't have any files in said host");
                     exit(0)
                     
-                }else {
+                };
+                let mv = _media_vec.unwrap();
+                let mut i = 0;
 
-                    let mv = _media_vec.unwrap();
-                    let mut i = 0;
+                for m in &mv {
+                    i+=1;
+                    println!("{i}(name: {}\n type: {}\nsize: {:.4}MB checksum: {}\n)",
+                        m.name,
+                        m.type_,
+                        (m.size as f64 / 1000 as f64) / 1000 as f64,
+                        m.checksum
+                    );
+                };
 
-                    for m in &mv {
-                        i+=1;
-                        println!("{i}(name: {}\n type: {}\nsize: {:.4}MB checksum: {}\n)",
-                            m.name,
-                            m.type_,
-                            (m.size as f64 / 1000 as f64) / 1000 as f64,
-                            m.checksum
-                        );
-                    };
+                print!("enter the index of media you want: ");
+                stdout().flush().unwrap();
+                let mut buf =  String::new();
+                let size = stdin().read_line(&mut buf).unwrap();
 
-                    print!("enter the index of media you want: ");
-                    stdout().flush().unwrap();
-                    let mut buf =  String::new();
-                    let size = stdin().read_line(&mut buf).unwrap();
+                let index = buf.trim_ascii_end();
+                println!("you chose {index}");
 
-                    let index = buf.trim_ascii_end();
-                    println!("you chose {index}");
-
-                    let user_index:u32 = index.parse().unwrap();
-                    let index = user_index - 1;
-                    let m: SqliteMedia = mv[index as usize ].clone();
-                    let getp = get.unwrap();
-                    let path = if getp == PathBuf::from("./") {
-                        format!("./{}", &m.name)
-                    } else {
-                        let path: String;
-                        if getp.is_dir() {
-                            let string_path = getp.to_str().unwrap();
-                            if string_path.ends_with("/") {
-                                path = format!("{string_path}{}",m.name);
-                            }else {
-                                path = format!("{string_path}/{}",m.name);
-                            };
-                        } else {
-                            path = getp.to_str().unwrap().to_string();
+                let user_index:u32 = index.parse().unwrap();
+                let index = user_index - 1;
+                let m: SqliteMedia = mv[index as usize ].clone();
+                let getp = get.unwrap();
+                let path = if getp == PathBuf::from("./") {
+                    format!("./{}", &m.name)
+                } else {
+                    let path: String;
+                    if getp.is_dir() {
+                        let string_path = getp.to_str().unwrap();
+                        if string_path.ends_with("/") {
+                            path = format!("{string_path}{}",m.name);
+                        }else {
+                            path = format!("{string_path}/{}",m.name);
                         };
-                        path
-
-
+                    } else {
+                        path = getp.to_str().unwrap().to_string();
                     };
+                    path
 
-                    let request = RQM {
-                        cpid: m.cpid,
-                        name: m.name,
-                        size: m.size,
-                        type_: m.type_,
-                        header: GET.to_string(),
-                        chcksum: m.checksum,
-                        path: Some(path),
-                    };
 
-                    let request = Some(request);
-                    let res = client_process(
-                        _pool.clone(),
-                        usr.clone(),
-                        server.clone(),
-                        port,
-                        ip,
-                        Some(checksum),
-                        request.clone(),
+                };
 
-                    ).await.unwrap();
+                let request = RQM {
+                    cpid: m.cpid,
+                    name: m.name,
+                    size: m.size,
+                    type_: m.type_,
+                    header: GET.to_string(),
+                    chcksum: m.checksum,
+                    path: Some(path),
+                };
 
-                    let res = if res == 8 {
-                        info!("will connect again");
-                        client_process(
-                            _pool,
-                            usr,
-                            server,
-                            port,
-                            ip,
-                            Some(checksum),
-                            request,
-                        ).await.unwrap()
+                let request = Some(request);
+                let res = client_process(
+                    _pool.clone(),
+                    usr.clone(),
+                    server.clone(),
+                    port,
+                    ip,
+                    Some(checksum),
+                    request.clone(),
 
-                    }else {res};
-                    info!("STATUS: {res}");
-                }
-            } else if login.is_some() && login.unwrap() {
+                ).await.unwrap();
+
+                info!("STATUS: {res}");
+            } else if Delete.is_some() && Delete.unwrap() {
+                let status = check_jwt_status(
+                    &usr.cpid,
+                    &server.cpid,
+                    pool
+                ).await;
+                if !status {
+                    error!("you have no available token please login first");
+                    exit(1)
+                };
+                let _media_vec = fetch_all_media_from_host(
+                    &server.cpid,
+                    &usr.cpid,
+                    pool
+                ).await;
+                if _media_vec.is_err() {
+                    let e = _media_vec.err().unwrap();
+                    error!("database error: {}",e.to_string());
+                    info!("you don't have any files in said host");
+                    exit(0)
+                    
+                };
+                let mv = _media_vec.unwrap();
+                let mut i = 0;
+                
+                for m in &mv {
+                    i+=1;
+                    println!("{i}(name: {}\n type: {}\nsize: {:.4}MB checksum: {}\n)",
+                        m.name,
+                        m.type_,
+                        (m.size as f64 / 1000 as f64) / 1000 as f64,
+                        m.checksum
+                    );
+                };
+                warn!("you are doing a delete request");
+                print!("enter the index of media you want: ");
+                stdout().flush().unwrap();
+                let mut buf =  String::new();
+                let size = stdin().read_line(&mut buf).unwrap();
+
+                let index = buf.trim_ascii_end();
+                println!("you chose {index}");
+
+                let user_index:u32 = index.parse().unwrap();
+                let index = user_index - 1;
+                let m: SqliteMedia = mv[index as usize ].clone();
+                let request = RQM {
+                    size: m.size,
+                    cpid: m.cpid,
+                    name: m.name,
+                    type_: m.type_,
+                    header: DELETE.to_string(),
+                    chcksum: m.checksum,
+                    path: Some(m.path),
+                };
+                let request = Some(request);
+                let res = client_process(
+                    _pool,
+                    usr,
+                    server,
+                    port,
+                    ip,
+                    Some(false),
+                    request
+                ).await.unwrap();
+            
+            }else if login.is_some() && login.unwrap() {
                 let mut passwd = String::new();
                 let pass = get_pass(&mut passwd, &usr.name);
                 let passwd = hash_passwords(passwd);
-                client_login_process(
+                let res = client_login_process(
                     pool,
                     usr,
                     server,
@@ -386,6 +452,8 @@ pub async fn handle_cli_request(command: Commands) {
                     ip,
                     passwd
                 ).await.unwrap();
+                info!("STATUS: {res}");
+                
             }
             else {
                 error!("you did not enter a command to execute")
