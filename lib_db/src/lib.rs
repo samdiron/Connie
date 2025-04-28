@@ -11,7 +11,10 @@ pub(crate) use common_lib::sha256;
 use common_lib::sha256::digest;
 
 pub(crate) fn escape_user_input(s: &String) -> String{
+    // removing sigle quotes
     let ns = s.replace("'", "");
+    // removing double quotes
+    let ns = ns.replace(r#"""#, r#"""#);
     ns
 }
 

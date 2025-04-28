@@ -1,12 +1,16 @@
 
 use std::io::Result;
-use std::fs::metadata;
+use std::str::FromStr;
 use std::path::PathBuf;
+use std::fs::{metadata, remove_file};
 
 use lib_db::types::PgPool;
 use lib_db::media::checksum::{get_fsum, get_size};
 use lib_db::media::media::{
-    check_if_media_exist, check_if_media_exist_wchecksum, delete_media, Media
+    Media,
+    delete_media,
+    check_if_media_exist,
+    check_if_media_exist_wchecksum,
 };
 
 use common_lib::path::DATA_DIR;
@@ -20,16 +24,16 @@ use crate::types::RQM;
 use crate::common::ServerTlsStreams;
 use crate::common::util::server::{wffb, wifb, wvts};
 use crate::common::request::{
-    DATA_NOT_MATCH,
     GET,
-    DELETE,
     POST,
-    MEDIA_ALREADY_EXISTS,
-    NOT_FOUND,
+    DELETE,
     NO_VAL,
+    NOT_FOUND,
+    SUCCESFUL,
     READY_STATUS,
+    DATA_NOT_MATCH,
     SERVER_SIDE_ERR,
-    SUCCESFUL
+    MEDIA_ALREADY_EXISTS,
 };
 
 
@@ -160,8 +164,17 @@ pub async  fn handle_server_request(
                 &media,
                 pool
             ).await {
-                let rows = delete_media(media, pool).await.unwrap();
+                let db_media = Media::get(
+                    host_cpid,
+                    &media.cpid,
+                    &media.checksum,
+                    pool
+                ).await.unwrap();
+                let path = PathBuf::from_str(&db_media.path).unwrap();
+                info!("deleteing: {}", &db_media.path);
+                let rows = delete_media(db_media, pool).await.unwrap();
                 assert!(rows == 1);
+                remove_file(path).unwrap();
 
             } else {
                 stream.write_u8(NOT_FOUND).await?;

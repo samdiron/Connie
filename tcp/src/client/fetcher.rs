@@ -2,6 +2,7 @@
 use std::io::Result;
 use std::process::exit;
 use std::net::{IpAddr, SocketAddr};
+use std::str::FromStr;
 
 use lib_db::{
     media::fetch::Smedia, 
@@ -41,19 +42,47 @@ pub async fn get_files(
     u: &SqliteUser,
     server: &SqliteHost,
     jwt: String,
+    custom_port: Option<u16>,
+    custom_ip: Option<IpAddr>,
     pool: &SqlitePool
 ) -> Result<Vec<Smedia>> {
-    let port = server.port;
-    let me_pub_ip = public_ip::addr().await;
+    let port = if custom_port.is_some() {
+        debug!("using custom port");
+        custom_port.unwrap()
+    } else {
+        debug!("using server default port: {}",server.port);
+        server.port
+    };
+
+    let server_pub_ip: IpAddr = server.pub_ip.parse().unwrap();
+    let server_pri_ip: IpAddr = server.pri_ip.parse().unwrap();
+
+    let bind_me_pub_ip = public_ip::addr().await;
+    let me_pub_ip = if bind_me_pub_ip.is_some() {
+        bind_me_pub_ip.unwrap()
+    } else {
+        IpAddr::from_str("0.0.0.0").unwrap()
+    };
+    debug!("current public ip: {:?}", me_pub_ip);
+
     let ip: IpAddr;
-        let addr = if me_pub_ip.is_some() 
-        && me_pub_ip.unwrap().to_string() != server.pub_ip {
-            ip = server.pub_ip.parse().unwrap();
-            SocketAddr::new(server.pub_ip.parse().unwrap(), port)
-        } else {
-            ip = server.pri_ip.parse().unwrap();
-            SocketAddr::new(server.pri_ip.parse().unwrap(), port) 
-        };
+    let addr = if custom_ip.is_some() {
+        debug!("using custom ip");
+        ip = custom_ip.unwrap();
+        SocketAddr::new(ip, port)
+
+    } else if me_pub_ip != server_pub_ip {
+        debug!("using public ip: {}", &server.pub_ip);
+        ip = server_pub_ip;
+        SocketAddr::new(ip, port)
+        
+    } else {
+        debug!("using private ip: {}", &server.pri_ip);
+        ip = server_pri_ip;
+        SocketAddr::new(ip, port)
+        
+    };
+
     let stream = TcpStream::connect(&addr).await?;
     let server_name = ServerName::from(ip);
     let mut stream = get_tlstream(server_name, stream).await?;
@@ -63,8 +92,6 @@ pub async fn get_files(
         jwt,
         cpid: u.cpid.clone()
     };
-
-
     // handshake 
     let is_who_server = handshakes::client(
         &mut stream,
@@ -76,10 +103,12 @@ pub async fn get_files(
     };
     debug!("handshake done");
 
-
-    let request = head.sz().unwrap(); 
+    // serializeing request 
+    let request = head.sz().unwrap();
+    // writing request header
     stream.write_u8(FETCH).await?;
     stream.write_all(&request).await?;
+
     debug!("sent {}",request.len());
     stream.flush().await?;
     let items = stream.read_u16().await.unwrap();

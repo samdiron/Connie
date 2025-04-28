@@ -5,8 +5,6 @@ use std::io::{
     stdout,
 };
 use std::{
-    net::IpAddr,
-    str::FromStr,
     path::PathBuf,
     process::exit,
 };
@@ -206,23 +204,15 @@ pub async fn handle_cli_request(command: Commands) {
                 }
 
                 let jwt = jwt.unwrap();
-                let me_pub_ip = public_ip::addr().await;
-
-                let ip = if ip.is_some() {
-                    ip.unwrap()
-                } else if ( me_pub_ip.is_some() ) &&
-                    ( me_pub_ip.unwrap().to_string() == server.pub_ip ) {
-                    IpAddr::from_str(&server.pri_ip).unwrap()
-                }else {
-                    IpAddr::from_str(&server.pub_ip).unwrap()
-                };
-
+                let _me_pub_ip = public_ip::addr().await;
                 let host_cpid = server.cpid.clone();
                 let user_cpid = usr.cpid.clone();
                 let server_media = fetcher::get_files(
                     &usr,
                     &server,
                     jwt,
+                    port,
+                    ip,
                     pool
                 ).await.unwrap();
 
