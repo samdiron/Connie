@@ -1,9 +1,9 @@
 
 use lib_db::jwt::{
+    Claim,
     create,
     exp_gen,
     validate_jwt_claim,
-    Claim
 };
 
 use lib_db::{

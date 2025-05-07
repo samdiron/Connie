@@ -132,7 +132,8 @@ pub(crate) mod handshakes {
         ).await?;
         debug!("HANDSHAKE:SENT:HOST");
         let client_confirm = stream.read_u8().await?;
-        let server_ip = public_ip::addr().await.unwrap().to_string();
+        let server_ip = public_ip::addr()
+            .await.unwrap().to_string();
         if client_confirm == 0 {
             wvts(
                 stream,

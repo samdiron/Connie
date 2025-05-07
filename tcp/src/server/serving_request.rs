@@ -68,7 +68,11 @@ pub async  fn handle_server_request(
             let spath = path.to_str().unwrap();
             let mut writer = BufWriter::new(f);
             stream.write_u8(READY_STATUS).await?;
-            let _size = wifb(stream, &mut writer, false).await?;
+            let _size = wifb(
+                    stream,
+                    &mut writer,
+                    false
+                ).await?;
             let local_sum = get_fsum(spath).await?;
             let local_size = get_size(spath).await?;
             if &request.chcksum == NO_VAL {
@@ -121,7 +125,10 @@ pub async  fn handle_server_request(
                     assert_eq!(size as i64, request.size);
                     size 
                 } else  {
-                    error!("could not open file: {}",media.path);
+                    error!(
+                        "could not open file: {}",
+                        media.path
+                    );
                     0
 
                 };
@@ -134,7 +141,12 @@ pub async  fn handle_server_request(
                     let ready = stream.read_u8().await?;
                     if ready == READY_STATUS {
                         let mut reader = BufReader::new(f);
-                        wffb(stream, size, &mut reader, false).await?;
+                        wffb(
+                            stream,
+                            size,
+                            &mut reader,
+                            false
+                        ).await?;
                         let confirm = stream.read_u8().await?;
                         if confirm == SUCCESFUL {
                             info!("SUCCESFUL:GET");
@@ -170,9 +182,11 @@ pub async  fn handle_server_request(
                     &media.checksum,
                     pool
                 ).await.unwrap();
-                let path = PathBuf::from_str(&db_media.path).unwrap();
+                let path = PathBuf::from_str(&db_media.path)
+                    .unwrap();
                 info!("deleteing: {}", &db_media.path);
-                let rows = delete_media(db_media, pool).await.unwrap();
+                let rows = delete_media(db_media, pool)
+                    .await.unwrap();
                 assert!(rows == 1);
                 remove_file(path).unwrap();
 

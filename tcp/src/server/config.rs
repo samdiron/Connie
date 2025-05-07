@@ -29,7 +29,8 @@ fn load_certs(filename: &Path) -> Vec<CertificateDer<'static>> {
 }
 
 fn load_private_key(filename: &Path) -> PrivateKeyDer<'static> {
-    PrivateKeyDer::from_pem_file(filename).expect("cannot read private key file")
+    PrivateKeyDer::from_pem_file(filename)
+        .expect("cannot read private key file")
 }
 
 
@@ -52,7 +53,8 @@ pub fn make_config() -> Arc<ServerConfig> {
     .expect("could not create server config 2");
 
     config.key_log = Arc::new(KeyLogFile::new());
-    config.ticketer = provider::Ticketer::new().expect("faild to get server tls ticketer");
+    config.ticketer = provider::Ticketer::new()
+        .expect("faild to get server tls ticketer");
 
     Arc::new(config)
 

@@ -1,7 +1,8 @@
 
+use lib_db::media;
 use lib_db::types::PgPool;
 use lib_db::user::user_struct;
-use lib_db::media::{self, fetch::Smedia};
+use lib_db::media::fetch::Smedia;
 
 use lib_db::sqlite::{
     sqlite_host::{self, SqliteHost},
@@ -12,12 +13,13 @@ use common_lib::bincode;
 use common_lib::log::{debug, info, warn};
 
 use tokio::{
+    net::TcpStream,
     io::{AsyncReadExt, AsyncWriteExt},
-    net::TcpStream
 };
 
 use tokio_rustls::server::TlsStream;
 
+use std::time::Duration;
 use std::net::SocketAddr;
 use std::io::{
     Error,
@@ -26,7 +28,8 @@ use std::io::{
 };
 
 use crate::common::{
-    handshakes, request::{
+    handshakes,
+    request::{
         FETCH,
         JWT_AUTH,
         LOGIN_CRED,
@@ -161,6 +164,8 @@ pub async fn handle(
                 drop(stream);
             }
             else {
+                let dur = Duration::from_secs(3);
+                std::thread::sleep(dur);
                 stream.write_u8(UNAUTHORIZED).await?;
                 debug!("SERVER: jwt auth invalid");
 

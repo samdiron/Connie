@@ -85,13 +85,21 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
     let mut handles: Vec<JoinHandle<()>> = vec![];
     // cleaning time
     let mut ct = Instant::now();
+    // admin pause
+    let mut ap = Instant::now();
+
     let standard_clean_up_tls_dur = Instant::now();
     let wait1day =  Duration::from_secs(DURATION); // DURATION == 1 day
     let standard_wait = Duration::from_secs(300); // 5 min
     let mut impropertls: u32 = 0;
     loop {
-
+        
         // admin loop 
+        if handles.is_empty() && ap.elapsed() > standard_wait {
+            ap+=standard_wait;
+        }
+
+        // cleaner loop 
         if (ct.elapsed() >= standard_wait && !handles.is_empty()) ||
             handles.len() >= 5usize {
             let start = Instant::now();

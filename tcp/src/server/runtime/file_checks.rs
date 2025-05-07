@@ -17,8 +17,10 @@ use lib_db::{
 };
 
 
-pub async fn clean_unfinished_files(cpid: &String, pool: &PgPool) {
-    
+pub async fn clean_unfinished_files(
+    cpid: &String,
+    pool: &PgPool
+) {    
     let files_size = in_storage_size(
         pool,
         cpid
