@@ -24,7 +24,14 @@ pub fn hash_passwords(s: String) -> String {
     hashed
 }
 
-
+pub mod inner {
+    pub use sqlx;
+    pub use crate::jwt;
+    pub use crate::types;
+    pub use crate::sqlite;
+    pub use crate::hash_passwords;
+    pub use crate::escape_user_input;
+}
 
 /// this lib provides a sqlite db for the client to make it easer for 
 /// non technical users
