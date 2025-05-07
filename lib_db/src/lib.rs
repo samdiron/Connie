@@ -10,11 +10,11 @@ pub mod user;
 pub(crate) use common_lib::sha256;
 use common_lib::sha256::digest;
 
-pub(crate) fn escape_user_input(s: &String) -> String{
+pub fn escape_user_input(s: &String) -> String{
     // removing sigle quotes
     let ns = s.replace("'", "");
     // removing double quotes
-    let ns = ns.replace(r#"""#, r#"""#);
+    let ns = ns.replace(r#"""#, "");
     ns
 }
 
@@ -26,7 +26,6 @@ pub fn hash_passwords(s: String) -> String {
 
 pub mod inner {
     pub use sqlx;
-    pub use crate::jwt;
     pub use crate::types;
     pub use crate::sqlite;
     pub use crate::hash_passwords;
