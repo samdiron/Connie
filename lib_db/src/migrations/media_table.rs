@@ -6,12 +6,16 @@ CREATE TABLE IF NOT EXISTS media(
   name TEXT,
   in_host TEXT,
   "type" VARCHAR(10),
-  checksum TEXT,
+  checksum TEXT NOT NULL,
   "size" BIGINT,
   CONSTRAINT fk_cpid 
     FOREIGN KEY(
       cpid
     ) REFERENCES "user"(cpid),
+  CONSTRAINT fk_host 
+    FOREIGN KEY(
+      host
+    ) REFERENCES server(cpid),
   path TEXT
 );
 "#

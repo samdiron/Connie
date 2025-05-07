@@ -7,7 +7,11 @@ CREATE TABLE IF NOT EXISTS "user"(
   username VARCHAR(50),
   host TEXT,
   email TEXT,
-  password TEXT
+  password TEXT,
+  CONSTRAINT fk_host 
+    FOREIGN KEY(
+      host
+    ) REFERENCES server(cpid),
 );
 "#
     .to_string();
