@@ -97,7 +97,7 @@ impl JwtReq {
         &self,
         host_cpid: &String,
         pool: &PgPool
-    ) -> Result<bool, sqlE> {
+    ) -> Result<(bool,String), sqlE> {
         let token = &self.jwt;
         let state = validate_jwt_claim(token, host_cpid, pool).await;
         Ok(state)
@@ -127,7 +127,7 @@ impl Chead {
         &self,
         host_cpid: &String,
         pool: &PgPool
-    ) -> Result<bool, sqlE> {
+    ) -> Result<(bool, String), sqlE> {
         let token = &self.jwt;
         let state = validate_jwt_claim(token, host_cpid, pool).await;
         Ok(state)

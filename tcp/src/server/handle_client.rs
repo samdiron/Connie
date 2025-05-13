@@ -19,8 +19,8 @@ use tokio::{
 
 use tokio_rustls::server::TlsStream;
 
-use std::time::Duration;
 use std::net::SocketAddr;
+use std::time::{Duration, SystemTime};
 use std::io::{
     Error,
     Result,
@@ -47,6 +47,8 @@ use crate::server::{
     serving_request::handle_server_request
 };
 
+use super::runtime::generate_log_templates::ClientErrorMsgLog;
+
 
 
 
@@ -71,7 +73,7 @@ pub async fn handle(
     pool: PgPool,
     allow_new_users: bool,
     sqlite_host: SqliteHost,
-) -> Result<u8> {
+) -> Result<(u8, Option<ClientErrorMsgLog>)> {
     
     let mut stream = st.0;
     let addr = st.1;
@@ -84,7 +86,7 @@ pub async fn handle(
     ).await?;
     if is_correct_addres == 1 {
         debug!("a client was lost");
-        return Ok(1)
+        return Ok((1, None))
     }else if is_correct_addres == SIGNIN_CRED {
         
         debug!("SERVER: signin request");
@@ -143,10 +145,11 @@ pub async fn handle(
             debug!("SERVER: recved request with size: {}", buf.len());
             
             let jwtreq = JwtReq::dz(buf).expect("could not unwrap struct");
-            let is_valid = jwtreq.validate(&sqlite_host.cpid, &pool)
-                    .await
-                    .unwrap();
-            if  is_valid {
+            let ( is_valid, current_client_cpid )= jwtreq.validate(
+                    &sqlite_host.cpid,
+                    &pool
+                ).await.unwrap();
+            if  is_valid && (current_client_cpid == jwtreq.request.cpid) {
                 stream.write_u8(0).await?;
                 debug!("SERVER: valid jwt login");
                 let status = handle_server_request(
@@ -162,6 +165,21 @@ pub async fn handle(
                 stream.flush().await?;
 
                 drop(stream);
+            } else if current_client_cpid != jwtreq.request.cpid {
+                    let client_ip = stream.into_inner().0
+                        .peer_addr()
+                        .unwrap()
+                        .ip()
+                        .to_string();
+                    let timestamp = SystemTime::now();
+                let err = ClientErrorMsgLog {
+                    client_jwt_cpid: current_client_cpid,
+                    client_request_cpid: jwtreq.request.cpid,
+                    client_ip,
+                    timestamp,
+                    sev: 1,
+                };
+                return Ok( ( 44, Some(err) ) );
             }
             else {
                 let dur = Duration::from_secs(3);
@@ -214,10 +232,10 @@ pub async fn handle(
             let mut buf = vec![0;600];
             let _size = stream.read(&mut buf).await?;
             let request = Chead::dz(buf).expect("could not deserialze");
-            let is_val = request.validate(&sqlite_host.cpid, &pool)
+            let (is_val, current_client_cpid ) = request.validate(&sqlite_host.cpid, &pool)
                     .await
                     .unwrap();
-            if is_val {
+            if is_val && (request.cpid == current_client_cpid) {
 
                 let data: Vec<Smedia> = media::fetch::get_user_files(
                     request.cpid,
@@ -231,11 +249,28 @@ pub async fn handle(
                     assert_eq!(s, 0);
 
                 }
+            } else if &request.cpid != &current_client_cpid {
+                
+                let client_ip = stream.into_inner().0
+                        .peer_addr()
+                        .unwrap()
+                        .ip()
+                        .to_string();
+                let timestamp = SystemTime::now();
+                let err = ClientErrorMsgLog {
+                    client_jwt_cpid: current_client_cpid,
+                    client_request_cpid: request.cpid,
+                    client_ip,
+                    timestamp,
+                    sev: 1,
+                };
+                return Ok( ( 44, Some(err) ) );
+                
             }
         }
         _=> {info!("client sent a invalid auth header: {auth_type}")}
     }
 
     } 
-    Ok(0)
+    Ok( (0, None) )
 }

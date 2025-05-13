@@ -121,10 +121,11 @@ pub mod jwt {
         token: &String,
         cpid: &String,
         pool: &PgPool
-    ) -> bool {
+    ) -> (bool, String) {
         let c = decode_jwt(token);
+        let mut client_cpid = String::new();
         if !c.is_ok(){
-            return false
+            return (false, client_cpid)
         }
         let c = c.unwrap();
         let now = get_current_timestamp();
@@ -136,9 +137,10 @@ pub mod jwt {
         ).await.unwrap();
         let exp = c.exp;
         if is_who && (now < exp) {
-            return true
+            client_cpid = c.cpid.clone();
+            return (true, client_cpid )
         }else {
-            return false
+            return (false, client_cpid)
         }
         
     }

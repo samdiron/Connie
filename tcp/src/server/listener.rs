@@ -23,6 +23,7 @@ use crate::server::config::make_config;
 use crate::server::handle_client::handle;
 use crate::consts::{NET_STATUS, NEW_USERS, USE_IP};
 use crate::server::runtime::file_checks::clean_unfinished_files;
+use crate::server::runtime::generate_log_templates;
 
 
 
@@ -168,9 +169,14 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
                             sqlite_host
                         ).await {
                         Ok(res) => {
-                            if res == 0 {info!("a client was handled")}
-                            else if res == 1 {
+                            if res.0 == 0 {info!("a client was handled")}
+                            else if res.0 == 1 {
                                 info!("a client was lost");
+                            } else if res.0 == 44 {
+                                let err = res.1.unwrap();
+
+                                let filename = generate_log_templates::client_cpid_not_match(&err);
+                                warn!("a suspicious activity see full log at {}", filename);
                             }
                         },
                         Err(e) => {debug!("a client request faild: {:#?}", e)},
