@@ -15,12 +15,12 @@ use crate::Commands;
 pub async fn handle_cli_db(command: Commands) {
     match command {
          Commands::DB { 
-            sqlite_migrations,
-            postgres_migrations,
+            test,
+            path,
             connection,
             delete_conn,
-            test,
-            path
+            sqlite_migrations,
+            postgres_migrations,
         } => {
             if let Some(conn) = connection {
                 let mut f = File::create_new(DB_CONN)

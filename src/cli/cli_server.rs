@@ -27,16 +27,16 @@ use crate::{
 pub async fn handle_cli_server(command: Commands) {
     match command {
         Commands::SERVER {
-        new,
-        default_machine,
-        port, 
-        new_users,
-        net_space,
-        update,
         ip,
+        new,
+        port, 
         name,
         host,
-        max_conn 
+        update,
+        max_conn,
+        new_users,
+        net_space,
+        default_machine,
     } => {
         let pool =  get_conn().await.unwrap();
         let pool = &pool;

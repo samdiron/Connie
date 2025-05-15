@@ -42,14 +42,15 @@ use crate::{
 
 pub async fn handle_cli_bind(command: Commands) {
     match command {
-                Commands::BIND {
-            default,
+            Commands::BIND {
             ip,
-            secret,
             port,
-            server,
-            new_users,
             users,
+            secret,
+            server,
+            default,
+            new_users,
+            admin_port,
         } => {
 
             if secret.is_some() {
