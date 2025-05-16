@@ -32,7 +32,7 @@ pub enum Commands {
     BIND {
 
         #[arg(long, short)]
-        admin_port: u16,
+        admin_port: Option<u16>,
 
         #[arg(long, short)]
         default: Option<bool>,

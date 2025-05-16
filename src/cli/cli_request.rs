@@ -12,6 +12,7 @@ use std::{
 use common_lib::log::warn;
 use common_lib::{
     public_ip,
+    display_size,
     path::SQLITEDB_PATH,
     log::{debug, error, info},
 };
@@ -302,10 +303,10 @@ pub async fn handle_cli_request(command: Commands) {
 
                 for m in &mv {
                     i+=1;
-                    println!("{i}(name: {}\n type: {}\nsize: {:.4}MB checksum: {}\n)",
+                    println!("{i}(name: {}\n type: {}\nsize: {} checksum: {}\n)",
                         m.name,
                         m.type_,
-                        (m.size as f64 / 1000 as f64) / 1000 as f64,
+                        display_size(m.size as u64),
                         m.checksum
                     );
                 };
