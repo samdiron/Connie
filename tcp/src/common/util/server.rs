@@ -1,4 +1,4 @@
-use std::time::{self, Duration, Instant};
+use std::time::Instant;
 
 use common_lib::display_size;
 use common_lib::log::{debug, info};
@@ -12,7 +12,9 @@ use common_lib::tokio::{
         Result
     },
 };
+use tokio::net::TcpStream;
 
+use crate::common::util::core::*;
 use crate::common::{request::PACKET_SIZE, ServerTlsStreams};
 
 type UniTls = ServerTlsStreams;
@@ -20,9 +22,19 @@ type UniTls = ServerTlsStreams;
 // reads the amount of b from a stream and returns the data read in a Vec<u8>
 // this function is made only for small reads it will not work as expected with larg buffer
 pub async fn read_stream(
-    s: &mut UniTls,
+    s: Option<&mut UniTls>,
+    raw: Option<&mut TcpStream>,
     b: u16
 ) -> Result<Vec<u8>> {
+    if raw.is_some() {
+        let s = raw.unwrap();
+        let res = raw_read_stream(s, b).await?;
+        return Ok(res);
+    };
+    assert!(s.is_some());
+
+    let s = s.unwrap();
+
     let mut buf = vec![0; b as usize];
     let mut rcve = 0usize;
     for _i in 0..1 {
@@ -41,8 +53,18 @@ pub async fn read_stream(
 /// stands for read vector from stream 
 /// and it only works with wvts
 pub async fn rvfs (
-    s: &mut UniTls,
+    s: Option<&mut UniTls>,
+    raw: Option<&mut TcpStream>
 ) -> Result<Vec<u8>> {
+    if raw.is_some() {
+        let s = raw.unwrap();
+        let res = raw_rvfs(s).await?;
+        return Ok(res);
+    };
+    assert!(s.is_some());
+
+    let s = s.unwrap();
+
     debug!("STREAMREAD: start");
     let buf_size = s.read_u16().await?;
     let mut buf = vec![0; buf_size as usize];
@@ -55,9 +77,17 @@ pub async fn rvfs (
 /// and only works with rvfs
 /// make sure the input buffer is less than a standard paket size
 pub async fn wvts(
-    s: &mut UniTls,
+    s: Option<&mut UniTls>,
+    raw: Option<&mut TcpStream>,
     fbuf: Vec<u8>
 ) -> Result<u8> {
+    if raw.is_some() {
+        let s = raw.unwrap();
+        let res = raw_wvts(s, fbuf).await?;
+        return Ok(res)
+    };
+    assert!(s.is_some());
+    let s = s.unwrap();
     let all = fbuf.len();
     assert!(all < PACKET_SIZE);
     
@@ -77,12 +107,21 @@ pub async fn wvts(
 /// it reads from the file a standard size buffer (PACKET_SIZE)
 /// then i writes it to a stream
 pub async fn wffb(
-    s: &mut UniTls,
+    s: Option<&mut UniTls>,
+    raw: Option<&mut TcpStream>,
     _size: u64,
     reader: &mut BufReader<File>,
-    verbose: bool
 ) -> Result<usize> {
-    let start = time::Instant::now();
+    if raw.is_some() {
+        let s = raw.unwrap();
+        let res = raw_wffb(s, _size, reader, false).await?;
+        return Ok(res);
+    };
+    assert!(s.is_some());
+
+    let s = s.unwrap();
+
+    let start = Instant::now();
     let mut nbuf = vec![0; PACKET_SIZE];
     let mut sent = 0usize;
     let _usize = _size as usize;
@@ -94,59 +133,26 @@ pub async fn wffb(
     s.flush().await?;
     
     info!("tol: {tol}, size: {_size}");
-    if verbose {
-        let standard_wait = Duration::from_secs(5);
-        let mut when_to_print = Instant::now();
-        for i in 0..tol {
-            let mut _when_to_print: u8 = 0;
-            if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
-                info!("end tol");
-                let buf_size = _usize - sent;
-                info!("buf_size: {buf_size}");
-                let end_buffer_size = buf_size as u16; 
-                s.write_u16(end_buffer_size).await?;
+    for i in 0..tol {
 
-                let mut buf = vec![0;buf_size];
-                reader.read_exact(&mut buf).await?;
-                s.write_all(&buf).await?;
-                s.flush().await?;
-                sent+=buf_size;
-                break;
-                
-            }else {
-                reader.read_exact(&mut nbuf).await?;
-                s.write_all(&nbuf).await?;
-                sent+=PACKET_SIZE
-            };
-            if when_to_print.elapsed() >= standard_wait {
-                when_to_print+=standard_wait;
-                let percent = (i as f64 / tol as f64) * 100.0;
-                info!("upload: {:.2}%", percent);
-            };
-        }
-    }
-    else {
-        for i in 0..tol {
+        if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
+            info!("end tol");
+            let buf_size = _usize - sent;
+            info!("buf_size: {buf_size}");
+            let end_buffer_size = buf_size as u16; 
+            s.write_u16(end_buffer_size).await?;
 
-            if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
-                info!("end tol");
-                let buf_size = _usize - sent;
-                info!("buf_size: {buf_size}");
-                let end_buffer_size = buf_size as u16; 
-                s.write_u16(end_buffer_size).await?;
-
-                let mut buf = vec![0;buf_size];
-                reader.read_exact(&mut buf).await?;
-                s.write_all(&buf).await?;
-                s.flush().await?;
-                sent+=buf_size;
-                break;
-                
-            }else {
-                reader.read_exact(&mut nbuf).await?;
-                s.write_all(&nbuf).await?;
-                sent+=PACKET_SIZE
-            }
+            let mut buf = vec![0;buf_size];
+            reader.read_exact(&mut buf).await?;
+            s.write_all(&buf).await?;
+            s.flush().await?;
+            sent+=buf_size;
+            break;
+            
+        }else {
+            reader.read_exact(&mut nbuf).await?;
+            s.write_all(&nbuf).await?;
+            sent+=PACKET_SIZE
         }
     }
     s.flush().await?;
@@ -171,11 +177,18 @@ pub async fn wffb(
 /// reads a standard (PACKET_SIZE) from stream and 
 /// writes the buffer into file
 pub async fn wifb(
-    s: &mut UniTls,
+    s: Option<&mut UniTls>,
+    raw: Option<&mut TcpStream>,
     writer: &mut BufWriter<File>,
-    verbose: bool
 ) -> Result<(u8, usize)> {
-    let start = time::Instant::now();
+    if raw.is_some() {
+        let s = raw.unwrap();
+        let res = raw_wifb(s, writer, false).await?;
+        return Ok(res)
+    };
+
+    let s = s.unwrap();
+    let start = Instant::now();
     let mut wrote = 0usize;
     let mut recvd = 0usize;
     let mut buf = vec![0; PACKET_SIZE];
@@ -183,27 +196,7 @@ pub async fn wifb(
     let s_all = s.read_u64().await? as usize;
     let mut i = 0u16;
     
-    if i < tol && tol != 1 && verbose {
-        let standard_wait = Duration::from_secs(5);
-        let mut when_to_print = Instant::now();
-
-        loop {
-            if i == tol || i == tol-1 || (recvd+PACKET_SIZE) > s_all {
-                debug!("last loop");break 
-            }
-            s.read_exact(&mut buf).await?;
-            writer.write_all(&buf).await?;
-            writer.flush().await?;
-            i+=1;
-
-            if when_to_print.elapsed() >= standard_wait {
-                when_to_print+=standard_wait;
-                let percent = (i as f64 / tol as f64) * 100.0;
-                info!("download: {:.2}%", percent);
-            };
-        }
-    };
-    if i < tol && tol != 1 && !verbose {
+    if i < tol && tol != 1 {
         loop {
             if i == tol || i == tol-1 || (recvd+PACKET_SIZE) > s_all {
                 debug!("last loop");break 

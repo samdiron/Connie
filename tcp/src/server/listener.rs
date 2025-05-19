@@ -14,13 +14,14 @@ use common_lib::cheat_sheet::{LOCAL_IP, TCP_MAIN_PORT};
 
 use tokio::task;
 use tokio::task::JoinHandle;
+use tokio::io::AsyncReadExt;
 use tokio::net::{TcpListener, TcpStream};
 
 use tokio_rustls::TlsAcceptor;
 use tokio_rustls::server::TlsStream;
 
 use crate::server::config::make_config;
-use crate::server::handle_client::handle;
+use crate::server::handle_client::{handle, raw_handle};
 use crate::consts::{NET_STATUS, NEW_USERS, USE_IP};
 use crate::server::runtime::file_checks::clean_unfinished_files;
 use crate::server::runtime::generate_log_templates;
@@ -155,15 +156,13 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
                 let inner_allow_new_users = allow_new_users.clone();
                 let sqlite_host = sqlite_host.clone();
                 let addr = stream.1;
-                let inner_acceptor = acceptor.clone();
-                let tls = tls_acceptor(inner_acceptor, stream.0).await;
-                if tls.is_ok() {
-                let task_handle = task::spawn(async move {
-                    let tls = tls.unwrap();
-                    let stream = (tls, addr);
+                let mut stream = stream.0;
+                let no_tls = stream.read_u8().await.unwrap();
+                if no_tls == 1 {
+                    let task_handle = task::spawn(async move {
                     info!("client: {}", &addr);
-                    match handle(
-                            stream,
+                    match raw_handle(
+                            (stream, addr),
                             inner_p,
                             inner_allow_new_users,
                             sqlite_host
@@ -183,10 +182,44 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
                     }
                     });
                     handles.push(task_handle);
-                } else {
-                    warn!("client with improper tls addres: {addr}");
-                    impropertls+=1;
+
                 }
+                else {
+                    info!("notls client");
+
+                    let inner_acceptor = acceptor.clone();
+                    let tls = tls_acceptor(inner_acceptor, stream).await;
+                    if tls.is_ok() {
+                    let task_handle = task::spawn(async move {
+                        let tls = tls.unwrap();
+                        let stream = (tls, addr);
+                        info!("client: {}", &addr);
+                        match handle(
+                                stream,
+                                inner_p,
+                                inner_allow_new_users,
+                                sqlite_host
+                            ).await {
+                            Ok(res) => {
+                                if res.0 == 0 {info!("a client was handled")}
+                                else if res.0 == 1 {
+                                    info!("a client was lost");
+                                } else if res.0 == 44 {
+                                    let err = res.1.unwrap();
+
+                                    let filename = generate_log_templates::client_cpid_not_match(&err);
+                                    warn!("a suspicious activity see full log at {}", filename);
+                                }
+                            },
+                            Err(e) => {debug!("a client request faild: {:#?}", e)},
+                        }
+                        });
+                        handles.push(task_handle);
+                    } else {
+                        warn!("client with improper tls addres: {addr}");
+                        impropertls+=1;
+                    }
+                };
             }Err(e) => {
                 warn!("there was an err while accepting a client : {:#?}", e)
             }

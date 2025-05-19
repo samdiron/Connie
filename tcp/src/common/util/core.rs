@@ -1,4 +1,9 @@
+
+
+const WAIT_FOR_UPDATE_PERCENTAGE: u16 = 1;
+    
 use std::time::{
+    self,
     Instant,
     Duration,
 };
@@ -17,28 +22,14 @@ use common_lib::{
             Result
         },
 }};
-use crate::common::ClientTlsStreams;
 use crate::common::request::PACKET_SIZE;
 
-use crate::common::util::core::*;
-// reads the amount of b from a stream and returns the data read in a Vec<u8>
-// this function is made only for small reads it will not work as expected with larg buffers
 
-type UniTls = ClientTlsStreams;
-const WAIT_FOR_UPDATE_PERCENTAGE: u16 = 1;
-pub async fn read_stream(
-    s: Option<&mut UniTls>,
-    raw: Option<&mut TcpStream>,
+
+pub async fn raw_read_stream(
+    s: &mut TcpStream,
     b: u16
 ) -> Result<Vec<u8>> {
-    if raw.is_some() {
-        let s = raw.unwrap();
-        let res = raw_read_stream(s, b).await?;
-        return Ok(res);
-    };
-    assert!(s.is_some());
-
-    let s = s.unwrap();
     let mut buf = vec![0; b as usize];
     let mut rcve = 0usize;
     for _i in 0..1 {
@@ -56,18 +47,9 @@ pub async fn read_stream(
 } 
 /// stands for read vector from stream 
 /// and it only works with wvts
-pub async fn rvfs (
-    s: Option<&mut UniTls>,
-    raw: Option<&mut TcpStream>,
+pub async fn raw_rvfs (
+    s: &mut TcpStream,
 ) -> Result<Vec<u8>> {
-    if raw.is_some() {
-        let s = raw.unwrap();
-        let res = raw_rvfs(s).await?;
-        return Ok(res);
-    };
-
-    assert!(s.is_some());
-    let s = s.unwrap();
     let buf_size = s.read_u16().await?;
     debug!("should read {buf_size}");
     let mut buf = vec![0; buf_size as usize];
@@ -79,18 +61,10 @@ pub async fn rvfs (
 /// stands for write vectr into stream 
 /// and only works with rvfs
 /// make sure the input buffer is less than a standard paket size
-pub async fn wvts(
-    s: Option<&mut UniTls>,
-    raw: Option<&mut TcpStream>,
+pub async fn raw_wvts(
+    s: &mut TcpStream,
     fbuf: Vec<u8>
 ) -> Result<u8> {
-    if raw.is_some() {
-        let s = raw.unwrap();
-        let res = raw_wvts(s, fbuf).await?;
-        return Ok(res)
-    };
-    assert!(s.is_some());
-    let s = s.unwrap();
     let all = fbuf.len();
     assert!(all < PACKET_SIZE);
 
@@ -108,21 +82,13 @@ pub async fn wvts(
 /// stands for write from file buffer 
 /// it reads from the file a standard size buffer (PACKET_SIZE)
 /// then i writes it to a stream
-pub async fn wffb(
-    s: Option<&mut UniTls>,
-    raw: Option<&mut TcpStream>,
+pub async fn raw_wffb(
+    s: &mut TcpStream,
     _size: u64,
     reader: &mut BufReader<File>,
     verbose: bool
 ) -> Result<usize> {
-    if raw.is_some() {
-        let s = raw.unwrap();
-        let res = raw_wffb(s, _size, reader, verbose).await?;
-        return Ok(res);
-    }
-
-    let s = s.unwrap();
-    let start = Instant::now();
+    let start = time::Instant::now();
     let mut nbuf = vec![0; PACKET_SIZE];
     let mut sent = 0usize;
     let _usize = _size as usize;
@@ -204,22 +170,16 @@ pub async fn wffb(
     Ok(sent)
 }
 
-/// reads a standard (PACKET_SIZE) from stream and 
-/// writes the buffer into file
-pub async fn wifb(
-    s: Option<&mut UniTls>,
-    raw: Option<&mut TcpStream>,
+
+
+
+pub async fn raw_wifb(
+    s: &mut TcpStream,
     writer: &mut BufWriter<File>,
     verbose: bool
 ) -> Result<(u8, usize)> {
-    if raw.is_some() {
-        let s = raw.unwrap();
-        let res = raw_wifb(s, writer, verbose).await?;
-        return Ok(res)
-    };
 
-    let s = s.unwrap();
-    let start = Instant::now();
+    let start = time::Instant::now();
     let mut wrote = 0usize;
     let mut recvd = 0usize;
     let mut buf = vec![0; PACKET_SIZE];
@@ -284,8 +244,3 @@ pub async fn wifb(
     );
     Ok((status, wrote))
 }
-
-
-
-
-

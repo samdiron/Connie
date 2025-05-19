@@ -31,7 +31,7 @@ use crate::common::handshakes;
 use crate::client::config::make_config;
 use crate::client::client::Connection;
 use crate::common::util::client::{rvfs, wvts};
-use crate::client::handle_request::handle_client_request;
+use crate::client::handle_request::{handle_client_request, raw_handle_client_request};
 use crate::common::request::req_format::{JwtReq, LoginReq};
 use crate::common::request::{
     JWT_AUTH,
@@ -55,12 +55,12 @@ pub async fn signup_process(
         .await?;
     info!("Connected tls");
     let d: Vec<u8> = vec![SIGNIN_CRED];
-    wvts(&mut stream, d).await?;
+    wvts(Some(&mut stream), None, d).await?;
     debug!("sent status to host {SIGNIN_CRED}");
     let will_allow = stream.read_u8().await?;
     if will_allow == 0 {
         info!("server accsepted request");
-        let vector = rvfs(&mut stream).await?;
+        let vector = rvfs(Some(&mut stream), None).await?;
         let server = SqliteHost::dz(vector).unwrap();
         info!("server: name: {}, host: {};",&server.name, &server.host);
         info!("the thread will pause for 2s if you want to cancel type ^c");
@@ -68,9 +68,9 @@ pub async fn signup_process(
         thread::sleep(dur);
         stream.write_u8(0).await?;
         stream.flush().await?;
-        wvts(&mut stream, short_user_vec).await?;
+        wvts(Some(&mut stream), None, short_user_vec).await?;
 
-        let user_vec = rvfs(&mut stream).await?;
+        let user_vec = rvfs(Some(&mut stream), None).await?;
         
         let mut user = SqliteUser::dz(user_vec).unwrap();
         user.host = server.cpid.clone();
@@ -244,7 +244,8 @@ pub async fn connect_tcp(
     pool: &SqlitePool,
     conn: Connection,
     check_for_sum: Option<bool>,
-    rqm: Option<RQM>
+    rqm: Option<RQM>,
+    no_tls: bool,
 ) -> Result<u8> {
     debug!("Will use jwt auth");
     assert!(rqm.is_some());
@@ -260,49 +261,102 @@ pub async fn connect_tcp(
     let request = req.sz().unwrap();
 
     let (
-        stream,
+        mut stream,
         tls_server_name
     ) = get_stream(&conn.server, conn.port, conn.ip).await?;
-    let mut stream = get_tlstream(tls_server_name, stream).await?;
-        
-    let is_who_server = handshakes::client(
-        &mut stream,
-        &conn.server,
-        pool
-    ).await?;
-    if is_who_server != 0 {
-        exit(1);
-    };
+    if no_tls {
+        stream.write_u8(1).await?;
 
-        
-    stream.write_u8(JWT_AUTH).await?;
-    stream.flush().await?;
-    debug!("sent auth state {}",JWT_AUTH);
-    let size = stream.write(&request).await?;
-    stream.flush().await?;
-    let is_valid = stream.read_u8().await?;
-    if is_valid != 0 {
-        delete_jwt(&extra_jwt, pool).await.unwrap();
-        info!("there was an unexpected jwt change please run the login request flag(-l or --login ) with true ");
-        exit(UNAUTHORIZED as i32)
-    };
+        stream.write_u8(0).await?;
 
-    info!("sent full request with size: {:?}",size);
-    let state = handle_client_request(
-        &mut stream,
-        rqm,
-        conn.server.cpid,
-        check_for_sum,
-        pool
-    ).await.unwrap();
-    if state == 0 {
-        info!("request request was succesful");
+            
+        let is_who_server = handshakes::raw_client_handshake(
+            &mut stream,
+            &conn.server,
+            pool
+        ).await?;
+        if is_who_server != 0 {
+            exit(1);
+        };
+
+            
+        stream.write_u8(JWT_AUTH).await?;
+        stream.flush().await?;
+        debug!("sent auth state {}",JWT_AUTH);
+        let size = stream.write(&request).await?;
+        stream.flush().await?;
+        let is_valid = stream.read_u8().await?;
+        if is_valid != 0 {
+            delete_jwt(&extra_jwt, pool).await.unwrap();
+            info!("there was an unexpected jwt change please run the login request flag(-l or --login ) with true ");
+            exit(UNAUTHORIZED as i32)
+        };
+
+        info!("sent full request with size: {:?}",size);
+        let state = raw_handle_client_request(
+            &mut stream,
+            rqm,
+            conn.server.cpid,
+            check_for_sum,
+            pool
+        ).await.unwrap();
+        if state == 0 {
+            info!("request request was succesful");
+        }
+        else {
+            warn!("a request was unsuccesful");
+            println!("a request was unsuccesful");
+            return Ok(1);
+        }
+        
+        Ok(0)
+
+    } else {
+        stream.write_u8(0).await?;
+
+        let mut stream = get_tlstream(tls_server_name, stream).await?;
+            
+        let is_who_server = handshakes::client(
+            &mut stream,
+            &conn.server,
+            pool
+        ).await?;
+        if is_who_server != 0 {
+            exit(1);
+        };
+
+            
+        stream.write_u8(JWT_AUTH).await?;
+        stream.flush().await?;
+        debug!("sent auth state {}",JWT_AUTH);
+        let size = stream.write(&request).await?;
+        stream.flush().await?;
+        let is_valid = stream.read_u8().await?;
+        if is_valid != 0 {
+            delete_jwt(&extra_jwt, pool).await.unwrap();
+            info!("there was an unexpected jwt change please run the login request flag(-l or --login ) with true ");
+            exit(UNAUTHORIZED as i32)
+        };
+
+        info!("sent full request with size: {:?}",size);
+        let state = handle_client_request(
+            &mut stream,
+            rqm,
+            conn.server.cpid,
+            check_for_sum,
+            pool
+        ).await.unwrap();
+        if state == 0 {
+            info!("request request was succesful");
+        }
+        else {
+            warn!("a request was unsuccesful");
+            println!("a request was unsuccesful");
+            return Ok(1);
+        }
+        
+        Ok(0)
+
     }
-    else {
-        warn!("a request was unsuccesful");
-        println!("a request was unsuccesful");
-        return Ok(1);
-    }
-    
-    Ok(0)
+
 }

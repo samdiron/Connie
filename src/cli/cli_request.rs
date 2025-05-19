@@ -108,6 +108,7 @@ pub async fn handle_cli_request(command: Commands) {
             Port: port,
             post,
             login,
+            no_tls,
             Delete,
             Domain,
             server_name,
@@ -272,6 +273,7 @@ pub async fn handle_cli_request(command: Commands) {
                     ip,
                     None,
                     request,
+                    no_tls.unwrap(),
                 ).await.unwrap();
 
                 println!("done {}", res);
@@ -361,6 +363,7 @@ pub async fn handle_cli_request(command: Commands) {
                     ip,
                     Some(checksum),
                     request.clone(),
+                    no_tls.unwrap(),
 
                 ).await.unwrap();
 
@@ -428,7 +431,8 @@ pub async fn handle_cli_request(command: Commands) {
                     port,
                     ip,
                     Some(false),
-                    request
+                    request,
+                    no_tls.unwrap(),
                 ).await.unwrap();
             
             }else if login.is_some() && login.unwrap() {

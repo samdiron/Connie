@@ -83,6 +83,7 @@ pub async fn client_process(
     ip: Option<IpAddr>,
     check_for_sum: Option<bool>,
     request: Option<RQM>,
+    no_tls: bool,
 ) -> Result<u8> {
 
     let jwt = get_jwt(
@@ -104,7 +105,8 @@ pub async fn client_process(
         &pool,
         conn,
         check_for_sum,
-        request
+        request,
+        no_tls,
     ).await.unwrap();
     Ok(state)
 

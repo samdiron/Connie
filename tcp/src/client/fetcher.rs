@@ -116,7 +116,7 @@ pub async fn get_files(
 
     for _i in 0..items {
         
-        let buf = rvfs(&mut stream).await?;
+        let buf = rvfs(Some(&mut stream), None).await?;
         let media: Smedia = Smedia::dz(buf).unwrap();
         let sqlitem = Smedia {
             name: media.name,

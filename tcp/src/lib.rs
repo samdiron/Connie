@@ -12,7 +12,6 @@ pub mod types {
         DELETE,
         JWT_AUTH,
         LOGIN_CRED,
-        
     };
 }
 

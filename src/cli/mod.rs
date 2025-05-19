@@ -100,6 +100,9 @@ pub enum Commands {
         Delete: Option<bool>,
 
         #[arg(long, short, default_value="false")]
+        no_tls: Option<bool>,
+
+        #[arg(long, short, default_value="false")]
         create_checksum: Option<bool>,
 
     },
