@@ -52,10 +52,15 @@ pub async fn signup_process(
     pool: &SqlitePool
 ) -> Result<()> {
     let short_user_vec = user.sz().unwrap();
-    let stream = TcpStream::connect(&addr).await?;
+    let mut stream = TcpStream::connect(&addr).await?;
     info!("connected to {addr}");
-    let server_name = ServerName::from(addr.ip());
-    let mut stream = get_tlstream(server_name, stream)
+
+    // write connection status 
+    stream.write_u8(0).await?; 
+
+
+    let server_name = get_server_name(addr.ip());
+    let mut stream = get_tlstream(stream, server_name)
         .await?;
     info!("Connected tls");
     let d: Vec<u8> = vec![SIGNIN_CRED];
@@ -96,13 +101,22 @@ pub async fn signup_process(
 
 #[allow(dead_code)]
 pub(in crate::client) async fn get_tlstream(
+    raw_stream: TcpStream,
     server_name: ServerName<'static>,
-    raw_stream: TcpStream
 ) -> Result<client::TlsStream<TcpStream>>{
     let config = make_config();
+    debug!("config: succesful");
     let connector = TlsConnector::from(config);
-    let stream = connector.connect(server_name, raw_stream).await?;
-    Ok(stream)
+    debug!("connector: succesful");
+    let stream = connector.connect(server_name, raw_stream).await;
+    if stream.is_err() {
+        debug!("tls stream: not succesful");
+        let e = stream.unwrap_err();
+        eprintln!("{:?}", e.to_string());
+        error!("will exit with status 1");
+        exit(1);
+    };
+    Ok(stream.unwrap())
 }
 
 
@@ -193,13 +207,17 @@ pub async fn login_request(
         paswd: passwd,
     };
     let request = req.sz().unwrap();
-    let (stream, _addr) = get_stream(
+    let (mut stream, ip_addr) = get_stream(
         &conn.server,
         conn.port,
         conn.ip
     ).await?;
-    let servername = get_server_name(_addr);
-    let mut stream = get_tlstream(servername, stream)
+
+    // write the connection status no_tls == 1 / tls == 0
+    stream.write_u8(0).await?;
+
+    let tls_server_name = get_server_name(ip_addr);
+    let mut stream = get_tlstream(stream, tls_server_name)
         .await
         .expect("could not connect tls");
     let is_who_server = handshakes::client(
@@ -326,7 +344,7 @@ pub async fn connect_tcp(
     } else {
         stream.write_u8(0).await?;
         let tls_server_name = get_server_name(ip_addr);
-        let mut stream = get_tlstream(tls_server_name, stream).await?;
+        let mut stream = get_tlstream(stream, tls_server_name).await?;
             
         let is_who_server = handshakes::client(
             &mut stream,

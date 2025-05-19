@@ -83,9 +83,13 @@ pub async fn get_files(
         
     };
 
-    let stream = TcpStream::connect(&addr).await?;
+    let mut stream = TcpStream::connect(&addr).await?;
     let server_name = ServerName::from(ip);
-    let mut stream = get_tlstream(server_name, stream).await?;
+    //
+    //write connection status 
+    stream.write_u8(0).await?;
+    
+    let mut stream = get_tlstream(stream, server_name).await?;
     debug!("tls connected");
     // get request ready before handshake
     let head = Chead {
