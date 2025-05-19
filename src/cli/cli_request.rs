@@ -144,7 +144,9 @@ pub async fn handle_cli_request(command: Commands) {
                 exit(1);
             };
 
-
+            let no_tls = if no_tls.is_none(){
+                false
+            } else {no_tls.unwrap()};
             let db_path = if db.is_none() {
                 debug!("using default sqliteDB ");
                 SQLITEDB_PATH.to_string()
@@ -273,7 +275,7 @@ pub async fn handle_cli_request(command: Commands) {
                     ip,
                     None,
                     request,
-                    no_tls.unwrap(),
+                    no_tls,
                 ).await.unwrap();
 
                 println!("done {}", res);
@@ -363,7 +365,7 @@ pub async fn handle_cli_request(command: Commands) {
                     ip,
                     Some(checksum),
                     request.clone(),
-                    no_tls.unwrap(),
+                    no_tls,
 
                 ).await.unwrap();
 
@@ -432,7 +434,7 @@ pub async fn handle_cli_request(command: Commands) {
                     ip,
                     Some(false),
                     request,
-                    no_tls.unwrap(),
+                    no_tls,
                 ).await.unwrap();
             
             }else if login.is_some() && login.unwrap() {

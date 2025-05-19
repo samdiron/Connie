@@ -99,7 +99,7 @@ pub enum Commands {
         #[arg(long)]
         Delete: Option<bool>,
 
-        #[arg(long, short, default_value="false")]
+        #[arg(long, short)]
         no_tls: Option<bool>,
 
         #[arg(long, short, default_value="false")]

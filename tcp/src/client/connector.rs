@@ -1,4 +1,5 @@
 
+use core::convert::From;
 use std::thread;
 use std::io::Result;
 use std::process::exit;
@@ -31,7 +32,10 @@ use crate::common::handshakes;
 use crate::client::config::make_config;
 use crate::client::client::Connection;
 use crate::common::util::client::{rvfs, wvts};
-use crate::client::handle_request::{handle_client_request, raw_handle_client_request};
+use crate::client::handle_request::{
+    handle_client_request,
+    raw_handle_client_request
+};
 use crate::common::request::req_format::{JwtReq, LoginReq};
 use crate::common::request::{
     JWT_AUTH,
@@ -106,7 +110,7 @@ async fn get_stream(
     host: &SqliteHost,
     port: Option<u16>,
     ip: Option<IpAddr>,
-) -> Result<(TcpStream, ServerName<'static>)> {
+) -> Result<(TcpStream, IpAddr)> {
     let port = if port.is_some(){port.unwrap()} else {host.port};
     
     let pub_ip: IpAddr = host.pub_ip.parse().unwrap();
@@ -115,7 +119,12 @@ async fn get_stream(
     let pub_addr = SocketAddr::new(pub_ip, port);
     let pri_addr = SocketAddr::new(pri_ip, port);
     let addr: IpAddr;
-    let me_pub_ip = public_ip::addr().await;
+
+    let dur = Duration::from_secs_f32(0.20);
+    let me_pub_ip_bind = timeout(dur, public_ip::addr()).await;
+    let me_pub_ip = if me_pub_ip_bind.is_ok() {
+        me_pub_ip_bind.unwrap()
+    } else {None};
     info!(
         "server pulic ip: {}, private ip: {}",
         &host.pub_ip,
@@ -142,13 +151,11 @@ async fn get_stream(
             .expect("could not connect to public ip")
 
     };
-    let addr = ServerName::from(addr);
-
     
     Ok((stream, addr))
     } else {
         let ip = ip.unwrap();
-        let addr = ServerName::from(ip.clone());
+        let addr = ip.clone();
         let socket_addr = SocketAddr::new(ip, port);
         debug!("will use custom ip: {}", &socket_addr);
         let stream = TcpStream::connect(&socket_addr)
@@ -158,6 +165,11 @@ async fn get_stream(
     }
 } 
 
+
+
+fn get_server_name(addr: IpAddr) -> ServerName<'static> {
+    ServerName::from(addr)
+}
 
 
 pub async fn login_request(
@@ -186,7 +198,8 @@ pub async fn login_request(
         conn.port,
         conn.ip
     ).await?;
-    let mut stream = get_tlstream(_addr, stream)
+    let servername = get_server_name(_addr);
+    let mut stream = get_tlstream(servername, stream)
         .await
         .expect("could not connect tls");
     let is_who_server = handshakes::client(
@@ -262,12 +275,11 @@ pub async fn connect_tcp(
 
     let (
         mut stream,
-        tls_server_name
+        ip_addr
     ) = get_stream(&conn.server, conn.port, conn.ip).await?;
     if no_tls {
+        info!("will not be using tls");
         stream.write_u8(1).await?;
-
-        stream.write_u8(0).await?;
 
             
         let is_who_server = handshakes::raw_client_handshake(
@@ -292,7 +304,7 @@ pub async fn connect_tcp(
             exit(UNAUTHORIZED as i32)
         };
 
-        info!("sent full request with size: {:?}",size);
+        debug!("sent full request with size: {:?}",size);
         let state = raw_handle_client_request(
             &mut stream,
             rqm,
@@ -313,7 +325,7 @@ pub async fn connect_tcp(
 
     } else {
         stream.write_u8(0).await?;
-
+        let tls_server_name = get_server_name(ip_addr);
         let mut stream = get_tlstream(tls_server_name, stream).await?;
             
         let is_who_server = handshakes::client(
@@ -338,7 +350,7 @@ pub async fn connect_tcp(
             exit(UNAUTHORIZED as i32)
         };
 
-        info!("sent full request with size: {:?}",size);
+        debug!("sent full request with size: {:?}",size);
         let state = handle_client_request(
             &mut stream,
             rqm,
