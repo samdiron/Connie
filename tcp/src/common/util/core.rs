@@ -42,7 +42,7 @@ pub async fn raw_read_stream(
     if buf.len() > rcve {
         buf.resize_with(rcve, Default::default);
     }
-    info!("STREAMREAD: bytes read {:?}", rcve);
+    debug!("STREAMREAD: bytes read {:?}", rcve);
     Ok(buf)
 } 
 /// stands for read vector from stream 
@@ -99,16 +99,15 @@ pub async fn raw_wffb(
     s.write_u64(_size).await?;
     s.flush().await?;
 
-    info!("tol: {tol}, size: {_size}");
+    debug!("tol: {tol}, size: {_size}");
     let standard_wait = Duration::from_secs(WAIT_FOR_UPDATE_PERCENTAGE.into());
     if verbose {
 
         let mut _when_to_print = Instant::now();
         for i in 0..tol {
             if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
-                info!("end tol");
                 let buf_size = _usize - sent;
-                info!("buf_size: {buf_size}");
+                debug!("end tol: buf_size: {buf_size}");
                 let end_buffer_size = buf_size as u16; 
                 s.write_u16(end_buffer_size).await?;
 
@@ -135,9 +134,8 @@ pub async fn raw_wffb(
         for i in 0..tol {
 
             if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
-                info!("end tol");
                 let buf_size = _usize - sent;
-                info!("buf_size: {buf_size}");
+                debug!("end tol: buf_size: {buf_size}");
                 let end_buffer_size = buf_size as u16; 
                 s.write_u16(end_buffer_size).await?;
 

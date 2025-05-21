@@ -47,7 +47,7 @@ pub async fn read_stream(
     if buf.len() > rcve {
         buf.resize_with(rcve, Default::default);
     }
-    info!("STREAMREAD: bytes read {:?}", rcve);
+    debug!("STREAMREAD: bytes read {:?}", rcve);
     Ok(buf)
 } 
 /// stands for read vector from stream 
@@ -136,9 +136,8 @@ pub async fn wffb(
     for i in 0..tol {
 
         if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
-            info!("end tol");
             let buf_size = _usize - sent;
-            info!("buf_size: {buf_size}");
+            debug!("end tol: buf_size: {buf_size}");
             let end_buffer_size = buf_size as u16; 
             s.write_u16(end_buffer_size).await?;
 

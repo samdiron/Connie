@@ -16,6 +16,7 @@ pub(crate) type ClientTlsStreams = client::TlsStream<TcpStream>;
 #[allow(dead_code)]
 pub(crate) mod handshakes {
     use std::io;
+    use std::time::Duration;
     
     use common_lib::log::{debug, warn};
     use common_lib::public_ip;
@@ -26,6 +27,7 @@ pub(crate) mod handshakes {
         types::SqlitePool
     };
     use tokio::net::TcpStream;
+    use tokio::time::timeout;
     
     use crate::common::{
         request::SIGNIN_CRED,
@@ -192,8 +194,13 @@ pub(crate) mod handshakes {
         ).await?;
         debug!("HANDSHAKE:SENT:HOST");
         let client_confirm = stream.read_u8().await?;
-        let server_ip = public_ip::addr()
-            .await.unwrap().to_string();
+
+        let dur = Duration::from_secs_f64(0.30);
+        let server_ip_bind = timeout(dur ,public_ip::addr()).await;
+        let server_ip = if server_ip_bind.is_ok() {
+            server_ip_bind.unwrap().unwrap().to_string()
+        }else { server.pub_ip.clone() };
+
         if client_confirm == 0 {
             wvts(
                 Some(stream),
@@ -251,8 +258,13 @@ pub(crate) mod handshakes {
         ).await?;
         debug!("HANDSHAKE:SENT:HOST");
         let client_confirm = stream.read_u8().await?;
-        let server_ip = public_ip::addr()
-            .await.unwrap().to_string();
+
+        let dur = Duration::from_secs_f64(0.30);
+        let server_ip_bind = timeout(dur ,public_ip::addr()).await;
+        let server_ip = if server_ip_bind.is_ok() {
+            server_ip_bind.unwrap().unwrap().to_string()
+        }else { server.pub_ip.clone() };
+
         if client_confirm == 0 {
             wvts(
                 None,
