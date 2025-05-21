@@ -190,6 +190,7 @@ pub async fn login_request(
     pool: &SqlitePool,
     conn: Connection,
     passwd: String,
+    notls: bool,
 ) -> Result<u8> {
     assert!(conn.jwt.is_none());
     info!("deleting old jwts");
@@ -199,8 +200,8 @@ pub async fn login_request(
         &conn.user.cpid,
         &conn.server.cpid
     ).await;
-    let name  = conn.user.usrname;
-    let cpid = conn.user.cpid;
+    let name  = conn.user.usrname.clone();
+    let cpid = conn.user.cpid.clone();
     let req = LoginReq {
         cpid: cpid.clone(),
         name: name.clone(),
@@ -212,6 +213,17 @@ pub async fn login_request(
         conn.port,
         conn.ip
     ).await?;
+
+    if notls {
+        stream.write_u8(1).await?;
+        let res = notls_login_helper(
+            stream,
+            request,
+            pool,
+            conn,
+        ).await?;
+        return Ok(res);
+    };
 
     // write the connection status no_tls == 1 / tls == 0
     stream.write_u8(0).await?;
@@ -270,6 +282,68 @@ pub async fn login_request(
         }
     }
 }
+
+async fn notls_login_helper(
+    mut stream: TcpStream,
+    request: Vec<u8>,
+    pool: &SqlitePool,
+    conn: Connection,
+) -> Result<u8> {
+    let cpid = conn.user.cpid;
+    let is_who_server = handshakes::raw_client_handshake(
+        &mut stream,
+        &conn.server,
+        pool
+    ).await?;
+    if is_who_server != 0 {
+        exit(1);
+    };
+    
+    stream.write_u8(LOGIN_CRED).await?;
+
+    stream.flush().await?;
+    let reques_len = request.len();
+    debug!("login request size: {:?}", reques_len);
+    let size = stream.write(&request).await?;
+    stream.flush().await?;
+    debug!("request was sent: bytes sent {:?}",size);
+    assert_eq!(size, reques_len);
+    debug_assert_eq!(size, reques_len);
+    drop(request);
+
+    let confirm = stream.read_u8().await?;
+    debug!("SERVER: {}",confirm);
+    if confirm == 0 {
+        let mut jwt_buf = vec![0;500];
+        let size = stream.read(&mut jwt_buf).await.unwrap();
+        let jwt = String::from_utf8(
+            jwt_buf[..size]
+                .to_vec()
+        ).unwrap();
+        add_jwt(&conn.server.cpid, &jwt, &cpid, pool).await;
+        stream.write_u8(0).await?;
+        drop(stream);
+        return Ok(0)
+    }
+    else {
+        match confirm {
+            UNAUTHORIZED => {
+                error!(
+                "SERVER: you are not authorized to log in
+                    check if you are an already a in the db used by the server 
+                    will exit not with status of 1"
+                );
+                exit(1) 
+                
+            } 
+            _ => {Ok(44)}
+        }
+    }
+}
+
+
+
+
 
 pub async fn connect_tcp(
     pool: &SqlitePool,

@@ -217,7 +217,8 @@ pub async fn handle_cli_request(command: Commands) {
                     jwt,
                     port,
                     ip,
-                    pool
+                    pool,
+                    no_tls
                 ).await.unwrap();
 
                 if server_media.len() == 0usize {
@@ -447,7 +448,8 @@ pub async fn handle_cli_request(command: Commands) {
                     server,
                     port,
                     ip,
-                    passwd
+                    passwd,
+                    no_tls
                 ).await.unwrap();
                 info!("STATUS: {res}");
                 

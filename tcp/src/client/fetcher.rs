@@ -44,7 +44,8 @@ pub async fn get_files(
     jwt: String,
     custom_port: Option<u16>,
     custom_ip: Option<IpAddr>,
-    pool: &SqlitePool
+    pool: &SqlitePool,
+    notls: bool,
 ) -> Result<Vec<Smedia>> {
     let port = if custom_port.is_some() {
         debug!("using custom port");
@@ -85,10 +86,16 @@ pub async fn get_files(
 
     let mut stream = TcpStream::connect(&addr).await?;
     let server_name = ServerName::from(ip);
-    //
+
+    if notls {
+        stream.write_u8(1).await?;
+        let res = notls_fetcher_helper(&mut stream, u, server, jwt, pool).await?;
+        return Ok(res);
+    };
+    
     //write connection status 
     stream.write_u8(0).await?;
-    
+
     let mut stream = get_tlstream(stream, server_name).await?;
     debug!("tls connected");
     // get request ready before handshake
@@ -133,5 +140,58 @@ pub async fn get_files(
     }
 
 
+    Ok(media_from_server)
+}
+
+
+
+
+async fn notls_fetcher_helper(
+    stream: &mut TcpStream,
+    u: &SqliteUser,
+    server: &SqliteHost,
+    jwt: String,
+    pool: &SqlitePool,
+) -> Result<Vec<Smedia>> {
+
+    let head = Chead {
+        jwt,
+        cpid: u.cpid.clone()
+    };
+    // handshake 
+    let is_who_server = handshakes::raw_client_handshake(
+        stream,
+        &server,
+        pool
+    ).await?;
+    if is_who_server != 0 {
+        exit(1);
+    };
+    debug!("handshake done");
+
+    // serializeing request 
+    let request = head.sz().unwrap();
+    // writing request header
+    stream.write_u8(FETCH).await?;
+    stream.write_all(&request).await?;
+
+    debug!("sent {}",request.len());
+    stream.flush().await?;
+    let items = stream.read_u16().await.unwrap();
+    let mut media_from_server: Vec<Smedia> = vec![];
+
+    for _i in 0..items {
+        
+        let buf = rvfs(None, Some(stream)).await?;
+        let media: Smedia = Smedia::dz(buf).unwrap();
+        let sqlitem = Smedia {
+            name: media.name,
+            type_: media.type_,
+            checksum: media.checksum,
+            size: media.size,
+        };
+
+        media_from_server.push(sqlitem);
+    }
     Ok(media_from_server)
 }

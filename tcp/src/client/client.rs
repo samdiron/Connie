@@ -53,6 +53,7 @@ pub async fn client_login_process(
     port: Option<u16>,
     ip: Option<IpAddr>,
     passwd: String,
+    notls: bool,
 ) -> Result<u8> {
     let conn = Connection {
         jwt: None,
@@ -66,7 +67,7 @@ pub async fn client_login_process(
         &conn.user.cpid,
         &conn.server.cpid
     ).await;
-    let status = login_request(pool, conn, passwd).await?;
+    let status = login_request(pool, conn, passwd, notls).await?;
     Ok(status)
 }
 
