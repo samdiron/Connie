@@ -1,6 +1,6 @@
 pub(in crate::client) mod config; 
-pub(crate) mod connector;
-pub(crate) mod handle_request;
+pub(in crate::client) mod connector;
+pub(in crate::client) mod handle_request;
 
 pub mod client;
 pub mod fetcher;

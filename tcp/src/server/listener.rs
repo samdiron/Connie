@@ -14,12 +14,13 @@ use common_lib::cheat_sheet::{LOCAL_IP, TCP_MAIN_PORT};
 
 use tokio::task;
 use tokio::task::JoinHandle;
-use tokio::io::AsyncReadExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 use tokio_rustls::TlsAcceptor;
 use tokio_rustls::server::TlsStream;
 
+use crate::common::request::SERVER_WILL_NOT_ALLOW_NOTLS;
 use crate::server::config::make_config;
 use crate::server::handle_client::{handle, raw_handle};
 use crate::consts::{NET_STATUS, NEW_USERS, USE_IP};
@@ -43,8 +44,9 @@ async fn tls_acceptor(
 
 
 #[allow(unused_assignments)]
-pub async fn bind(pool: PgPool, ident: Server, port: u16) {
-
+pub async fn bind(pool: PgPool, ident: Server, port: u16, allow_notls: bool) {
+        
+    info!("allow notls status is {}", allow_notls);
     let ip = if *USE_IP.lock().unwrap() == NET_STATUS {
         debug!("server will listen on a custom ip");
         let ip = "0.0.0.0";
@@ -147,8 +149,6 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
             thread::sleep(dur);
         }
 
-
-
         // listener
         match socket.accept().await {
             Ok(stream) => {
@@ -157,8 +157,17 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
                 let sqlite_host = sqlite_host.clone();
                 let addr = stream.1;
                 let mut stream = stream.0;
-                let no_tls = stream.read_u8().await.unwrap();
-                if no_tls == 1 {
+                let no_tls = stream.read_u8().await;
+
+                let no_tls = if no_tls.is_ok() {
+                    no_tls.unwrap()
+                }else { 0 };
+                
+                if no_tls == 1 && allow_notls {
+                    let res = stream.write_u8(0).await;
+                    if res.is_ok() {
+                        res.unwrap();
+                    };
                     let task_handle = task::spawn(async move {
                     info!("client: {}", &addr);
                     match raw_handle(
@@ -183,6 +192,11 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16) {
                     });
                     handles.push(task_handle);
 
+                } else if !allow_notls && no_tls == 1 {
+                    let res = stream.write_u8(SERVER_WILL_NOT_ALLOW_NOTLS).await;
+                    if res.is_ok() {
+                        res.unwrap();
+                    };
                 }
                 else {
                     info!("notls client");

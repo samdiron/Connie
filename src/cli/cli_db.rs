@@ -1,11 +1,18 @@
 
 use std::{
-    fs::remove_file, process::exit
+    fs::remove_file,
+    process::exit,
 };
 
-use lib_db::{database::{get_conn, migrate}, sqlite::{self, migration}};
+use lib_db::{
+    database::{get_conn, migrate},
+    sqlite::{self, migration},
+};
 
-use tokio::{fs::File, io::AsyncWriteExt};
+use tokio::{
+    io::AsyncWriteExt,
+    fs::File,
+};
 
 use common_lib::path::{DB_CONN, SQLITEDB_PATH};
 

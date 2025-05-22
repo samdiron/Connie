@@ -51,6 +51,7 @@ pub async fn handle_cli_bind(command: Commands) {
             default,
             new_users,
             admin_port,
+            allow_notls,
         } => {
 
             if secret.is_some() {
@@ -71,6 +72,11 @@ pub async fn handle_cli_bind(command: Commands) {
                 let mut new = NEW_USERS.lock().unwrap();
                 *new = 1
             };
+
+
+            let allow_notls = if allow_notls.is_some() {
+                allow_notls.unwrap()
+            } else { true };
 
 
 
@@ -123,7 +129,7 @@ pub async fn handle_cli_bind(command: Commands) {
                 debug!("should be files: {}",files_path.len());
                 let dir = PathBuf::from_str(DATA_DIR).unwrap();
                 file_checker(&dir, &files_path, files_size).await;
-                bind(pool, config.default_server, port).await
+                bind(pool, config.default_server, port, allow_notls).await
                 
             } else if server.is_some() {
                 let _pool =  get_conn().await.unwrap();
@@ -150,7 +156,7 @@ pub async fn handle_cli_bind(command: Commands) {
 
                 
                 
-                bind(_pool, _res.unwrap(), port).await;
+                bind(_pool, _res.unwrap(), port, allow_notls).await;
             }
         }
 

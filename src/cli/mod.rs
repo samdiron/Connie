@@ -31,6 +31,9 @@ pub enum Commands {
      
     BIND {
 
+        #[arg(long)]
+        allow_notls: Option<bool>,
+
         #[arg(long, short)]
         admin_port: Option<u16>,
 

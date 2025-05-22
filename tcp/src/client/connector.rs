@@ -38,10 +38,7 @@ use crate::client::handle_request::{
 };
 use crate::common::request::req_format::{JwtReq, LoginReq};
 use crate::common::request::{
-    JWT_AUTH,
-    RQM,
-    SIGNIN_CRED,
-    UNAUTHORIZED,
+    JWT_AUTH, RQM, SERVER_WILL_NOT_ALLOW_NOTLS, SIGNIN_CRED, UNAUTHORIZED
 };
 
 
@@ -216,6 +213,14 @@ pub async fn login_request(
 
     if notls {
         stream.write_u8(1).await?;
+        let server_will_allow_no_tls = stream.read_u8().await?;
+        if server_will_allow_no_tls == SERVER_WILL_NOT_ALLOW_NOTLS {
+            error!(
+                "SERVER will not allow notls connections with status: {}",
+                SERVER_WILL_NOT_ALLOW_NOTLS 
+            );
+            exit(SERVER_WILL_NOT_ALLOW_NOTLS as  i32);
+        };
         let res = notls_login_helper(
             stream,
             request,
@@ -373,6 +378,14 @@ pub async fn connect_tcp(
         info!("will not be using tls");
         stream.write_u8(1).await?;
 
+        let server_will_allow_no_tls = stream.read_u8().await?;
+        if server_will_allow_no_tls == SERVER_WILL_NOT_ALLOW_NOTLS {
+            error!(
+                "SERVER will not allow notls connections with status: {}",
+                SERVER_WILL_NOT_ALLOW_NOTLS 
+            );
+            exit(SERVER_WILL_NOT_ALLOW_NOTLS as  i32);
+        };
             
         let is_who_server = handshakes::raw_client_handshake(
             &mut stream,

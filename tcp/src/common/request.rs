@@ -19,8 +19,12 @@ pub const RECONNECT_STATUS: u8 = 8;
 pub const JWT_AUTH: u8 = 0;
 
 pub const NOT_FOUND: u8 = 22;
+
 pub const CLIENT_SIDE_ERR: u8 = 68;
+
 pub const SERVER_SIDE_ERR: u8 = 69;
+
+pub const SERVER_WILL_NOT_ALLOW_NOTLS: u8 = 73;
 
 pub const MEDIA_ALREADY_EXISTS: u8 = 62;
 

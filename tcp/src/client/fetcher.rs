@@ -4,6 +4,7 @@ use std::process::exit;
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 
+use common_lib::log::error;
 use lib_db::{
     media::fetch::Smedia, 
     types::SqlitePool
@@ -27,6 +28,7 @@ use common_lib::tokio::{
 
 use tokio_rustls::rustls::pki_types::ServerName;
 
+use crate::common::request::SERVER_WILL_NOT_ALLOW_NOTLS;
 use crate::common::{
     handshakes,
     request::FETCH,
@@ -89,6 +91,14 @@ pub async fn get_files(
 
     if notls {
         stream.write_u8(1).await?;
+        let server_will_allow_no_tls = stream.read_u8().await?;
+        if server_will_allow_no_tls == SERVER_WILL_NOT_ALLOW_NOTLS {
+            error!(
+                "SERVER will not allow notls connections with status: {}",
+                SERVER_WILL_NOT_ALLOW_NOTLS 
+            );
+            exit(SERVER_WILL_NOT_ALLOW_NOTLS as  i32);
+        };
         let res = notls_fetcher_helper(&mut stream, u, server, jwt, pool).await?;
         return Ok(res);
     };
