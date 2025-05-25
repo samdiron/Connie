@@ -176,6 +176,7 @@ pub(crate) mod handshakes {
             return Ok(1)
         };
         stream.write_u8(0).await?;
+        stream.flush().await?;
         wvts(
             Some(stream),
             None,
@@ -183,7 +184,7 @@ pub(crate) mod handshakes {
                 .as_bytes()
                 .to_vec()
         ).await?;
-        debug!("HANDSHAKE:SENT:CPID");
+        debug!("SENT:CPID");
         let _confirm = stream.read_u8().await?;
         wvts(
             Some(stream),
@@ -192,7 +193,7 @@ pub(crate) mod handshakes {
                 .as_bytes()
                 .to_vec()
         ).await?;
-        debug!("HANDSHAKE:SENT:HOST");
+        debug!("SENT:HOST");
         let client_confirm = stream.read_u8().await?;
 
         let dur = Duration::from_secs_f64(0.30);
@@ -209,12 +210,9 @@ pub(crate) mod handshakes {
                     .as_bytes()
                     .to_vec()
             ).await?;
-            debug!("SUCCSESFUL:HANDSHAKE");
+            debug!(":SUCCSESFUL");
             return Ok(0)
         } else {return Ok(1)}
-
-        
-        
     }
 
 
@@ -247,7 +245,7 @@ pub(crate) mod handshakes {
                 .as_bytes()
                 .to_vec()
         ).await?;
-        debug!("HANDSHAKE:SENT:CPID");
+        debug!("SENT:CPID");
         let _confirm = stream.read_u8().await?;
         wvts(
             None,
@@ -256,7 +254,7 @@ pub(crate) mod handshakes {
                 .as_bytes()
                 .to_vec()
         ).await?;
-        debug!("HANDSHAKE:SENT:HOST");
+        debug!("SENT:HOST");
         let client_confirm = stream.read_u8().await?;
 
         let dur = Duration::from_secs_f64(0.30);
@@ -273,7 +271,7 @@ pub(crate) mod handshakes {
                     .as_bytes()
                     .to_vec()
             ).await?;
-            debug!("SUCCSESFUL:HANDSHAKE");
+            debug!(":SUCCSESFUL");
             return Ok(0)
         } else {return Ok(1)}
 
