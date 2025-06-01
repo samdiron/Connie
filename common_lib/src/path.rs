@@ -1,7 +1,11 @@
 pub const HOME: &str = "/opt/Connie";
 
 pub const DB_CONN: &str = "/opt/Connie/conf/db_conn";
+
 pub const DATA_DIR: &str = "/opt/Connie/metadata";
+
+pub const PUBLIC_DATA_DIR: &str = "/opt/Connie/metadata/pub";
+pub const CURRENT_DOWNLOADS: &str = "/opt/Connie/metadata/.current.toml";
 
 pub const CERTIFICATE_INFO: &str = "/opt/Connie/conf/cert.info.toml";
 
