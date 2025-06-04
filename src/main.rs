@@ -119,7 +119,14 @@ async fn main() {
             }
         }
 
-    }   
+    } else {
+        env_logger::Builder::new()
+            .parse_filters("WARN")
+            .parse_filters("ERROR")
+            .parse_filters("INFO")
+            .init();
+
+    }  
     
     if let Some(command) = _cli.config {
         config_handle(command).await;
