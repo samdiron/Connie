@@ -83,8 +83,10 @@ pub async fn handle_cli_server(command: Commands) {
                 } else {
                     common_lib::cheat_sheet::LOCAL_IP.to_string()
                 };
+                let pub_ip = String::from(" ");
                 let server = Server {
-                    ip,
+                    pri_ip: ip,
+                    pub_ip,
                     cpid: String::new(),
                     name,
                     host: string_host,

@@ -7,10 +7,11 @@ use crate::escape_user_input;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Server {
-    pub ip: String,
     pub cpid: String,
     pub name: String,
     pub host: String,
+    pub pri_ip: String,
+    pub pub_ip: String,
     pub memory: i64,
     pub max_conn: i16,
     pub password: String,
@@ -27,7 +28,8 @@ pub async fn get_server(
         .fetch_one(pool)
         .await?;
     let server = Server {
-        ip: row.get("ip"),
+        pri_ip: row.get("pri_ip"),
+        pub_ip: row.get("pub_ip"),
         cpid: row.get("cpid"),
         name: row.get("name"),
         host: row.get("host"),
@@ -44,14 +46,15 @@ impl Server {
         let cpid = Uuid::new_v4().to_string();
 
         let sql = format!(
-            "INSERT INTO server(cpid, name, host, memory, max_conn,ip , password) 
-            VALUES ('{}', '{}', '{}', {}, {}, '{}', '{}'); ",
+            "INSERT INTO server(cpid, name, host, memory, max_conn, pri_ip, pub_ip, password) 
+            VALUES ('{}', '{}', '{}', {}, {}, '{}', '{}', '{}'); ",
             escape_user_input(&cpid),
             escape_user_input(&self.name),
             escape_user_input(&self.host),
             self.memory,
             self.max_conn,
-            escape_user_input(&self.ip),
+            escape_user_input(&self.pri_ip),
+            escape_user_input(&self.pub_ip),
             escape_user_input(&password),
             
         );
@@ -59,10 +62,11 @@ impl Server {
             .execute(pool)
             .await?;
         let server = Server {
-            ip: self.ip,
             cpid,
             name: self.name,
             host: self.host,
+            pri_ip: self.pri_ip,
+            pub_ip: self.pub_ip,
             memory: self.memory,
             max_conn: self.max_conn,
             password,

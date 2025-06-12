@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Instant};
 
 use common_lib::{
     log::{debug, info},
@@ -17,6 +17,7 @@ pub async fn file_checker(
     dir: &PathBuf,
     files: &Vec<PathBuf>,
     size: u64)  {
+    let start = Instant::now();
     let (current_files, ..) = get_files_in_storage(dir);
     debug!("FILE_CHECKER: found {} files in {:#?}",current_files.len(), dir);
     let mut files_removed = 0;
@@ -33,7 +34,8 @@ pub async fn file_checker(
     }
     let (.., nsize) = get_files_in_storage(&dir);
     assert_eq!(size, nsize);
-    info!("FILE_CHECKER: removed {files_removed} from {:#?}", dir);
+    if 0 == files_removed {info!("FILE_CHECKER: removed {files_removed} from {:#?}", dir)};
+    info!("FILESCHECKER: finished in {}ns", start.elapsed().as_nanos());
 }
 
 

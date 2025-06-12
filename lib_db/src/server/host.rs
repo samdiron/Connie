@@ -1,10 +1,14 @@
-use sqlx::PgPool;
-use sqlx::Result;
+use common_lib::log::debug;
 use sqlx::Row;
+use sqlx::query;
+use sqlx::Result;
+use sqlx::PgPool;
 
 use crate::sha256::digest;
 use crate::escape_user_input;
+use crate::media::media::Media;
 use super::server_struct::Server;
+use crate::sqlite::sqlite_host::SqliteHost;
 
 /// gets the host info used for bind --server 
 pub async fn get_host_info(
@@ -31,10 +35,11 @@ pub async fn get_host_info(
     .await?;
     
     let s = Server{
-        ip: row.get("ip"),
         cpid: row.get("cpid"),
         name: row.get("name"),
         host: row.get("host"),
+        pri_ip: row.get("pri_ip"),
+        pub_ip: row.get("pub_ip"),
         memory: row.get("memory"),
         max_conn: row.get("max_conn"),
         password: row.get("password")
@@ -44,6 +49,75 @@ pub async fn get_host_info(
 
 }
 
+
+pub async fn get_host_public_files(
+    server: &SqliteHost,
+    pool: &PgPool
+) -> Result<Vec<Media>> {
+    let sql = format!("
+SELECT (name, size, path, type, checksum) 
+FROM media 
+WHERE in_host = cpid AND in_host = '{}' ;
+", escape_user_input(&server.cpid));
+    let vec_res = query(&sql).fetch_all(pool).await?;
+    let mut media_vec: Vec<Media> = Vec::with_capacity(vec_res.len()); 
+    for res in vec_res {
+        let name = res.get("name");
+        let size = res.get("size");
+        let path = res.get("path");
+        let type_ = res.get("type");
+        let checksum = res.get("checksum");
+        let cpid = server.cpid.clone();
+        let in_host = server.cpid.clone();
+        let m: Media = Media {
+            name,
+            cpid,
+            size,
+            path,
+            type_,
+            in_host,
+            checksum,
+        };
+        media_vec.push(m);
+    };
+    Ok(media_vec)
+}   
+
+pub async fn update_server_pri_ip(
+    server_cpid: &String,
+    ip: &String,
+    pool: &PgPool
+) -> Result<u8> {
+    let sql = format!("
+UPDATE server
+SET pri_ip = '{}'
+WHERE cpid = '{}' ;
+",  escape_user_input(ip),
+    escape_user_input(server_cpid)
+    );
+    debug!("updating server public ip");
+    let res = query(&sql).execute(pool).await?;
+    drop(sql);
+    Ok(res.rows_affected() as u8 )
+}
+
+
+pub async fn update_server_pub_ip(
+    server_cpid: &String,
+    ip: &String,
+    pool: &PgPool
+) -> Result<u8> {
+    let sql = format!("
+UPDATE server
+SET pub_ip = '{}'
+WHERE cpid = '{}' ;
+",  escape_user_input(ip),
+    escape_user_input(server_cpid)
+    );
+    debug!("updating server private ip");
+    let res = query(&sql).execute(pool).await?;
+    Ok(res.rows_affected() as u8 )
+}
 
 
 

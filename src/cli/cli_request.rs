@@ -4,6 +4,7 @@ use std::io::{
     Write,
     stdout,
 };
+use std::time;
 use std::{
     path::PathBuf,
     process::exit,
@@ -59,6 +60,7 @@ async fn file_checker(
     cpid: String,
     pool: &SqlitePool
 ) {
+    let start = time::Instant::now();
     let mut deleted = 0;
     let mut added = 0;
     // deleteing local sqlite media that is deleted from the server
@@ -90,8 +92,11 @@ async fn file_checker(
             added+=1;
         };
     }
-    info!("FILECHECKER: added {added} files from server");
-    info!("FILECHECKER: deleted {deleted} files server");
+    let end = start.elapsed();
+    
+    if 0 == added {info!("FILECHECKER: added {added} files from server")};
+    if 0 == deleted {info!("FILECHECKER: deleted {deleted} files server")};
+    info!("FILECHECKER: finished in {}ns", end.as_nanos());
 }
 
 #[allow(unused_assignments)]
