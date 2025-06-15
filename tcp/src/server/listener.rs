@@ -3,6 +3,8 @@ use std::str::FromStr;
 use std::net::{IpAddr, SocketAddr};
 use std::time::{Duration, Instant};
 
+use common_lib::path::PUBLIC_DATA_DIR;
+use lib_db::server::host::get_host_public_files;
 use lib_db::types::PgPool;
 use lib_db::jwt::DURATION;
 use lib_db::server::server_struct::Server;
@@ -26,6 +28,7 @@ use crate::server::handle_client::{handle, raw_handle};
 use crate::consts::{NET_STATUS, NEW_USERS, USE_IP};
 use crate::server::runtime::file_checks::clean_unfinished_files;
 use crate::server::runtime::generate_log_templates;
+use crate::server::runtime::public_files::{new_pub_files_process, pub_files_process};
 
 
 
@@ -84,6 +87,24 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16, allow_notls: bool) {
         pub_ip: me_pub_ip.to_string(),
         pri_ip:LOCAL_IP.to_string(),
     };
+
+    let db_pub_files = get_host_public_files(&sqlite_host, &pool).await.unwrap();
+    if !db_pub_files.is_empty() {
+        pub_files_process(
+            db_pub_files,
+            PUBLIC_DATA_DIR,
+            &sqlite_host.cpid,
+            &pool
+        ).await.unwrap();
+    }else {
+        new_pub_files_process(
+            PUBLIC_DATA_DIR,
+            &sqlite_host.cpid,
+            &pool
+        ).await.unwrap();
+    }
+
+
     let config = make_config();
     let acceptor = TlsAcceptor::from(config);
     let mut handles: Vec<JoinHandle<()>> = vec![];

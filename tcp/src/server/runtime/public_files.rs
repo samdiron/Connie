@@ -79,12 +79,20 @@ fn get_new_files(
     let (files , ..) = get_files_in_storage(dir);
     let mut new_files: Vec<PathBuf> = vec![];
     let mut nfiles_added = 0usize;
-    for f in files {
-        if !path_vec.contains(&f) {
-            new_files.push(f);
-            nfiles_added+=1;
-        }
+    if files.is_empty(){
+        return Ok((new_files, nfiles_added));
     };
+    if !path_vec.is_empty() {
+        for f in files {
+            if !path_vec.contains(&f) {
+                new_files.push(f);
+                nfiles_added+=1;
+            }
+        };
+    } else {
+        let len = files.len();
+        return Ok((files, len)); 
+    }
 
     Ok((new_files, nfiles_added))
 }
@@ -130,6 +138,22 @@ async fn create_new_records(
 
 
 
+pub async fn new_pub_files_process(
+    dir: &str,
+    host_cpid: &String,
+    pool: &PgPool,
+) -> Result<(), sqlE> {
+    
+    let dir = PathBuf::from_str(dir).unwrap();
+    if !dir.is_dir() || !dir.exists() {
+        return Ok(());
+    }
+    let (files , ..) = get_files_in_storage(&dir);
+    create_new_records(files, host_cpid, pool).await?;
+    Ok(())
+}
+
+
 pub async fn pub_files_process(
     db_files: Vec<Media>,
     dir: &str,
@@ -137,6 +161,9 @@ pub async fn pub_files_process(
     pool: &PgPool,
 ) -> Result<(), sqlE> {
     let dir = PathBuf::from_str(dir).unwrap();
+    if !dir.is_dir() || !dir.exists() {
+        return Ok(());
+    }
     let (cleaned_vec, nfiles_removed) = remove_deleted_file_records(db_files, pool).await?;
     if nfiles_removed != 0usize {
         info!("pub files removed: {}", nfiles_removed);

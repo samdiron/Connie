@@ -27,11 +27,6 @@ pub async fn migrate(pool: &PgPool) -> Result<(), sqlx::Error> {
         debug!("4:migrate:{sql}");
         let _res = sqlx::query(sql.as_str()).execute(pool).await?;
     }
-    {
-        let sql = crate::migrations::user_av_jwt::get_sql();
-        debug!("5:migrate:{sql}");
-        let _res = sqlx::query(sql.as_str()).execute(pool).await?;
-    }
     Ok(())
 }
 pub fn check_conn() -> u8{

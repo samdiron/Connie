@@ -64,10 +64,13 @@ fn get_files_in_storage(path: &PathBuf) -> (Vec<PathBuf>, u64) {
         .unwrap();
     for entry in meta_dir{
         let e = entry.unwrap();
-        let path = e.path();
-        let size = e.metadata().unwrap().len();
-        paths.push(path);
-        storage+=size
+        if !e.metadata().unwrap().is_dir() {
+
+            let path = e.path();
+            let size = e.metadata().unwrap().len();
+            paths.push(path);
+            storage+=size
+        }
     }
 
 
