@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS "user"(
   CONSTRAINT fk_host 
     FOREIGN KEY(
       host
-    ) REFERENCES server(cpid),
+    ) REFERENCES server(cpid)
 );
 "#
     .to_string();

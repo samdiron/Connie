@@ -11,10 +11,10 @@ CREATE TABLE IF NOT EXISTS media(
   CONSTRAINT fk_cpid 
     FOREIGN KEY(
       cpid
-    ) REFERENCES "user"(cpid),
+    ) REFERENCES "user"(cpid) OR server(cpid),
   CONSTRAINT fk_host 
     FOREIGN KEY(
-      host
+      in_host
     ) REFERENCES server(cpid),
   path TEXT
 );
