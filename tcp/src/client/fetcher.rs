@@ -47,8 +47,9 @@ pub async fn get_files(
     custom_port: Option<u16>,
     custom_ip: Option<IpAddr>,
     pool: &SqlitePool,
+    pub_files: bool,
     notls: bool,
-) -> Result<Vec<Smedia>> {
+) -> Result<(Vec<Smedia>, Option<Vec<Smedia>>)> {
     let port = if custom_port.is_some() {
         debug!("using custom port");
         custom_port.unwrap()
@@ -99,7 +100,13 @@ pub async fn get_files(
             );
             exit(SERVER_WILL_NOT_ALLOW_NOTLS as  i32);
         };
-        let res = notls_fetcher_helper(&mut stream, u, server, jwt, pool).await?;
+        let res = notls_fetcher_helper(
+            &mut stream,
+            u,
+            server, jwt,
+            pub_files,
+            pool
+        ).await?;
         return Ok(res);
     };
     
@@ -149,20 +156,49 @@ pub async fn get_files(
         media_from_server.push(sqlitem);
     }
 
+    let public_files: Option<Vec<Smedia>> = if pub_files {
+        stream.write_u8(1).await?;
+        stream.flush().await?;
+        let items = stream.read_u16().await.unwrap();
+        let mut public_files: Vec<Smedia> = vec![];
 
-    Ok(media_from_server)
+        for _i in 0..items {
+            
+            let buf = rvfs(Some(&mut stream), None).await?;
+            let media: Smedia = Smedia::dz(buf).unwrap();
+            let sqlitem = Smedia {
+                name: media.name,
+                type_: media.type_,
+                checksum: media.checksum,
+                size: media.size,
+            };
+
+            public_files.push(sqlitem);
+        };
+        Some(public_files)
+    }else {
+        stream.write_u8(0).await?;
+        stream.flush().await?;
+        None
+    };
+
+    
+
+    
+    Ok((media_from_server, public_files))
 }
 
 
 
-
+// first vec is user files second vec is public files
 async fn notls_fetcher_helper(
     stream: &mut TcpStream,
     u: &SqliteUser,
     server: &SqliteHost,
     jwt: String,
+    pub_files: bool,
     pool: &SqlitePool,
-) -> Result<Vec<Smedia>> {
+) -> Result<(Vec<Smedia>, Option<Vec<Smedia>>)> {
 
     let head = Chead {
         jwt,
@@ -203,5 +239,33 @@ async fn notls_fetcher_helper(
 
         media_from_server.push(sqlitem);
     }
-    Ok(media_from_server)
+
+    let public_files: Option<Vec<Smedia>> = if pub_files {
+        stream.write_u8(1).await?;
+        stream.flush().await?;
+        let items = stream.read_u16().await.unwrap();
+        let mut public_files: Vec<Smedia> = vec![];
+
+        for _i in 0..items {
+            
+            let buf = rvfs(None, Some(stream)).await?;
+            let media: Smedia = Smedia::dz(buf).unwrap();
+            let sqlitem = Smedia {
+                name: media.name,
+                type_: media.type_,
+                checksum: media.checksum,
+                size: media.size,
+            };
+
+            public_files.push(sqlitem);
+        };
+        Some(public_files)
+    }else {
+        stream.write_u8(0).await?;
+        stream.flush().await?;
+        None
+    };
+
+    
+    Ok((media_from_server, public_files))
 }

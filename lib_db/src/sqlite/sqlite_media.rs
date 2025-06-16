@@ -93,7 +93,38 @@ WHERE cpid = '{user}' AND host = '{host}' ;
 }
 
 
+   
+pub async fn fetch_all_public_files_from_host(
+    host: &String,
+    pool: &SqlitePool
+) -> Result<Vec<Smedia>> {
+    let host = escape_user_input(&host);
+    let sql = format!(r#"
+SELECT *
+FROM media
+WHERE cpid = '{}' AND host = '{}' ;
+    "#, host, host);
+    let rows = sqlx::query(&sql).fetch_all(pool).await?;
+    drop(sql);
+    let mut media_vec: Vec<Smedia> = Vec::new();
+    for row in rows {
+        let name: String = row.get("name");
+        let type_: String = row.get("type");
+        let checksum: String = row.get("checksum");
+        let size: i64 = row.get("size");
+        let local_struct = Smedia {
+            name,
+            type_,
+            checksum,
+            size,
+        };
+        media_vec.push(local_struct);
+
+    }
+    Ok(media_vec)
     
+}
+
 pub async fn fetch_all_media_from_host(
     host: &String,
     user: &String,

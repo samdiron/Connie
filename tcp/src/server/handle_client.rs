@@ -3,6 +3,7 @@ use lib_db::media;
 use lib_db::types::PgPool;
 use lib_db::user::user_struct;
 use lib_db::media::fetch::Smedia;
+use lib_db::server::host::fetch_host_public_files;
 
 use lib_db::sqlite::{
     sqlite_host::{self, SqliteHost},
@@ -242,14 +243,15 @@ pub async fn raw_handle(
             let mut buf = vec![0;600];
             let _size = stream.read(&mut buf).await?;
             let request = Chead::dz(buf).expect("could not deserialze");
-            let (is_val, current_client_cpid ) = request.validate(&sqlite_host.cpid, &pool)
-                    .await
-                    .unwrap();
+            let (is_val, current_client_cpid ) = request.validate(
+                    &sqlite_host.cpid,
+                    &pool
+            ).await.unwrap();
             if is_val && (request.cpid == current_client_cpid) {
 
                 let data: Vec<Smedia> = media::fetch::get_user_files(
                     request.cpid,
-                    sqlite_host.cpid,
+                    sqlite_host.cpid.clone(),
                     &pool
                 ).await.unwrap();
                 stream.write_u16(data.len() as u16).await?;
@@ -259,6 +261,24 @@ pub async fn raw_handle(
                     assert_eq!(s, 0);
 
                 }
+
+                let pub_file = stream.read_u8().await?;
+                if pub_file == 1 {
+                    
+                    let data: Vec<Smedia> = fetch_host_public_files(
+                        &sqlite_host,
+                        &pool
+                    ).await.unwrap();
+                    stream.write_u16(data.len() as u16).await?;
+                    for d in data {
+                        let vec = bincode::serialize(&d).unwrap();
+                        let s = wvts(None, Some(&mut stream), vec).await?;
+                        assert_eq!(s, 0);
+
+                };
+                }
+
+                
             } else if &request.cpid != &current_client_cpid {
                 
                 let client_ip = stream
@@ -455,8 +475,8 @@ pub async fn handle(
             if is_val && (request.cpid == current_client_cpid) {
 
                 let data: Vec<Smedia> = media::fetch::get_user_files(
-                    request.cpid,
-                    sqlite_host.cpid,
+                    request.cpid.clone(),
+                    sqlite_host.cpid.clone(),
                     &pool
                 ).await.unwrap();
                 stream.write_u16(data.len() as u16).await?;
@@ -466,6 +486,22 @@ pub async fn handle(
                     assert_eq!(s, 0);
 
                 }
+
+                let pub_file = stream.read_u8().await?;
+                if pub_file == 1 {
+                    
+                    let data: Vec<Smedia> = fetch_host_public_files(
+                        &sqlite_host,
+                        &pool
+                    ).await.unwrap();
+                    stream.write_u16(data.len() as u16).await?;
+                    for d in data {
+                        let vec = bincode::serialize(&d).unwrap();
+                        let s = wvts(Some(&mut stream), None, vec).await?;
+                        assert_eq!(s, 0);
+
+                };
+
             } else if &request.cpid != &current_client_cpid {
                 
                 let client_ip = stream.into_inner().0
@@ -483,7 +519,7 @@ pub async fn handle(
                 };
                 return Ok( ( 44, Some(err) ) );
                 
-            }
+            }}
         }
         _=> {info!("client sent a invalid auth header: {auth_type}")}
     }

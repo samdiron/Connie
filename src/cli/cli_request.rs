@@ -33,11 +33,7 @@ use lib_db::sqlite::{
     sqlite_user::fetch_sqlite_user_with_server_cpid,
 };
 use lib_db::sqlite::sqlite_media::{
-    SqliteMedia,
-    sqlite_delete_media,
-    sqlite_media_exists,
-    fetch_all_media_from_host,
-    fetch_all_media_from_host_smedia,
+    fetch_all_media_from_host, fetch_all_media_from_host_smedia, fetch_all_public_files_from_host, sqlite_delete_media, sqlite_media_exists, SqliteMedia
 };
 
 use tcp::client::client::client_login_process;
@@ -51,6 +47,62 @@ use tcp::{
 };
 
 use crate::{get_pass, Commands};
+
+
+
+
+
+
+
+
+
+
+
+async fn pub_file_checker(
+    db_files: Vec<Smedia>,
+    server_pub_files: Vec<Smedia>,
+    host: String,
+    pool: &SqlitePool
+) {
+    let start = time::Instant::now();
+    let mut deleted = 0;
+    let mut added = 0;
+    // deleteing local sqlite media that is deleted from the server
+    for df in db_files {
+        if !server_pub_files.contains(&df) {
+            sqlite_delete_media(
+                &host,
+                &host,
+                &df.checksum,
+                pool
+            ).await;
+            deleted+=1;
+        };
+    }
+    // adding new fils from server
+    for sf in server_pub_files {
+        if !sqlite_media_exists(&host, &host, &sf.checksum, pool).await {
+            let media = SqliteMedia {
+                name: sf.name,
+                checksum: sf.checksum,
+                cpid: host.clone(),
+                host: host.clone(),
+                size: sf.size,
+                type_: sf.type_,
+                date: get_current_timestamp() as i64,
+                path: "./".to_string()
+            };
+            SqliteMedia::add_media(media, pool).await.unwrap();
+            added+=1;
+        };
+    }
+    let end = start.elapsed();
+    
+    if 0 == added {info!("PUBFILECHECKER: added {added} files from server")};
+    if 0 == deleted {info!("PUBFILECHECKER: deleted {deleted} files server")};
+    info!("PUBFILECHECKER: finished in {}ns", end.as_nanos());
+}
+
 
 
 async fn file_checker(
@@ -116,6 +168,7 @@ pub async fn handle_cli_request(command: Commands) {
             no_tls,
             Delete,
             Domain,
+            pub_files,
             server_name,
             fetch_files, 
             create_checksum: checksum,
@@ -125,15 +178,24 @@ pub async fn handle_cli_request(command: Commands) {
                 command_vec.push(true);
             };
             if post.is_some() {
+                if pub_files.is_some() {
+                    warn!("pub files flag only works with get and fetch")
+                }
                 command_vec.push(true);
             };
             if fetch_files.is_some() {
                 command_vec.push(true);
             };
             if Delete.is_some() {
+                if pub_files.is_some() {
+                    warn!("pub files flag only works with get and fetch")
+                }
                 command_vec.push(true);
             };
             if login.is_some() {
+                if pub_files.is_some() {
+                    warn!("pub files flag only works with get and fetch")
+                }
                 command_vec.push(true);
             }
 
@@ -184,6 +246,11 @@ pub async fn handle_cli_request(command: Commands) {
             };
             let checksum = checksum.unwrap();
 
+
+            let pub_files = if pub_files.is_some() {
+                pub_files.unwrap()
+            }else {false};
+
             
             let usr = fetch_sqlite_user_with_server_cpid(
                 &user,
@@ -216,14 +283,16 @@ pub async fn handle_cli_request(command: Commands) {
                 let _me_pub_ip = public_ip::addr().await;
                 let host_cpid = server.cpid.clone();
                 let user_cpid = usr.cpid.clone();
-                let server_media = fetcher::get_files(
+                
+                let (server_media, server_pub_files) = fetcher::get_files(
                     &usr,
                     &server,
                     jwt,
                     port,
                     ip,
                     pool,
-                    no_tls
+                    pub_files,
+                    no_tls,
                 ).await.unwrap();
 
                 if server_media.len() == 0usize {
@@ -237,6 +306,21 @@ pub async fn handle_cli_request(command: Commands) {
                     &user_cpid,
                     pool
                 ).await.unwrap();
+                if pub_files {
+                    
+                    let db_pub_files = fetch_all_public_files_from_host(
+                        &host_cpid,
+                        pool
+                    ).await.unwrap();
+                    if server_pub_files.is_some() {
+                        pub_file_checker(
+                            db_pub_files,
+                            server_pub_files.unwrap(),
+                            host_cpid.clone(),
+                            pool
+                        ).await;
+                    }
+                };
 
                 file_checker(
                     db_media,

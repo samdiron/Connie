@@ -16,7 +16,8 @@ pub(crate) mod checks;
 pub async fn file_checker(
     dir: &PathBuf,
     files: &Vec<PathBuf>,
-    size: u64)  {
+    size: u64
+)  {
     let start = Instant::now();
     let (current_files, ..) = get_files_in_storage(dir);
     debug!("FILE_CHECKER: found {} files in {:#?}",current_files.len(), dir);

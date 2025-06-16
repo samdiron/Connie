@@ -87,7 +87,7 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16, allow_notls: bool) {
         pub_ip: me_pub_ip.to_string(),
         pri_ip:LOCAL_IP.to_string(),
     };
-
+    debug!("will fetch public files ");
     let db_pub_files = get_host_public_files(&sqlite_host, &pool).await.unwrap();
     if !db_pub_files.is_empty() {
         pub_files_process(

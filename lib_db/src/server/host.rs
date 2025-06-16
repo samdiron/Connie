@@ -4,6 +4,7 @@ use sqlx::query;
 use sqlx::Result;
 use sqlx::PgPool;
 
+use crate::media::fetch::Smedia;
 use crate::sha256::digest;
 use crate::escape_user_input;
 use crate::media::media::Media;
@@ -50,25 +51,57 @@ pub async fn get_host_info(
 }
 
 
-pub async fn get_host_public_files(
+
+/// return Smedia for fetch requests
+pub async fn fetch_host_public_files(
     server: &SqliteHost,
     pool: &PgPool
-) -> Result<Vec<Media>> {
+) -> Result<Vec<Smedia>> {
     let sql = format!("
 SELECT (name, size, path, type, checksum) 
 FROM media 
 WHERE in_host = cpid AND in_host = '{}' ;
 ", escape_user_input(&server.cpid));
     let vec_res = query(&sql).fetch_all(pool).await?;
-    let mut media_vec: Vec<Media> = Vec::with_capacity(vec_res.len()); 
+    let mut media_vec: Vec<Smedia> = Vec::with_capacity(vec_res.len()); 
     for res in vec_res {
         let name = res.get("name");
         let size = res.get("size");
-        let path = res.get("path");
         let type_ = res.get("type");
         let checksum = res.get("checksum");
-        let cpid = server.cpid.clone();
-        let in_host = server.cpid.clone();
+        let m: Smedia = Smedia {
+            name,
+            size,
+            type_,
+            checksum,
+        };
+        media_vec.push(m);
+    };
+    Ok(media_vec)
+}   
+
+
+// returns Media for checking process
+pub async fn get_host_public_files(
+    server: &SqliteHost,
+pool: &PgPool
+) -> Result<Vec<Media>> {
+let sql = format!("
+SELECT *
+FROM media 
+WHERE in_host = cpid AND in_host = '{}' ;
+", escape_user_input(&server.cpid));
+    let vec_res = query(&sql).fetch_all(pool).await?;
+    let mut media_vec: Vec<Media> = Vec::with_capacity(vec_res.len()); 
+    debug!("PUBLIC_FILES: {} records found", vec_res.len());
+    for res in vec_res {
+        let name: String = res.get("name");
+        let size: i64 = res.get("size");
+        let path: String = res.get("path");
+        let type_: String = res.get("type");
+        let checksum: String = res.get("checksum");
+        let cpid: String = server.cpid.clone();
+        let in_host: String = server.cpid.clone();
         let m: Media = Media {
             name,
             cpid,
