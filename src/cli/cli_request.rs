@@ -319,7 +319,8 @@ pub async fn handle_cli_request(command: Commands) {
                             host_cpid.clone(),
                             pool
                         ).await;
-                    }
+                    } 
+
                 };
 
                 file_checker(

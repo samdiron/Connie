@@ -18,6 +18,11 @@ pub const SERVER_IDENT: &str = "/opt/Connie/conf/server_ident.toml";
 
 
 pub const LOGS_PATH: &str = "/opt/Connie/logs";
+
+
+pub const CLIENT_LOG_F: &str = "/opt/Connie/logs/client_logs";
+pub const UNAUTHORIZED_CLIINET_LOG_F: &str = "/opt/Connie/logs/unauthorized_client";
+
 // pub const CLIENT_CRED: &str = "/opt/Connie/conf/client_ident.toml";
 // pub const CONFIG: &str = "/opt/Connie/conf/config.toml";
 //

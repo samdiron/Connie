@@ -1,5 +1,6 @@
 
 use std::io::Result;
+use std::net::IpAddr;
 use std::str::FromStr;
 use std::path::PathBuf;
 use std::fs::{metadata, remove_file};
@@ -38,6 +39,8 @@ use crate::common::request::{
     MEDIA_ALREADY_EXISTS,
 };
 
+use super::runtime::logs::client_log;
+
 
 pub async fn raw_handle_server_request(
     request: RQM,
@@ -45,6 +48,8 @@ pub async fn raw_handle_server_request(
     host_cpid: &String,
     pool: &PgPool
 ) -> Result<u8> {
+    let ip = stream.peer_addr()?.ip();
+    let cpid = request.cpid.clone();
     match request.header.as_str() {
         POST => {
             if check_if_media_exist(
@@ -160,6 +165,7 @@ pub async fn raw_handle_server_request(
             } else {
                 stream.write_u8(NOT_FOUND).await?;
                 stream.flush().await?;
+                let _ = client_log(ip, &cpid, &request.header, NOT_FOUND).await?;
                 return Ok(NOT_FOUND);
             }
         }
@@ -167,7 +173,7 @@ pub async fn raw_handle_server_request(
             let media = Media {
                 name: request.name,
                 size: request.size,
-                cpid: request.cpid,
+                cpid: request.cpid.clone(),
                 type_: request.type_,
                 checksum: request.chcksum,
                 path: String::new(),
@@ -194,20 +200,25 @@ pub async fn raw_handle_server_request(
             } else {
                 stream.write_u8(NOT_FOUND).await?;
                 stream.flush().await?;
+                let _ = client_log(ip, &cpid, &request.header, NOT_FOUND).await?;
                 return Ok(NOT_FOUND);
             }
         }
         _ => {}
-    } 
+    }
+    let _ = client_log(ip, &cpid, &request.header, 0).await?;
     Ok(0)
 }
 
 pub async  fn handle_server_request(
     request: RQM,
     stream: &mut ServerTlsStreams,
+    client_ip: IpAddr,
     host_cpid: &String,
     pool: &PgPool
 ) -> Result<u8> {
+    let ip = client_ip;
+    let cpid = request.cpid.clone();
     match request.header.as_str() {
         POST => {
             if check_if_media_exist(
@@ -323,6 +334,7 @@ pub async  fn handle_server_request(
             } else {
                 stream.write_u8(NOT_FOUND).await?;
                 stream.flush().await?;
+                let _ = client_log(ip, &cpid, &request.header, NOT_FOUND).await?;
                 return Ok(NOT_FOUND);
             }
         }
@@ -357,10 +369,12 @@ pub async  fn handle_server_request(
             } else {
                 stream.write_u8(NOT_FOUND).await?;
                 stream.flush().await?;
+                let _ = client_log(ip, &cpid, &request.header, NOT_FOUND).await?;
                 return Ok(NOT_FOUND);
             }
         }
         _ => {}
     } 
+    let _ = client_log(ip, &cpid, &request.header, 0).await?;
     Ok(0)
 }

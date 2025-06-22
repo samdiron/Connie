@@ -39,6 +39,7 @@ use crate::common::{
     },
     util::server::{read_stream, rvfs, wvts}
 };
+use crate::server::runtime::logs::client_log;
 use crate::server::serving_request::raw_handle_server_request;
 use crate::server::{
     req_format::{
@@ -141,6 +142,7 @@ pub async fn raw_handle(
         } else {
             stream.write_u8(UNAUTHORIZED).await?;
             stream.flush().await?;
+            let _ = client_log(addr.ip(), &"NULL".to_string(), &"SIGNUP".to_string(), UNAUTHORIZED).await?;
         }
         stream.shutdown().await?;
     } else {
@@ -160,7 +162,10 @@ pub async fn raw_handle(
                     &sqlite_host.cpid,
                     &pool
                 ).await.unwrap();
-            if  is_valid && (current_client_cpid == jwtreq.request.cpid) {
+            if  is_valid && (
+                current_client_cpid == jwtreq.request.cpid ||
+                sqlite_host.cpid == jwtreq.request.cpid 
+            ) {
                 stream.write_u8(0).await?;
                 debug!("SERVER: valid jwt login");
                 let status = raw_handle_server_request(
@@ -177,11 +182,7 @@ pub async fn raw_handle(
 
                 drop(stream);
             } else if current_client_cpid != jwtreq.request.cpid {
-                    let client_ip = stream
-                        .peer_addr()
-                        .unwrap()
-                        .ip()
-                        .to_string();
+                    let client_ip = addr.ip().to_string();
                     let timestamp = SystemTime::now();
                 let err = ClientErrorMsgLog {
                     client_jwt_cpid: current_client_cpid,
@@ -208,6 +209,7 @@ pub async fn raw_handle(
             let size = stream.read(&mut buf).await?;
             debug!("request size: {}",size);
             let request = LoginReq::dz(buf).expect("could not deserialze");
+            let cpid = request.cpid.clone();
             let is_jwt = login_create_jwt(
                     request,
                     &sqlite_host.cpid,
@@ -227,12 +229,14 @@ pub async fn raw_handle(
                 drop(stream);
                 
                 debug!("SERVER: client logged in succsefully ");
+                let _ = client_log(addr.ip(), &cpid, "LOGIN", 0).await?;
 
             } else {
                 debug!("a login with res code {UNAUTHORIZED}");
                 debug!("SERVER: login faild");
                 stream.write_u8(UNAUTHORIZED).await?;
                 stream.flush().await?;
+                let _ = client_log(addr.ip(), &cpid, "LOGIN", UNAUTHORIZED).await?;
 
             }
 
@@ -275,8 +279,9 @@ pub async fn raw_handle(
                         let s = wvts(None, Some(&mut stream), vec).await?;
                         assert_eq!(s, 0);
 
-                };
-                }
+                }};
+
+                let _ = client_log(addr.ip(), &current_client_cpid, &"FETCH".to_string(), 0).await?;
 
                 
             } else if &request.cpid != &current_client_cpid {
@@ -294,6 +299,7 @@ pub async fn raw_handle(
                     timestamp,
                     sev: 1,
                 };
+                let _ = client_log(addr.ip(), &"NULL".to_string(), &"FETCH".to_string(), 44).await?;
                 return Ok( ( 44, Some(err) ) );
                 
             }
@@ -349,7 +355,7 @@ pub async fn handle(
                 };
                 let _user = user.create(&pool).await.unwrap();
                 let sqlite_user = SqliteUser {
-                    cpid: _user.cpid,
+                    cpid: _user.cpid.clone(),
                     name: _user.name,
                     host: _user.host,
                     email: _user.email,
@@ -365,6 +371,7 @@ pub async fn handle(
                 warn!("a user tried to signup then declind");
             }
         } else {
+            let _ = client_log(addr.ip(), &"NULL".to_string(), &"SIGNUP".to_string(), UNAUTHORIZED).await?;
             stream.write_u8(UNAUTHORIZED).await?;
             stream.flush().await?;
         }
@@ -392,6 +399,7 @@ pub async fn handle(
                 let status = handle_server_request(
                     jwtreq.request,
                     &mut stream,
+                    addr.ip(),
                     &sqlite_host.cpid,
                     &pool
                 ).await?;
@@ -403,11 +411,7 @@ pub async fn handle(
 
                 drop(stream);
             } else if current_client_cpid != jwtreq.request.cpid {
-                    let client_ip = stream.into_inner().0
-                        .peer_addr()
-                        .unwrap()
-                        .ip()
-                        .to_string();
+                    let client_ip = addr.ip().to_string();
                     let timestamp = SystemTime::now();
                 let err = ClientErrorMsgLog {
                     client_jwt_cpid: current_client_cpid,
@@ -434,6 +438,7 @@ pub async fn handle(
             let size = stream.read(&mut buf).await?;
             debug!("request size: {}",size);
             let request = LoginReq::dz(buf).expect("could not deserialze");
+            let cpid = request.cpid.clone();
             let is_jwt = login_create_jwt(
                     request,
                     &sqlite_host.cpid,
@@ -454,11 +459,13 @@ pub async fn handle(
                 
                 debug!("SERVER: client logged in succsefully ");
 
+                let _ = client_log(addr.ip(), &cpid, "LOGIN", 0).await?;
             } else {
                 debug!("a login with res code {UNAUTHORIZED}");
                 debug!("SERVER: login faild");
                 stream.write_u8(UNAUTHORIZED).await?;
                 stream.flush().await?;
+                let _ = client_log(addr.ip(), &cpid, "LOGIN", UNAUTHORIZED).await?;
 
             }
 
@@ -501,6 +508,7 @@ pub async fn handle(
                         assert_eq!(s, 0);
 
                 };
+                let _ = client_log(addr.ip(), &current_client_cpid, &"FETCH".to_string(), 0).await?;
 
             } else if &request.cpid != &current_client_cpid {
                 
@@ -517,6 +525,7 @@ pub async fn handle(
                     timestamp,
                     sev: 1,
                 };
+                let _ = client_log(addr.ip(), &"NULL".to_string(), &"FETCH".to_string(), 44).await?;
                 return Ok( ( 44, Some(err) ) );
                 
             }}
