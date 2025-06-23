@@ -84,7 +84,7 @@ pub enum Commands {
         #[arg(long, short)]
         fetch_files: Option<bool>,
 
-        #[arg(long, short)]
+        #[arg(long)]
         pub_files: Option<bool>,
         
         #[arg(long, short)]

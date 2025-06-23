@@ -281,7 +281,7 @@ pub async fn raw_handle(
 
                 }};
 
-                let _ = client_log(addr.ip(), &current_client_cpid, &"FETCH".to_string(), 0).await?;
+                let _ = client_log(addr.ip(), &current_client_cpid, "FETCH", 0).await?;
 
                 
             } else if &request.cpid != &current_client_cpid {
@@ -508,7 +508,7 @@ pub async fn handle(
                         assert_eq!(s, 0);
 
                 };
-                let _ = client_log(addr.ip(), &current_client_cpid, &"FETCH".to_string(), 0).await?;
+                let _ = client_log(addr.ip(), &current_client_cpid, "FETCH", 0).await?;
 
             } else if &request.cpid != &current_client_cpid {
                 

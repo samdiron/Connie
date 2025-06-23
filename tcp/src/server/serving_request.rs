@@ -39,8 +39,13 @@ use crate::common::request::{
     MEDIA_ALREADY_EXISTS,
 };
 
-use super::runtime::logs::client_log;
+use crate::server::runtime::logs::client_log;
 
+
+
+const POST_HEADER: &str = "POST";
+const GET_HEADER: &str = "GET";
+const DELETE_HEADER: &str = "DELETE";
 
 pub async fn raw_handle_server_request(
     request: RQM,
@@ -105,6 +110,7 @@ pub async fn raw_handle_server_request(
             };
             let _res = media.post(pool).await.unwrap();
             assert_eq!(_res, 0);
+            let _ = client_log(ip, &cpid, POST_HEADER, 0).await?;
             }
         }
         GET => {
@@ -141,6 +147,7 @@ pub async fn raw_handle_server_request(
                 if size == 0 {
                     stream.write_u8(SERVER_SIDE_ERR).await?;
                     stream.flush().await?;
+                    let _ = client_log(ip, &cpid, GET_HEADER, SERVER_SIDE_ERR).await?;
                 } else {
                     stream.write_u8(READY_STATUS).await?;
                     stream.flush().await?;
@@ -157,15 +164,17 @@ pub async fn raw_handle_server_request(
                         if confirm == SUCCESFUL {
                             info!("SUCCESFUL:GET");
                         } else {
+                            let _ = client_log(ip, &cpid, GET_HEADER, 1).await?;
                             debug!("UNSUCCESFUL:GET");
                             return Ok(1)
                         }
+                        let _ = client_log(ip, &cpid, GET_HEADER, 0).await?;
                     }
                 }
             } else {
                 stream.write_u8(NOT_FOUND).await?;
                 stream.flush().await?;
-                let _ = client_log(ip, &cpid, &request.header, NOT_FOUND).await?;
+                let _ = client_log(ip, &cpid, GET_HEADER, NOT_FOUND).await?;
                 return Ok(NOT_FOUND);
             }
         }
@@ -196,17 +205,17 @@ pub async fn raw_handle_server_request(
                     .await.unwrap();
                 assert!(rows == 1);
                 remove_file(path).unwrap();
+                let _ = client_log(ip, &cpid, DELETE_HEADER, 0).await?;
 
             } else {
                 stream.write_u8(NOT_FOUND).await?;
                 stream.flush().await?;
-                let _ = client_log(ip, &cpid, &request.header, NOT_FOUND).await?;
+                let _ = client_log(ip, &cpid, DELETE_HEADER, NOT_FOUND).await?;
                 return Ok(NOT_FOUND);
             }
         }
         _ => {}
     }
-    let _ = client_log(ip, &cpid, &request.header, 0).await?;
     Ok(0)
 }
 
@@ -274,6 +283,7 @@ pub async  fn handle_server_request(
             };
             let _res = media.post(pool).await.unwrap();
             assert_eq!(_res, 0);
+            let _ = client_log(ip, &cpid, POST_HEADER, 0).await?;
             }
         }
         GET => {
@@ -327,14 +337,16 @@ pub async  fn handle_server_request(
                             info!("SUCCESFUL:GET");
                         } else {
                             debug!("UNSUCCESFUL:GET");
+                            let _ = client_log(ip, &cpid, GET_HEADER, 1).await?;
                             return Ok(1)
                         }
+                        let _ = client_log(ip, &cpid, GET_HEADER, 0).await?;
                     }
                 }
             } else {
                 stream.write_u8(NOT_FOUND).await?;
                 stream.flush().await?;
-                let _ = client_log(ip, &cpid, &request.header, NOT_FOUND).await?;
+                let _ = client_log(ip, &cpid, GET_HEADER, NOT_FOUND).await?;
                 return Ok(NOT_FOUND);
             }
         }
@@ -351,7 +363,7 @@ pub async  fn handle_server_request(
             if check_if_media_exist_wchecksum(
                 &media,
                 pool
-            ).await {
+            ).await && host_cpid != &media.cpid {
                 let db_media = Media::get(
                     host_cpid,
                     &media.cpid,
@@ -365,16 +377,16 @@ pub async  fn handle_server_request(
                     .await.unwrap();
                 assert!(rows == 1);
                 remove_file(path).unwrap();
+                let _ = client_log(ip, &cpid, DELETE_HEADER, 0).await?;
 
             } else {
                 stream.write_u8(NOT_FOUND).await?;
                 stream.flush().await?;
-                let _ = client_log(ip, &cpid, &request.header, NOT_FOUND).await?;
+                let _ = client_log(ip, &cpid, DELETE_HEADER, NOT_FOUND).await?;
                 return Ok(NOT_FOUND);
             }
         }
         _ => {}
     } 
-    let _ = client_log(ip, &cpid, &request.header, 0).await?;
     Ok(0)
 }
