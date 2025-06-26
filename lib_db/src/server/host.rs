@@ -58,9 +58,9 @@ pub async fn fetch_host_public_files(
     pool: &PgPool
 ) -> Result<Vec<Smedia>> {
     let sql = format!("
-SELECT (name, size, path, type, checksum) 
+SELECT *
 FROM media 
-WHERE in_host = cpid AND in_host = '{}' ;
+WHERE in_host = cpid AND cpid = '{}' ;
 ", escape_user_input(&server.cpid));
     let vec_res = query(&sql).fetch_all(pool).await?;
     let mut media_vec: Vec<Smedia> = Vec::with_capacity(vec_res.len()); 

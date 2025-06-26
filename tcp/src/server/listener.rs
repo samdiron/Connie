@@ -28,6 +28,7 @@ use crate::server::handle_client::{handle, raw_handle};
 use crate::consts::{NET_STATUS, NEW_USERS, USE_IP};
 use crate::server::runtime::file_checks::clean_unfinished_files;
 use crate::server::runtime::generate_log_templates;
+use crate::server::runtime::logs::unauthorized_client_log;
 use crate::server::runtime::public_files::{new_pub_files_process, pub_files_process};
 
 
@@ -243,7 +244,7 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16, allow_notls: bool) {
                                     let err = res.1.unwrap();
 
                                     let filename = generate_log_templates::client_cpid_not_match(&err);
-                                    warn!("a suspicious activity see full log at {}", filename);
+                                    warn!("suspicious activity see full log at {}", filename);
                                 }
                             },
                             Err(e) => {debug!("a client request faild: {:#?}", e)},
@@ -251,7 +252,8 @@ pub async fn bind(pool: PgPool, ident: Server, port: u16, allow_notls: bool) {
                         });
                         handles.push(task_handle);
                     } else {
-                        warn!("client with improper tls addres: {addr}");
+                        warn!("client with improper tls addres: {}", &addr);
+                        let _ = unauthorized_client_log(addr).await.unwrap();
                         impropertls+=1;
                     }
                 };

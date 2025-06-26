@@ -393,7 +393,8 @@ pub async fn handle(
                     &sqlite_host.cpid,
                     &pool
                 ).await.unwrap();
-            if  is_valid && (current_client_cpid == jwtreq.request.cpid) {
+            if  is_valid && current_client_cpid == jwtreq.request.cpid ||
+                sqlite_host.cpid == jwtreq.request.cpid {
                 stream.write_u8(0).await?;
                 debug!("SERVER: valid jwt login");
                 let status = handle_server_request(
