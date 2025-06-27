@@ -14,7 +14,7 @@ use lib_db::media::media::{
     check_if_media_exist_wchecksum,
 };
 
-use common_lib as cl;
+use common_lib::{self as cl};
 use cl::path::DATA_DIR;
 use cl::tokio::fs::File;
 use cl::tokio::io::BufWriter;
@@ -55,6 +55,7 @@ pub async fn raw_handle_server_request(
 ) -> Result<u8> {
     let ip = stream.peer_addr()?.ip();
     let cpid = request.cpid.clone();
+    let mut exit_status = 0u8;
     match request.header.as_str() {
         POST => {
             if check_if_media_exist(
@@ -83,7 +84,8 @@ pub async fn raw_handle_server_request(
                     None,
                     Some(stream),
                     &mut writer,
-                ).await?;
+                ).await;
+            let log_status = if _size.is_ok() {0} else {exit_status=1;1};
             let local_sum = get_fsum(spath).await?;
             let local_size = get_size(spath).await?;
             if &request.chcksum == NO_VAL {
@@ -110,7 +112,7 @@ pub async fn raw_handle_server_request(
             };
             let _res = media.post(pool).await.unwrap();
             assert_eq!(_res, 0);
-            let _ = client_log(ip, &cpid, POST_HEADER, 0).await?;
+            let _ = client_log(ip, &cpid, POST_HEADER, log_status).await?;
             }
         }
         GET => {
@@ -154,28 +156,28 @@ pub async fn raw_handle_server_request(
                     let ready = stream.read_u8().await?;
                     if ready == READY_STATUS {
                         let mut reader = BufReader::new(f);
-                        wffb(
+                        let _status = wffb(
                             None,
                             Some(stream),
                             size,
                             &mut reader,
-                        ).await?;
+                        ).await;
+                        let log_status = if _status.is_ok() {0} else {exit_status=1;1};
                         let confirm = stream.read_u8().await?;
                         if confirm == SUCCESFUL {
                             info!("SUCCESFUL:GET");
                         } else {
-                            let _ = client_log(ip, &cpid, GET_HEADER, 1).await?;
                             debug!("UNSUCCESFUL:GET");
-                            return Ok(1)
+                            exit_status = 1;
                         }
-                        let _ = client_log(ip, &cpid, GET_HEADER, 0).await?;
+                        let _ = client_log(ip, &cpid, GET_HEADER, log_status).await?;
                     }
                 }
             } else {
                 stream.write_u8(NOT_FOUND).await?;
                 stream.flush().await?;
                 let _ = client_log(ip, &cpid, GET_HEADER, NOT_FOUND).await?;
-                return Ok(NOT_FOUND);
+                exit_status = NOT_FOUND;
             }
         }
         DELETE => {
@@ -211,12 +213,12 @@ pub async fn raw_handle_server_request(
                 stream.write_u8(NOT_FOUND).await?;
                 stream.flush().await?;
                 let _ = client_log(ip, &cpid, DELETE_HEADER, NOT_FOUND).await?;
-                return Ok(NOT_FOUND);
+                exit_status = NOT_FOUND;
             }
         }
         _ => {}
     }
-    Ok(0)
+    Ok(exit_status)
 }
 
 pub async  fn handle_server_request(
@@ -228,6 +230,7 @@ pub async  fn handle_server_request(
 ) -> Result<u8> {
     let ip = client_ip;
     let cpid = request.cpid.clone();
+    let mut exit_status = 0u8;
     match request.header.as_str() {
         POST => {
             if check_if_media_exist(
@@ -256,7 +259,8 @@ pub async  fn handle_server_request(
                     Some(stream),
                     None,
                     &mut writer,
-                ).await?;
+                ).await;
+            let log_status = if _size.is_ok() {0} else {exit_status=1;1};
             let local_sum = get_fsum(spath).await?;
             let local_size = get_size(spath).await?;
             if &request.chcksum == NO_VAL {
@@ -283,7 +287,7 @@ pub async  fn handle_server_request(
             };
             let _res = media.post(pool).await.unwrap();
             assert_eq!(_res, 0);
-            let _ = client_log(ip, &cpid, POST_HEADER, 0).await?;
+            let _ = client_log(ip, &cpid, POST_HEADER, log_status).await?;
             }
         }
         GET => {
@@ -326,28 +330,28 @@ pub async  fn handle_server_request(
                     let ready = stream.read_u8().await?;
                     if ready == READY_STATUS {
                         let mut reader = BufReader::new(f);
-                        wffb(
+                        let _status = wffb(
                             Some(stream),
                             None,
                             size,
                             &mut reader,
-                        ).await?;
+                        ).await;
+                        let log_status = if _status.is_ok() {0} else {exit_status=1;1};
                         let confirm = stream.read_u8().await?;
                         if confirm == SUCCESFUL {
                             info!("SUCCESFUL:GET");
                         } else {
                             debug!("UNSUCCESFUL:GET");
-                            let _ = client_log(ip, &cpid, GET_HEADER, 1).await?;
-                            return Ok(1)
+                            exit_status = 1
                         }
-                        let _ = client_log(ip, &cpid, GET_HEADER, 0).await?;
+                        let _ = client_log(ip, &cpid, GET_HEADER, log_status).await?;
                     }
                 }
             } else {
                 stream.write_u8(NOT_FOUND).await?;
                 stream.flush().await?;
                 let _ = client_log(ip, &cpid, GET_HEADER, NOT_FOUND).await?;
-                return Ok(NOT_FOUND);
+                exit_status = NOT_FOUND;
             }
         }
         DELETE => {
@@ -383,10 +387,10 @@ pub async  fn handle_server_request(
                 stream.write_u8(NOT_FOUND).await?;
                 stream.flush().await?;
                 let _ = client_log(ip, &cpid, DELETE_HEADER, NOT_FOUND).await?;
-                return Ok(NOT_FOUND);
+                exit_status = NOT_FOUND;
             }
         }
         _ => {}
     } 
-    Ok(0)
+    Ok(exit_status)
 }
