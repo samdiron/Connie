@@ -28,6 +28,8 @@ members = [
   "lib_start",
   "tcp",
   "tui",
+  "extern/rustls/rustls",
+  "extern/tokio-rustls",
 ]
 
 [dependencies]

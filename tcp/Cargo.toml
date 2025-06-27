@@ -13,5 +13,5 @@ common_lib = { path = "../common_lib/" }
 tokio = { version = "1.43.0", features = ["macros", "net", "rt-multi-thread"] }
 serde = "1.0.217"
 
-tokio-rustls = "0.26.1"
+tokio-rustls = { path = "../extern/tokio-rustls/" }
 webpki-roots = "0.26.8"
