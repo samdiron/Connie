@@ -1,7 +1,5 @@
-
-
 const WAIT_FOR_UPDATE_PERCENTAGE: u16 = 1;
-    
+
 use std::time::{
     self,
     Instant,
@@ -44,7 +42,8 @@ pub async fn raw_read_stream(
     }
     debug!("STREAMREAD: bytes read {:?}", rcve);
     Ok(buf)
-} 
+}
+
 /// stands for read vector from stream 
 /// and it only works with wvts
 pub async fn raw_rvfs (
@@ -79,9 +78,12 @@ pub async fn raw_wvts(
     Ok(state)
     
 }
-/// stands for write from file buffer 
-/// it reads from the file a standard size buffer (PACKET_SIZE)
-/// then i writes it to a stream
+
+/// a raw tcp version of wffb(write into file buffer)
+/// faster and takes less processing power
+/// but not secure
+/// returns (bits written' to stream: usize)
+/// fails if data sent does not match data written 
 pub async fn raw_wffb(
     s: &mut TcpStream,
     _size: u64,
@@ -92,66 +94,42 @@ pub async fn raw_wffb(
     let mut nbuf = vec![0; PACKET_SIZE];
     let mut sent = 0usize;
     let _usize = _size as usize;
-    let _tol = _size as f64 / PACKET_SIZE as f64;
-    let tol = _tol.ceil() as u16;
-    s.write_u16(tol).await?;
+    let _tol = _usize as f64 / PACKET_SIZE as f64;
+    let tol = _tol.ceil() as u64;
+    s.write_u64(tol).await?;
     s.flush().await?;
     s.write_u64(_size).await?;
     s.flush().await?;
 
     debug!("tol: {tol}, size: {_size}");
     let standard_wait = Duration::from_secs(WAIT_FOR_UPDATE_PERCENTAGE.into());
-    if verbose {
+    let mut _when_to_print = Instant::now();
 
-        let mut _when_to_print = Instant::now();
-        for i in 0..tol {
-            if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
-                let buf_size = _usize - sent;
-                debug!("end tol: buf_size: {buf_size}");
-                let end_buffer_size = buf_size as u16; 
-                s.write_u16(end_buffer_size).await?;
+    for i in 0..tol {
+        if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
+            let buf_size = _usize - sent;
+            debug!("end tol: buf_size: {buf_size}");
+            let end_buffer_size = buf_size as u16; 
+            s.write_u16(end_buffer_size).await?;
 
-                let mut buf = vec![0;buf_size];
-                reader.read_exact(&mut buf).await?;
-                s.write_all(&buf).await?;
-                s.flush().await?;
-                sent+=buf_size;
-                break;
-                
-            }else {
-                reader.read_exact(&mut nbuf).await?;
-                s.write_all(&nbuf).await?;
-                sent+=PACKET_SIZE
-            };
-            if _when_to_print.elapsed() >= standard_wait {
-                _when_to_print+=standard_wait;
-                let percent = (i as f64 / tol as f64) * 100.0;
-                info!("upload: {:.2}%", percent);
-            };
-        }
-    }
-    else {
-        for i in 0..tol {
+            let mut buf = vec![0;buf_size];
+            reader.read_exact(&mut buf).await?;
+            s.write_all(&buf).await?;
+            s.flush().await?;
+            sent+=buf_size;
+            break;
+            
+        }else {
+            reader.read_exact(&mut nbuf).await?;
+            s.write_all(&nbuf).await?;
+                        sent+=PACKET_SIZE;
+        };
 
-            if i == tol || tol == 1 || ((_usize - sent) < PACKET_SIZE){
-                let buf_size = _usize - sent;
-                debug!("end tol: buf_size: {buf_size}");
-                let end_buffer_size = buf_size as u16; 
-                s.write_u16(end_buffer_size).await?;
-
-                let mut buf = vec![0;buf_size];
-                reader.read_exact(&mut buf).await?;
-                s.write_all(&buf).await?;
-                s.flush().await?;
-                sent+=buf_size;
-                break;
-                
-            }else {
-                reader.read_exact(&mut nbuf).await?;
-                s.write_all(&nbuf).await?;
-                sent+=PACKET_SIZE
-            }
-        }
+        if verbose && _when_to_print.elapsed() >= standard_wait {
+            _when_to_print+=standard_wait;
+            let percent = (i as f64 / tol as f64) * 100.0;
+            info!("upload: {:.2}%", percent);
+        };
     }
     s.flush().await?;
     assert_eq!(_usize , sent);
@@ -168,9 +146,11 @@ pub async fn raw_wffb(
     Ok(sent)
 }
 
-
-
-
+/// a raw tcp version of wifb(write into file buffer)
+/// faster and takes less processing power
+/// but not secure
+/// returns (status: u8, bits written' to disk : usize)
+/// fails if data sent does not match data written 
 pub async fn raw_wifb(
     s: &mut TcpStream,
     writer: &mut BufWriter<File>,
@@ -181,12 +161,12 @@ pub async fn raw_wifb(
     let mut wrote = 0usize;
     let mut recvd = 0usize;
     let mut buf = vec![0; PACKET_SIZE];
-    let tol = s.read_u16().await?;
+    let tol = s.read_u64().await?;
     let s_all = s.read_u64().await? as usize;
-    let mut i = 0u16;
+    let mut i = 0u64;
     let standard_wait = Duration::from_secs(WAIT_FOR_UPDATE_PERCENTAGE.into());
 
-    if i < tol && tol != 1 && verbose {
+    if i < tol && tol != 1 {
         let mut when_to_print = Instant::now();
         loop {
             if i == tol || i == tol-1 || (recvd+PACKET_SIZE) > s_all {
@@ -195,10 +175,10 @@ pub async fn raw_wifb(
             }
             s.read_exact(&mut buf).await?;
             writer.write_all(&buf).await?;
-            writer.flush().await?;
+            // writer.flush().await?;
             i+=1;
             
-            if when_to_print.elapsed() >= standard_wait {
+            if verbose && when_to_print.elapsed() >= standard_wait {
                 when_to_print+=standard_wait;
                 let percent = (i as f64 / tol as f64) * 100.0;
                 // gauge_sender
@@ -208,18 +188,6 @@ pub async fn raw_wifb(
             };
         }
     };
-    if i < tol && tol != 1 && !verbose {
-        loop {
-            if i == tol || i == tol-1 || (recvd+PACKET_SIZE) > s_all {
-                debug!("last loop");break 
-            }
-            s.read_exact(&mut buf).await?;
-            writer.write_all(&buf).await?;
-            writer.flush().await?;
-            i+=1;
-        }
-    };
-
     if tol == 1 || i <= tol || (recvd+PACKET_SIZE) > s_all {
         let buf_size = s.read_u16().await? as usize;
         let mut buf = vec![0; buf_size];

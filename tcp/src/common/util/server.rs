@@ -126,8 +126,8 @@ pub async fn wffb(
     let mut sent = 0usize;
     let _usize = _size as usize;
     let _tol = _size as f64 / PACKET_SIZE as f64;
-    let tol = _tol.ceil() as u16;
-    s.write_u16(tol).await?;
+    let tol = _tol.ceil() as u64;
+    s.write_u64(tol).await?;
     s.flush().await?;
     s.write_u64(_size).await?;
     s.flush().await?;
@@ -191,9 +191,9 @@ pub async fn wifb(
     let mut wrote = 0usize;
     let mut recvd = 0usize;
     let mut buf = vec![0; PACKET_SIZE];
-    let tol = s.read_u16().await?;
+    let tol = s.read_u64().await?;
     let s_all = s.read_u64().await? as usize;
-    let mut i = 0u16;
+    let mut i = 0u64;
     
     if i < tol && tol != 1 {
         loop {
