@@ -61,7 +61,7 @@ async fn remove_deleted_file_records(
     }
 
     let number_of_elements = removed.len(); 
-    i = 0usize;
+    i = 1usize;
     if number_of_elements > 0usize {
         loop {
             let index = removed[number_of_elements - i];
@@ -89,7 +89,6 @@ fn get_new_files(
         return Ok((new_files, nfiles_added));
     };
     debug!("found {} public files", files.len());
-    debug!("only {} public files are on db", files.len());
     if !path_vec.is_empty() {
         for f in files {
             if !path_vec.contains(&f) {
@@ -117,8 +116,10 @@ async fn create_new_records(
         let name = f.file_name().unwrap()
             .to_str().unwrap().to_owned();
         let path = f.to_str().unwrap().to_owned();
-        let type_ = f.extension().unwrap()
-            .to_str().unwrap().to_owned();
+        let type_ = if f.extension().is_some() {
+            f.extension().unwrap()
+                .to_str().unwrap().to_owned()
+        }else {"".to_owned()};
         let metadata = f.metadata().unwrap();
         let size = metadata.len() as i64;
         
