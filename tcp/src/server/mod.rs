@@ -6,7 +6,7 @@ pub(crate) mod handle_client;
 pub(crate) mod serving_request;
 
 pub(in crate::server) mod config;
-pub(in crate::server) mod admin_requests;
+// pub(in crate::server) mod admin_requests;
 
 /// ment to be used inside 1 threaded loop 
 /// for runtime check and monitoring 
