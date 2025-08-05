@@ -44,36 +44,28 @@ fn get_path(
     return result;
 }
 
-/// takes all of the db files then removes and deletes all non existent files and returns it 
+/// takes all of the db files then
+/// removes and deletes all non existent files 
+/// returns media_vec and the number of elements removed 
 async fn remove_deleted_file_records(
-    mut media_vec: Vec<Media>,
+    media_vec: Vec<Media>,
     pool: &PgPool
 ) -> Result<(Vec<Media>, usize), sqlE> {
-    let mut removed: Vec<usize>= vec![];
-    let mut i = 0usize;
-    for m in &media_vec {
+    let mut number_of_elements = 0usize;
+    let mut existing_vec: Vec<Media> = vec![];
+
+    for m in media_vec {
         let path = PathBuf::from_str(&m.path).unwrap();
         if !path.exists() {
             debug!("a public file was removed");
-            removed.push(i);
+            delete_media(m, pool).await?;
+            number_of_elements += 1;
+        }else {
+            existing_vec.push(m);
         };
-        i+=1usize;
     }
 
-    let number_of_elements = removed.len(); 
-    i = 1usize;
-    if number_of_elements > 0usize {
-        loop {
-            let index = removed[number_of_elements - i];
-            let m = media_vec.remove(index);
-            delete_media(m, pool).await?;
-            if i == number_of_elements {
-                break;
-            }
-            i+=1
-        }
-    }
-    Ok((media_vec, number_of_elements))
+    Ok((existing_vec, number_of_elements))
 }
 
 
@@ -176,7 +168,10 @@ pub async fn pub_files_process(
     }
 
     let original_size = db_files.len();
-    let (cleaned_vec, nfiles_removed) = remove_deleted_file_records(db_files, pool).await?;
+    let (cleaned_vec, nfiles_removed) = remove_deleted_file_records(
+        db_files,
+        pool
+    ).await?;
     if nfiles_removed > 0usize {
         info!("pub files removed: {}", nfiles_removed);
     };
