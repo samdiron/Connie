@@ -3,10 +3,13 @@ pub mod listener;
 
 pub(crate) mod req_format;
 pub(crate) mod handle_client;
+
+#[allow(dead_code)]
+pub(crate) mod admin_requests;
+
 pub(crate) mod serving_request;
 
 pub(in crate::server) mod config;
-// pub(in crate::server) mod admin_requests;
 
 /// ment to be used inside 1 threaded loop 
 /// for runtime check and monitoring 
