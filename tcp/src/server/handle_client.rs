@@ -39,6 +39,7 @@ use crate::common::{
     },
     util::server::{read_stream, rvfs, wvts}
 };
+use crate::server::listener::ALL_REQUESTS;
 use crate::server::runtime::logs::client_log;
 use crate::server::serving_request::raw_handle_server_request;
 use crate::server::{
@@ -389,6 +390,8 @@ pub async fn handle(
             debug!("SERVER: recved request with size: {}", buf.len());
             
             let jwtreq = JwtReq::dz(buf).expect("could not unwrap struct");
+
+            let rqm_admin_clone = jwtreq.request.clone();
             let ( is_valid, current_client_cpid )= jwtreq.validate(
                     &sqlite_host.cpid,
                     &pool
@@ -428,6 +431,13 @@ pub async fn handle(
                 std::thread::sleep(dur);
                 stream.write_u8(UNAUTHORIZED).await?;
                 debug!("SERVER: jwt auth invalid");
+
+            }
+            match ALL_REQUESTS.lock() {
+                Ok(mut val) => {
+                    val.push(rqm_admin_clone);
+                }
+                Err(e) => {debug!("couldn't lock ALL_REQUESTS to push admin copy; msg = {}", e.to_string())}
 
             }
 

@@ -1,3 +1,4 @@
+use std::sync::{Arc, LazyLock, Mutex};
 use std::{io, thread};
 use std::str::FromStr;
 use std::net::{IpAddr, SocketAddr};
@@ -23,6 +24,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio_rustls::TlsAcceptor;
 use tokio_rustls::server::TlsStream;
 
+use crate::types::RQM;
 use crate::consts::{NET_STATUS, NEW_USERS, USE_IP};
 use crate::common::request::SERVER_WILL_NOT_ALLOW_NOTLS;
 
@@ -37,6 +39,12 @@ use crate::server::runtime::public_files::{
     new_pub_files_process,
     pub_files_process
 };
+
+
+pub static ALL_REQUESTS: LazyLock<Mutex<Vec<RQM>>> = LazyLock::new(||{
+    let vector: Mutex<Vec<RQM>> = Mutex::new(vec![]);
+    vector
+});
 
 pub async fn bind(
     pool: PgPool,
@@ -104,6 +112,12 @@ pub async fn bind(
     let acceptor = TlsAcceptor::from(config);
     let mut handles: Vec<JoinHandle<()>> = vec![];
 
+
+    let mut n_all_time_requests = 0u64;
+    let mut n_current_requests = 0u64;
+    let mut succesful_requests = 0u64;
+    let mut failed_requests = 0u64;
+
     // timers and counters
     // cleaning time
     let mut ct = Instant::now();
@@ -121,7 +135,11 @@ pub async fn bind(
         }
 
         // cleaner loop 
-        if (ct.elapsed() >= standard_wait && !handles.is_empty()) || handles.len() >= 5usize {
+        if (ct.elapsed() >= standard_wait && !handles.is_empty()) || handles.len() >= 10usize {
+            if ALL_REQUESTS.lock().is_ok(){
+                let size = ALL_REQUESTS.lock().unwrap().len();
+                debug!("all request admin copies: {size}");
+            }
             admin_loop(
                 &mut handles,
                 &mut impropertls,
@@ -130,7 +148,11 @@ pub async fn bind(
                 &mut ct,
                 &wait1day,
                 &standard_wait,
-                &standard_clean_up_tls_dur
+                &standard_clean_up_tls_dur,
+                &mut succesful_requests,
+                &mut failed_requests,
+                &mut n_current_requests
+
             ).await;
         }; 
         if impropertls ==  100_000 {
@@ -143,6 +165,7 @@ pub async fn bind(
         // listener
         match socket.accept().await {
             Ok(stream) => {
+                n_all_time_requests+=1;
                 let inner_p = pool.clone();
                 let inner_allow_new_users = allow_new_users.clone();
                 let sqlite_host = sqlite_host.clone();
@@ -284,12 +307,13 @@ async fn admin_loop(
     wait1day: &Duration,
     standard_wait: &Duration,
     standard_clean_up_tls_dur: &Instant,
+    failed_tasks: &mut u64,
+    succesful_tasks: &mut u64,
+    current_requests: &mut u64,
 ) {
     let start = Instant::now();
     let total_tasks = handles.len(); 
     debug!("TASKCLEANER: {} tasks to check", total_tasks);
-    let mut faild_tasks:u64 = 0;
-    let mut succesful_tasks:u64 = 0;
     *ct = ct.clone() + standard_wait.clone();
     let mut items_to_remove: Vec<usize>= vec![];
     for i in 0usize..total_tasks {
@@ -304,18 +328,19 @@ async fn admin_loop(
                 .remove(total_items_to_remove-i);
             let handle = handles.remove(index);
             match handle.await {
-                Ok(..) => {succesful_tasks+=1;}
-                Err(..) => {faild_tasks+=1;}
+                Ok(..) => {*succesful_tasks+=1;}
+                Err(..) => {*failed_tasks+=1;}
             }
         }
-        debug!("TASKCLEANER: total tasks {total_tasks}/ finished tasks {total_items_to_remove} / succesful tasks {succesful_tasks} / faild tasks {faild_tasks}");
+        debug!("TASKCLEANER: total tasks {total_tasks}/ finished tasks {total_items_to_remove} / succesful tasks {succesful_tasks} / faild tasks {failed_tasks}");
     };
-    if handles.is_empty() && faild_tasks > 0 {
+    if handles.is_empty() && *failed_tasks > 0 {
         clean_unfinished_files(local_cpid, pool).await;
     }
     if &standard_clean_up_tls_dur.elapsed() >= wait1day {
         *impropertls= 0u32;
     }
+    *current_requests = handles.len() as u64;
     let end = start.elapsed();
     debug!("TASKCLEANER: took {} ms", end.as_millis());
 }
