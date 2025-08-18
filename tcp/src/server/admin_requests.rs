@@ -1,15 +1,22 @@
 #![allow(non_camel_case_types)]
 
-use std::time::Duration;
+use std::{
+    io,
+    time::Duration
+};
 
 type Obool = Option<bool>;  
 
+use common_lib as cl;
+use cl::bincode;
 use lib_db::{
-    media::media::Media,
-    user::user_struct::User
+    media::media::Media, types::PgPool, user::user_struct::User
 };
+use serde::{Deserialize, Serialize};
+use tokio::{io::AsyncReadExt, net::TcpStream};
+use tokio_rustls::TlsStream;
 
-
+// #[derive(Clone, Deserialize, Serialize)]
 struct STATS {
     pid: String,
     uptime: Duration,
@@ -29,6 +36,7 @@ struct STATS {
 
 
 
+#[derive(Clone, Deserialize, Serialize)]
 pub enum ADMINREQS {
     STATS {
         all: Obool,
@@ -60,5 +68,42 @@ pub enum ADMINREQS {
 
 
 }
+
+
+impl ADMINREQS {
+
+    fn dz(buf: Vec<u8>) -> Result<Self, bincode::Error> {
+        let res: Self = bincode::deserialize(&buf)?;
+        drop(buf);
+        Ok(res)
+    }
+}
+
+
+// blue prints to the server admin function
+async fn handle_admin(
+    mut stream: TlsStream<TcpStream>,  
+    pool: &PgPool,
+) -> io::Result<()> {
+    let request_size = stream.read_u32().await?;
+    let mut request_buf= vec![0;request_size as usize];
+    stream.read_exact(&mut request_buf).await?;
+    let request = ADMINREQS::dz(request_buf);
+    if request.is_err() {
+        // warn and freak out and create logs
+    };
+    // unwrap and then match the request and change static values in the main loop 
+    // to control the flow of users
+    // and count and analyze the requests 
+    Ok(())
+}
+
+
+
+
+
+
+
+
 
 

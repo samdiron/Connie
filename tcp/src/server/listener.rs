@@ -1,6 +1,6 @@
-use std::sync::{Arc, LazyLock, Mutex};
 use std::{io, thread};
 use std::str::FromStr;
+use std::sync::{LazyLock, Mutex};
 use std::net::{IpAddr, SocketAddr};
 use std::time::{Duration, Instant};
 

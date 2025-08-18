@@ -143,7 +143,12 @@ pub async fn raw_handle(
         } else {
             stream.write_u8(UNAUTHORIZED).await?;
             stream.flush().await?;
-            let _ = client_log(addr.ip(), &"NULL".to_string(), &"SIGNUP".to_string(), UNAUTHORIZED).await?;
+            let _ = client_log(
+                addr.ip(),
+                &"NULL".to_string(),
+                &"SIGNUP".to_string(),
+                UNAUTHORIZED
+            ).await?;
         }
         stream.shutdown().await?;
     } else {
@@ -237,7 +242,12 @@ pub async fn raw_handle(
                 debug!("SERVER: login faild");
                 stream.write_u8(UNAUTHORIZED).await?;
                 stream.flush().await?;
-                let _ = client_log(addr.ip(), &cpid, "LOGIN", UNAUTHORIZED).await?;
+                let _ = client_log(
+                        addr.ip(), 
+                        &cpid, 
+                        "LOGIN", 
+                        UNAUTHORIZED
+                ).await?;
 
             }
 
@@ -282,7 +292,12 @@ pub async fn raw_handle(
 
                 }};
 
-                let _ = client_log(addr.ip(), &current_client_cpid, "FETCH", 0).await?;
+                let _ = client_log(
+                        addr.ip(),
+                        &current_client_cpid,
+                        "FETCH",
+                        0
+                ).await?;
 
                 
             } else if &request.cpid != &current_client_cpid {
@@ -300,7 +315,12 @@ pub async fn raw_handle(
                     timestamp,
                     sev: 1,
                 };
-                let _ = client_log(addr.ip(), &"NULL".to_string(), &"FETCH".to_string(), 44).await?;
+                let _ = client_log(
+                        addr.ip(),
+                        &"NULL".to_string(),
+                        &"FETCH".to_string(),
+                        44
+                    ).await?;
                 return Ok( ( 44, Some(err) ) );
                 
             }
@@ -322,7 +342,7 @@ pub async fn handle(
     let mut stream = st.0;
     let addr = st.1;
     // this function assures the client that is 
-    // in the correct addres and send the pub ip of
+    // the correct addres and send the pub ip of
     // the server and if the if the client is in the correct addres it will return 0 else 1
     let is_correct_addres = handshakes::server(
         &mut stream,
@@ -372,7 +392,12 @@ pub async fn handle(
                 warn!("a user tried to signup then declind");
             }
         } else {
-            let _ = client_log(addr.ip(), &"NULL".to_string(), &"SIGNUP".to_string(), UNAUTHORIZED).await?;
+            let _ = client_log(
+                addr.ip(),
+                &"NULL".to_string(),
+                &"SIGNUP".to_string(),
+                UNAUTHORIZED
+            ).await?;
             stream.write_u8(UNAUTHORIZED).await?;
             stream.flush().await?;
         }
@@ -437,7 +462,12 @@ pub async fn handle(
                 Ok(mut val) => {
                     val.push(rqm_admin_clone);
                 }
-                Err(e) => {debug!("couldn't lock ALL_REQUESTS to push admin copy; msg = {}", e.to_string())}
+                Err(e) => {
+                        debug!(
+                            "couldn't lock ALL_REQUESTS to push admin copy; msg = {}",
+                            e.to_string()
+                        )
+                    }
 
             }
 
@@ -476,7 +506,12 @@ pub async fn handle(
                 debug!("SERVER: login faild");
                 stream.write_u8(UNAUTHORIZED).await?;
                 stream.flush().await?;
-                let _ = client_log(addr.ip(), &cpid, "LOGIN", UNAUTHORIZED).await?;
+                let _ = client_log(
+                        addr.ip(),
+                        &cpid,
+                        "LOGIN",
+                        UNAUTHORIZED
+                ).await?;
 
             }
 
@@ -487,9 +522,9 @@ pub async fn handle(
             let mut buf = vec![0;600];
             let _size = stream.read(&mut buf).await?;
             let request = Chead::dz(buf).expect("could not deserialze");
-            let (is_val, current_client_cpid ) = request.validate(&sqlite_host.cpid, &pool)
-                    .await
-                    .unwrap();
+            let (is_val, current_client_cpid ) = request.validate(
+                    &sqlite_host.cpid, &pool
+                ).await.unwrap();
             if is_val && (request.cpid == current_client_cpid) {
 
                 let data: Vec<Smedia> = media::fetch::get_user_files(
@@ -519,7 +554,12 @@ pub async fn handle(
                         assert_eq!(s, 0);
 
                 };
-                let _ = client_log(addr.ip(), &current_client_cpid, "FETCH", 0).await?;
+                let _ = client_log(
+                            addr.ip(),
+                            &current_client_cpid,
+                            "FETCH",
+                            0
+                        ).await?;
 
             } else if &request.cpid != &current_client_cpid {
                 
@@ -536,7 +576,12 @@ pub async fn handle(
                     timestamp,
                     sev: 1,
                 };
-                let _ = client_log(addr.ip(), &"NULL".to_string(), &"FETCH".to_string(), 44).await?;
+                let _ = client_log(
+                            addr.ip(),
+                            &"NULL".to_string(),
+                            &"FETCH".to_string(),
+                            44
+                        ).await?;
                 return Ok( ( 44, Some(err) ) );
                 
             }}
