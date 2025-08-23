@@ -1,25 +1,31 @@
-use common_lib::{bincode, gethostname, log::debug};
+use common_lib::bincode;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Result, Row};
 
+use crate::escape_user_input;
+
 
 /// the s stand for short 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq)]
 pub struct Smedia {
     pub name: String,
     pub type_: String,
     pub checksum: String,
-    pub size: i64
+    pub size: i64,
 }
 
 pub async fn get_user_files(
     cpid: String,
+    host: String,
     pool: &PgPool
 ) -> Result<Vec<Smedia>> {
-    let host = gethostname::gethostname();
-    let sql = format!("SELECT * FROM media WHERE cpid = '{}' AND in_host = '{}' ;",&cpid ,host.to_str().unwrap());
-    debug!("sql: {}",&sql);
+    let sql = format!(
+        "SELECT * FROM media WHERE cpid = '{}' AND in_host = '{}' ;",
+        escape_user_input(&cpid),
+        host
+    );
     let _res = sqlx::query(&sql).fetch_all(pool).await?;
+    drop(sql);
     let mut media_v: Vec<Smedia> = Vec::new();
     for row in _res {
         let name = row.get("name");

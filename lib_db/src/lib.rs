@@ -6,6 +6,31 @@ mod migrations;
 pub mod server;
 pub mod user;
 
+#[allow(unused_imports)]
+pub(crate) use common_lib::sha256;
+use common_lib::sha256::digest;
+
+pub fn escape_user_input(s: &String) -> String{
+    // removing sigle quotes
+    let ns = s.replace("'", "");
+    // removing double quotes
+    let ns = ns.replace(r#"""#, "");
+    ns
+}
+
+
+pub fn hash_passwords(s: String) -> String {
+    let hashed = digest(s);
+    hashed
+}
+
+pub mod inner {
+    pub use sqlx;
+    pub use crate::types;
+    pub use crate::sqlite;
+    pub use crate::hash_passwords;
+    pub use crate::escape_user_input;
+}
 
 /// this lib provides a sqlite db for the client to make it easer for 
 /// non technical users
@@ -27,23 +52,39 @@ pub mod jwt {
     use std::sync::{LazyLock, Mutex};
 
     use jsonwebtoken::{
-        decode, encode, errors::Result, DecodingKey, EncodingKey, Header, Validation
+        decode,
+        encode,
+        Header,
+        Validation,
+        DecodingKey,
+        EncodingKey,
+        errors::Result,
     };
     pub use jsonwebtoken::get_current_timestamp;
+
     pub fn exp_gen() -> u64 {
         let now = get_current_timestamp();
         let exp = now + DURATION;
         exp
     }
     use sqlx::PgPool;
-    use crate::user::user_struct::validate_claim_wcpid;
+    use crate::user::validation::validate_claim_wcpid;
     use serde::{Deserialize, Serialize};
     // the user may chose the word 
-    pub static MUTEX_SECRET_WORD: Mutex<&str> = Mutex::new("Lorem ipsum dolor sit amet quis");
+    pub static MUTEX_SECRET_WORD: Mutex<LazyLock<Mutex<String>>> = Mutex::new(
+            LazyLock::new( ||  
+                {
+                    Mutex::new(String::from("Lorem ipsum dolor sit amet quis"))
+                }
+            )
+    );
 
     fn get_secret() -> String {
-        let mutex_word = *MUTEX_SECRET_WORD.lock().unwrap();
-        let str = mutex_word.to_string();
+        let mutex_word = MUTEX_SECRET_WORD
+            .lock().unwrap()
+            .lock().unwrap()
+            .clone();
+        let str = mutex_word;
         str
     }
 
@@ -75,15 +116,31 @@ pub mod jwt {
 
         Ok(token.claims)
     }
-    pub async fn validate_jwt_claim(token: &String, pool: &PgPool) -> bool {
-        let c = decode_jwt(token).unwrap();
+    /// takes the raw jwt then decodes it and validate it with the server cpid
+    pub async fn validate_jwt_claim(
+        token: &String,
+        cpid: &String,
+        pool: &PgPool
+    ) -> (bool, String) {
+        let c = decode_jwt(token);
+        let mut client_cpid = String::new();
+        if !c.is_ok(){
+            return (false, client_cpid)
+        }
+        let c = c.unwrap();
         let now = get_current_timestamp();
-        let is_who = validate_claim_wcpid(c.cpid, c.paswd, pool).await.unwrap();
+        let is_who = validate_claim_wcpid(
+            &c.cpid,
+            &c.paswd,
+            cpid,
+            pool
+        ).await.unwrap();
         let exp = c.exp;
         if is_who && (now < exp) {
-            return true
+            client_cpid = c.cpid.clone();
+            return (true, client_cpid )
         }else {
-            return false
+            return (false, client_cpid)
         }
         
     }

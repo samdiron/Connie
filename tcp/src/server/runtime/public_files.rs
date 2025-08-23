@@ -1,0 +1,188 @@
+use std::{io, path::PathBuf, str::FromStr};
+
+use common_lib::{log::{debug, info},sha256::try_async_digest};
+use lib_db::{
+    media::media::{delete_media, Media},
+    types::{sqlE, PgPool}
+};
+
+// use common_lib::path::PUBLIC_DATA_DIR;
+// use lib_db::media::media::Media;
+
+
+fn get_files_in_storage(path: &PathBuf) -> (Vec<PathBuf>, u64) {
+    let mut paths: Vec<PathBuf> = vec![];
+    let mut storage = 0u64;
+        
+    let meta_dir = path
+        .read_dir()
+        .unwrap();
+    for entry in meta_dir{
+        let e = entry.unwrap();
+        let path = e.path();
+        if !path.is_dir() {
+            let size = e.metadata().unwrap().len();
+            paths.push(path);
+            storage+=size
+        }
+    }
+
+
+    return (paths, storage);
+}
+
+
+fn get_path(
+    media_vec: &Vec<Media>
+) -> Vec<PathBuf> {
+    let mut result: Vec<PathBuf> = vec![];
+    for m in media_vec {
+        let path = PathBuf::from_str(&m.path);
+        result.push(path.unwrap());
+    };
+
+    return result;
+}
+
+/// takes all of the db files then
+/// removes and deletes all non existent files 
+/// returns media_vec and the number of elements removed 
+async fn remove_deleted_file_records(
+    media_vec: Vec<Media>,
+    pool: &PgPool
+) -> Result<(Vec<Media>, usize), sqlE> {
+    let mut number_of_elements = 0usize;
+    let mut existing_vec: Vec<Media> = vec![];
+
+    for m in media_vec {
+        let path = PathBuf::from_str(&m.path).unwrap();
+        if !path.exists() {
+            debug!("a public file was removed");
+            delete_media(m, pool).await?;
+            number_of_elements += 1;
+        }else {
+            existing_vec.push(m);
+        };
+    }
+
+    Ok((existing_vec, number_of_elements))
+}
+
+
+fn get_new_files(
+    media_vec: &Vec<Media>,
+    dir: &PathBuf
+) -> io::Result<(Vec<PathBuf>, usize)> {
+    let path_vec = get_path(media_vec);
+    let (files , ..) = get_files_in_storage(dir);
+    let mut new_files: Vec<PathBuf> = vec![];
+    let mut nfiles_added = 0usize;
+    if files.is_empty(){
+        return Ok((new_files, nfiles_added));
+    };
+    debug!("found {} public files", files.len());
+    if !path_vec.is_empty() {
+        for f in files {
+            if !path_vec.contains(&f) {
+                new_files.push(f);
+                nfiles_added+=1;
+            }
+        };
+    } else {
+        
+        let len = files.len();
+        return Ok((files, len)); 
+    }
+
+    Ok((new_files, nfiles_added))
+}
+
+async fn create_new_records(
+    new_files: Vec<PathBuf>,
+    host_cpid: &String,
+    pool: &PgPool
+) -> Result<(), sqlE> {
+    
+    assert!(new_files.len() != 0usize);
+    for f in new_files {
+        let name = f.file_name().unwrap()
+            .to_str().unwrap().to_owned();
+        let path = f.to_str().unwrap().to_owned();
+        let type_ = if f.extension().is_some() {
+            f.extension().unwrap()
+                .to_str().unwrap().to_owned()
+        }else {"".to_owned()};
+        let metadata = f.metadata().unwrap();
+        let size = metadata.len() as i64;
+        
+        debug!("creating checksum for {:?}", f);
+        let checksum = try_async_digest(&f)
+            .await
+            .unwrap();
+        debug!("created checksum for {:?}", f);
+
+        let media = Media {
+            name,
+            size,
+            in_host: host_cpid.to_owned(),
+            cpid: host_cpid.to_owned(),
+            path,
+            checksum,
+            type_
+        };
+        let _res = media.post(pool).await?;
+        assert!(_res == 0);
+        debug!("pub file added to db succesfully");
+    }
+    
+    Ok(())
+}
+
+
+
+pub async fn new_pub_files_process(
+    dir: &str,
+    host_cpid: &String,
+    pool: &PgPool,
+) -> Result<(), sqlE> {
+    debug!("new_pub_files_process");
+    let dir = PathBuf::from_str(dir).unwrap();
+    if !dir.is_dir() || !dir.exists() {
+        return Ok(());
+    }
+    let (files , ..) = get_files_in_storage(&dir);
+    create_new_records(files, host_cpid, pool).await?;
+    Ok(())
+}
+
+
+pub async fn pub_files_process(
+    db_files: Vec<Media>,
+    dir: &str,
+    host_cpid: &String,
+    pool: &PgPool,
+) -> Result<(), sqlE> {
+    let dir = PathBuf::from_str(dir).unwrap();
+    if !dir.is_dir() || !dir.exists() {
+        return Ok(());
+    }
+
+    let original_size = db_files.len();
+    let (cleaned_vec, nfiles_removed) = remove_deleted_file_records(
+        db_files,
+        pool
+    ).await?;
+    if nfiles_removed > 0usize {
+        info!("pub files removed: {}", nfiles_removed);
+    };
+    assert_eq!(original_size, nfiles_removed+cleaned_vec.len());
+    
+    let (new_files, nfiles_added) = get_new_files(&cleaned_vec, &dir).unwrap();
+    if nfiles_added > 0usize {
+        info!("pub files added: {}", nfiles_added);
+        create_new_records(new_files, host_cpid, pool).await?;
+    }
+    Ok(())
+}
+
+

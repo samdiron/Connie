@@ -1,24 +1,24 @@
 pub(crate) mod cli_db;
 pub(crate) mod cli_dev;
+#[allow(unused_assignments)]
 pub(crate) mod cli_bind;
 pub(crate) mod cli_user;
 pub(crate) mod cli_server;
 pub(crate) mod cli_request;
 
-
-
-
-
-
-use std::{net::IpAddr, path::PathBuf};
+use std::{
+    net::IpAddr,
+    path::PathBuf,
+};
 
 use clap::Subcommand;
-use cli_bind::handle_cli_bind;
 use cli_db::handle_cli_db;
-use cli_request::handle_cli_request;
-use cli_server::handle_cli_server;
 use cli_user::handle_cli_user;
+use cli_bind::handle_cli_bind;
+use cli_server::handle_cli_server;
+use cli_request::handle_cli_request;
 
+#[allow(non_snake_case)]
 #[derive(Debug,Subcommand)]
 pub enum Commands {
 
@@ -30,12 +30,24 @@ pub enum Commands {
     },
      
     BIND {
-        
+
+        #[arg(long)]
+        allow_notls: Option<bool>,
+
+        #[arg(long, short)]
+        admin_port: Option<u16>,
+
         #[arg(long, short)]
         default: Option<bool>,
 
         #[arg(long, short)]
         ip: Option<String>,
+
+        #[arg(long, short)]
+        new_users: Option<bool>,
+
+        #[arg(long, short)]
+        users: Option<u64>,
         
         #[arg(long, short)]
         server: Option<String>,
@@ -55,20 +67,33 @@ pub enum Commands {
         user: String,
 
         #[arg(long, short)]
-        ip: Option<IpAddr>,
+        Ip: Option<IpAddr>,
         
         #[arg(long)]
-        port: Option<u16>,
+        Domain: Option<String>,
+
+        #[arg(long)]
+        Port: Option<u16>,
 
         #[arg(long, short)]
         host: Option<String>,
+
         #[arg(long, short)]
         server_name: Option<String>,
         
         #[arg(long, short)]
         fetch_files: Option<bool>,
 
-        #[arg(short)]
+        #[arg(long)]
+        pub_files: Option<bool>,
+        
+        #[arg(long, short)]
+        login: Option<bool>,
+
+        #[arg(long, short)]
+        all: Option<bool>,
+
+        #[arg(short, long)]
         db: Option<PathBuf>,
 
         #[arg(long, short)]
@@ -76,7 +101,14 @@ pub enum Commands {
         
         #[arg(long, short)]
         post: Option<PathBuf>,
-        #[arg(long, short, default_value="true")]
+
+        #[arg(long)]
+        Delete: Option<bool>,
+
+        #[arg(long, short)]
+        no_tls: Option<bool>,
+
+        #[arg(long, short, default_value="false")]
         create_checksum: Option<bool>,
 
     },
@@ -133,16 +165,26 @@ pub enum Commands {
         delete_conn: Option<bool>,
 
         #[arg(long, short)]
-        migrations: Option<bool>,
+        connection: Option<String>,
 
         #[arg(long, short)]
-        connection: Option<String>,
+        path: Option<PathBuf>,
+
+        #[arg(long, short)]
+        sqlite_migrations: Option<bool>,
+
+        
+        #[arg(long, short)]
+        postgres_migrations: Option<bool>,
+
+
 
     },
 
 
     User {
-        #[arg(long)]
+
+        #[arg(long, help="this flag creates a user on the postgres database it only works if ")]
         new: Option<bool>,
 
         #[arg(long)]
@@ -151,17 +193,17 @@ pub enum Commands {
         #[arg(long)]
         host: Option<String>,
 
-        #[arg(long)]
+        #[arg(long, help="this flag is for the host ip that you want to signun to ")]
         ip: Option<IpAddr>,
 
         #[arg(long)]
         port: Option<u16>,
         
-        #[arg(long, short)]
+        #[arg(long, short, help="this flag is for signun to a remote machine")]
         signup: Option<bool>,
-        /// this is for when you are trying to enter your account from another machine  
-        // #[arg(long, short)]
-        // signin: Option<bool>,
+        
+        #[arg(long, short,)]
+        db: Option<PathBuf>,
 
         #[arg(long)]
         admin: Option<bool>,

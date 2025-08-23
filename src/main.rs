@@ -1,21 +1,22 @@
-// #![allow(unused_assignments)]
 #![allow(unused_variables)]
 mod cli;
 
 use std::{
+    process::exit,
     io::{stdout, Write},
-    process::exit
 };
-use cli::config_handle;
+
+
 use env_logger;
 
-use crate::cli::Commands;
+use cli::Commands;
+use cli::config_handle;
 
-use lib_start::certs;
-use common_lib::rpassword::read_password;
 use clap::Parser;
 
+use lib_start::certs;
 
+use common_lib::rpassword::read_password;
 
 
 //NOTE: for this progrm to start you have to write your postgres connection url
@@ -24,20 +25,17 @@ use clap::Parser;
 //in the /Connie/etc/db_conn; file
 
 #[derive(Debug,Parser)]
-#[command(version = "v0.2beta", about = "a web server in rust for more info visit https://github.com/samdiron/Connie")]
+#[command(version = "v0.3.3", about = "a web server in rust for more info visit https://github.com/samdiron/Connie")]
 #[command(disable_help_flag = true)]
 struct Cli {
     
-    #[arg(long)]
-    db: Option<String>,
-
     #[command(subcommand)]
     config: Option<Commands>,
 
     #[arg(long, short, default_value="false")]
     tui: Option<bool>,
 
-    #[arg(long, short, default_value="1")]
+    #[arg(long, short, default_value="2")]
     verbose: Option<u8>,
 
     #[arg(long, short, default_value = "false")]
@@ -90,16 +88,12 @@ async fn main() {
     if _cli.verbose.is_some() {
         match _cli.verbose.unwrap() {
             0 => {
-            env_logger::Builder::new()
-                    .parse_filters("WARN")
-                    .parse_filters("ERROR")
-                    .init();
+
             }
             1 => {
             env_logger::Builder::new()
                     .parse_filters("WARN")
                     .parse_filters("ERROR")
-                    .parse_filters("INFO")
                     .init();
             }
             2 => {
@@ -107,26 +101,39 @@ async fn main() {
                     .parse_filters("WARN")
                     .parse_filters("ERROR")
                     .parse_filters("INFO")
-                    .parse_filters("DEBUG")
                     .init();
             }
             3 => {
-                env_logger::Builder::new()
-                    .parse_filters("trace")
+            env_logger::Builder::new()
+                    .parse_filters("WARN")
+                    .parse_filters("ERROR")
+                    .parse_filters("INFO")
+                    .parse_filters("DEBUG")
                     .init();
+            }
+            _ => {
+            env_logger::Builder::new()
+                .parse_filters("trace")
+                .init();
 
-        }
-            _ => {}
+            }
         }
 
-    }
-    
+    } else {
+        env_logger::Builder::new()
+            .parse_filters("WARN")
+            .parse_filters("ERROR")
+            .parse_filters("INFO")
+            .init();
+
+    }  
     
     if let Some(command) = _cli.config {
         config_handle(command).await;
     }else {
-        println!("not now");
+        todo!()
     }
+    exit(0);
     
     
 

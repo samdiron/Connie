@@ -1,13 +1,22 @@
 #![allow(dead_code)]
-use std::{path::{Path, PathBuf}, sync::Arc};
+use std::{
+    sync::Arc,
+    path::{Path, PathBuf},
+};
 
 use common_lib::path::{CERIFICATE_PATH, PRIVATEKEY_PATH};
+
+use tokio_rustls::rustls::pki_types::{
+    pem::PemObject,
+    CertificateDer,
+    PrivateKeyDer
+};
 use tokio_rustls::rustls::{
-    self, crypto::CryptoProvider, pki_types::{
-        pem::PemObject,
-        CertificateDer,
-        PrivateKeyDer
-    },KeyLogFile, ServerConfig, DEFAULT_VERSIONS
+    self,
+    KeyLogFile,
+    ServerConfig,
+    DEFAULT_VERSIONS,
+    crypto::CryptoProvider,
 };
 
 use rustls::crypto::aws_lc_rs as provider;
@@ -20,7 +29,8 @@ fn load_certs(filename: &Path) -> Vec<CertificateDer<'static>> {
 }
 
 fn load_private_key(filename: &Path) -> PrivateKeyDer<'static> {
-    PrivateKeyDer::from_pem_file(filename).expect("cannot read private key file")
+    PrivateKeyDer::from_pem_file(filename)
+        .expect("cannot read private key file")
 }
 
 
@@ -43,7 +53,8 @@ pub fn make_config() -> Arc<ServerConfig> {
     .expect("could not create server config 2");
 
     config.key_log = Arc::new(KeyLogFile::new());
-    config.ticketer = provider::Ticketer::new().expect("faild to get server tls ticketer");
+    config.ticketer = provider::Ticketer::new()
+        .expect("faild to get server tls ticketer");
 
     Arc::new(config)
 

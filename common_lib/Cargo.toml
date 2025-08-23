@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+
+sha256 = "1.5.0"
 local-ip-addr = "0.1.1"
 public-ip = "0.2.2"
 bincode = "1.3.3"

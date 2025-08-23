@@ -1,7 +1,17 @@
+
 use std::net::SocketAddr;
 
-use common_lib::{gethostname::gethostname, path::SQLITEDB_PATH};
-use lib_db::{database::get_conn, sqlite::{get_sqlite_conn, sqlite_user::ShortUser}, user::user_struct::User};
+use common_lib::{
+    path::SQLITEDB_PATH,
+    gethostname::gethostname, 
+};
+
+use lib_db::{
+    database::get_conn,
+    user::user_struct::User,
+    sqlite::{get_sqlite_conn, sqlite_user::ShortUser},
+};
+
 use tcp::client::client::signup_process;
 
 use crate::{cli::Commands, get_new_pass};
@@ -9,16 +19,17 @@ use crate::{cli::Commands, get_new_pass};
 pub async fn handle_cli_user(command: Commands) {
     match command {
         Commands::User {
-            new,
-            signup,
-            update,
-            host,
             ip,
+            db,
+            new,
+            name,
+            host,
             port,
             admin,
-            name,
-            username,
             email,
+            signup,
+            update,
+            username,
         } => {
             let pool =  get_conn().await.unwrap();
             let pool = &pool;
@@ -47,10 +58,12 @@ pub async fn handle_cli_user(command: Commands) {
                 if admin.is_some() && admin.unwrap() {
                     // empty for now
                 }
-
-            } else if signup.is_some() && signup.unwrap() && port.is_some() && ip.is_some() {
+            }else if signup.is_some() && signup.unwrap() && port.is_some() && ip.is_some() {
                 let mut password = String::new();
-                let pool = get_sqlite_conn(&SQLITEDB_PATH.to_string()).await.unwrap();
+                let path = if db.is_some() {
+                    db.unwrap().to_str().unwrap().to_string()
+                } else {SQLITEDB_PATH.to_string()};
+                let pool = get_sqlite_conn(&path).await.unwrap();
                 println!("you are creating a user for a host");
                 get_new_pass(&mut password, &name);
                 let user = ShortUser {
@@ -61,20 +74,7 @@ pub async fn handle_cli_user(command: Commands) {
                 };
                 let addr = SocketAddr::new(ip.unwrap(), port.unwrap());
                 signup_process(addr, user, &pool).await.unwrap();
-            }//else if signin.is_some() && signin.unwrap() && port.is_some() && ip.is_some() {
-            //     let mut password = String::new();
-            //     let pool = get_sqlite_conn(&SQLITEDB_PATH.to_string()).await.unwrap();
-            //     println!("you are creating a user for a host");
-            //     get_new_pass(&mut password, &name);
-            //     let user = ShortUser {
-            //         name,
-            //         username,
-            //         email,
-            //         password  
-            //     };
-            //     let addr = SocketAddr::new(ip.unwrap(), port.unwrap());
-            //     signup_process(addr, user, &pool).await.unwrap();
-            // }
+            }
         } 
         _=> {}
     }

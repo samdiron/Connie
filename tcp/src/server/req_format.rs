@@ -1,7 +1,21 @@
-use crate::common::request::RQM;
-use lib_db::{jwt::{create, exp_gen, validate_jwt_claim, Claim}, types::{jwtE, sqlE, PgPool}, user::user_struct::validate_claim_wcpid};
-use serde::{Deserialize, Serialize};
+
+use lib_db::jwt::{
+    Claim,
+    create,
+    exp_gen,
+    validate_jwt_claim,
+};
+
+use lib_db::{
+    types::{jwtE, sqlE, PgPool},
+    user::validation::validate_claim_wcpid
+};
+
 use common_lib::bincode;
+use common_lib::serde::{Deserialize, Serialize};
+
+use crate::common::request::RQM;
+
 
 #[derive(Deserialize, Serialize)]
 pub struct Chead {
@@ -28,15 +42,21 @@ impl LoginReq {
         drop(self);
     }
 
-    pub(in crate::server) async fn validate(&self, pool: &PgPool) -> Result<bool, sqlE> {
-        let paswd = self.paswd.clone();
-        let cpid = self.cpid.clone();
-        let res = validate_claim_wcpid(cpid, paswd, pool).await?;
+    pub(in crate::server) async fn validate(
+        &self,
+        host_cpid: &String,
+        pool: &PgPool
+    ) -> Result<bool, sqlE> {
+        let paswd = &self.paswd;
+        let cpid = &self.cpid;
+        let res = validate_claim_wcpid(cpid, paswd, host_cpid, pool).await?;
         Ok(res)
 
     } 
 
-    pub(in crate::server)  async fn token_gen(self) -> Result<String, jwtE> {
+    pub(in crate::server)  async fn token_gen(
+        self
+    ) -> Result<String, jwtE> {
         let cpid = self.cpid;
         let paswd = self.paswd;
 
@@ -73,9 +93,13 @@ impl JwtReq {
         drop(self);
     }
 
-    pub(in crate::server) async fn validate(&self, pool: &PgPool) -> Result<bool, sqlE> {
+    pub(in crate::server) async fn validate(
+        &self,
+        host_cpid: &String,
+        pool: &PgPool
+    ) -> Result<(bool,String), sqlE> {
         let token = &self.jwt;
-        let state = validate_jwt_claim(token, pool).await;
+        let state = validate_jwt_claim(token, host_cpid, pool).await;
         Ok(state)
     }
 
@@ -99,9 +123,13 @@ impl Chead {
         drop(self);
     }
     
-    pub(in crate::server) async fn validate(&self, pool: &PgPool) -> Result<bool, sqlE> {
+    pub(in crate::server) async fn validate(
+        &self,
+        host_cpid: &String,
+        pool: &PgPool
+    ) -> Result<(bool, String), sqlE> {
         let token = &self.jwt;
-        let state = validate_jwt_claim(token, pool).await;
+        let state = validate_jwt_claim(token, host_cpid, pool).await;
         Ok(state)
     }
 

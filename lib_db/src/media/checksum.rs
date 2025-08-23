@@ -1,6 +1,6 @@
 use std::{io::Result, path::Path};
 
-use sha256::try_async_digest;
+use crate::sha256::try_async_digest;
 use std::fs;
 
 pub async fn get_fsum(path: &str) -> Result<String> {

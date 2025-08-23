@@ -1,8 +1,20 @@
-use std::{fs::remove_file, process::exit};
+
+use std::{
+    fs::remove_file,
+    process::exit,
+};
+
+use lib_db::{
+    database::{get_conn, migrate},
+    sqlite::{self, migration},
+};
+
+use tokio::{
+    io::AsyncWriteExt,
+    fs::File,
+};
 
 use common_lib::path::{DB_CONN, SQLITEDB_PATH};
-use lib_db::{database::get_conn, sqlite};
-use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::Commands;
 
@@ -10,10 +22,12 @@ use crate::Commands;
 pub async fn handle_cli_db(command: Commands) {
     match command {
          Commands::DB { 
-            migrations,
+            test,
+            path,
             connection,
             delete_conn,
-            test
+            sqlite_migrations,
+            postgres_migrations,
         } => {
             if let Some(conn) = connection {
                 let mut f = File::create_new(DB_CONN)
@@ -30,16 +44,18 @@ pub async fn handle_cli_db(command: Commands) {
                     exit(0)
                 }
             }
-            if let Some(migrations) = migrations {
-                let pool =  get_conn().await.unwrap();
-                let pool = &pool;
+            if sqlite_migrations.is_some() && sqlite_migrations.unwrap() {
+                let path = if path.is_some() {
+                    path.unwrap().to_str().unwrap().to_string()
+                } else {SQLITEDB_PATH.to_string()};
                 let spool = sqlite::get_sqlite_conn(
-                    &SQLITEDB_PATH.to_owned()
+                    &path
                 ).await.unwrap();
-                if migrations == true {
-                    lib_db::database::migrate(pool).await.unwrap();
-                    lib_db::sqlite::migration(&spool).await.unwrap();
-                }
+                migration(&spool).await.unwrap()
+            }
+            if postgres_migrations.is_some() && postgres_migrations.unwrap() {
+                let conn = get_conn().await.unwrap();
+                migrate(&conn).await.unwrap();
             }
             if let Some(test) = test {
                 if test == true {

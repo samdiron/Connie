@@ -7,12 +7,11 @@ pub mod types {
     use crate::common::request;
     pub use request::RQM;
     pub use request::{
-        JWT_AUTH,
-        LOGIN_CRED,
         GET,
         POST,
         DELETE,
-        
+        JWT_AUTH,
+        LOGIN_CRED,
     };
 }
 
@@ -30,7 +29,5 @@ pub mod consts {
     pub static USE_IP: Mutex<u8> = Mutex::new(PRIVATE_STATUS);
 
     pub static USE_PORT: Mutex<u8> = Mutex::new(0);
-
-
 
 }

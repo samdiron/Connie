@@ -14,8 +14,7 @@ jobs:
         toolchain:
           - stable
           - beta
-          - nightly
-      fail-fast: true
+      fail-fast: false
     env:
       POSTGRES_DB: ${{ secrets.POSTGRES_CLUSTER}}
     steps:
