@@ -1,6 +1,5 @@
 use std::{io, thread};
 use std::str::FromStr;
-use std::sync::{LazyLock, Mutex};
 use std::net::{IpAddr, SocketAddr};
 use std::time::{Duration, Instant};
 
@@ -24,14 +23,14 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio_rustls::TlsAcceptor;
 use tokio_rustls::server::TlsStream;
 
-use crate::types::RQM;
 use crate::consts::{NET_STATUS, NEW_USERS, USE_IP};
 use crate::common::request::SERVER_WILL_NOT_ALLOW_NOTLS;
 
 use crate::server::config::make_config;
-use crate::server::handle_client::{handle, raw_handle};
+use crate::server::request_handles::handle_client::{handle, raw_handle};
 
 //runtime
+use crate::server::runtime::statics::ALL_REQUESTS;
 use crate::server::runtime::generate_log_templates;
 use crate::server::runtime::logs::unauthorized_client_log;
 use crate::server::runtime::file_checks::clean_unfinished_files;
@@ -39,12 +38,6 @@ use crate::server::runtime::public_files::{
     new_pub_files_process,
     pub_files_process
 };
-
-
-pub static ALL_REQUESTS: LazyLock<Mutex<Vec<RQM>>> = LazyLock::new(||{
-    let vector: Mutex<Vec<RQM>> = Mutex::new(vec![]);
-    vector
-});
 
 pub async fn bind(
     pool: PgPool,
@@ -113,7 +106,7 @@ pub async fn bind(
     let mut handles: Vec<JoinHandle<()>> = vec![];
 
 
-    let mut n_all_time_requests = 0u64;
+    let mut _n_all_time_requests = 0u64;
     let mut n_current_requests = 0u64;
     let mut succesful_requests = 0u64;
     let mut failed_requests = 0u64;
@@ -165,7 +158,7 @@ pub async fn bind(
         // listener
         match socket.accept().await {
             Ok(stream) => {
-                n_all_time_requests+=1;
+                _n_all_time_requests+=1;
                 let inner_p = pool.clone();
                 let inner_allow_new_users = allow_new_users.clone();
                 let sqlite_host = sqlite_host.clone();
