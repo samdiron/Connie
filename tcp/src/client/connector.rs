@@ -1,5 +1,6 @@
 
 use core::convert::From;
+
 use std::thread;
 use std::io::Result;
 use std::process::exit;
@@ -29,8 +30,8 @@ use tokio_rustls::rustls::pki_types::ServerName;
 
 use crate::types::LOGIN_CRED;
 use crate::common::handshakes;
-use crate::client::config::make_config;
 use crate::client::client::Connection;
+use crate::client::config::make_config;
 use crate::common::util::client::{rvfs, wvts};
 use crate::client::handle_request::{
     handle_client_request,
@@ -38,7 +39,11 @@ use crate::client::handle_request::{
 };
 use crate::common::request::req_format::{JwtReq, LoginReq};
 use crate::common::request::{
-    JWT_AUTH, RQM, SERVER_WILL_NOT_ALLOW_NOTLS, SIGNIN_CRED, UNAUTHORIZED
+    RQM,
+    JWT_AUTH,
+    SIGNIN_CRED,
+    UNAUTHORIZED,
+    SERVER_WILL_NOT_ALLOW_NOTLS,
 };
 
 
@@ -60,13 +65,13 @@ pub async fn signup_process(
     let mut stream = get_tlstream(stream, server_name)
         .await?;
     info!("Connected tls");
-    let d: Vec<u8> = vec![SIGNIN_CRED];
-    wvts(Some(&mut stream), None, d).await?;
+    let single_item_vector: Vec<u8> = vec![SIGNIN_CRED];
+    wvts(&mut stream, single_item_vector).await?;
     debug!("sent status to host {SIGNIN_CRED}");
     let will_allow = stream.read_u8().await?;
     if will_allow == 0 {
         info!("server accsepted request");
-        let vector = rvfs(Some(&mut stream), None).await?;
+        let vector = rvfs(&mut stream).await?;
         let server = SqliteHost::dz(vector).unwrap();
         info!("server: name: {}, host: {};",&server.name, &server.host);
         info!("the thread will pause for 2s if you want to cancel type ^c");
@@ -74,9 +79,9 @@ pub async fn signup_process(
         thread::sleep(dur);
         stream.write_u8(0).await?;
         stream.flush().await?;
-        wvts(Some(&mut stream), None, short_user_vec).await?;
+        wvts(&mut stream, short_user_vec).await?;
 
-        let user_vec = rvfs(Some(&mut stream), None).await?;
+        let user_vec = rvfs(&mut stream).await?;
         
         let mut user = SqliteUser::dz(user_vec).unwrap();
         user.host = server.cpid.clone();

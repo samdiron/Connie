@@ -29,6 +29,7 @@ pub(crate) mod handshakes {
     use tokio::net::TcpStream;
     use tokio::time::timeout;
     
+    use crate::common::util::core::{raw_rvfs, raw_wvts};
     use crate::common::{
         request::SIGNIN_CRED,
         util
@@ -48,7 +49,7 @@ pub(crate) mod handshakes {
         debug!("START:HANDSHAKE");
         debug!("HANDSHAKING:{}", server.name);
         let server_name = server.name.as_bytes();
-        let _res = wvts(Some(stream), None, server_name.to_vec()).await?;
+        let _res = wvts(stream, server_name.to_vec()).await?;
         debug!("sent server_name with {_res}");
         let server_confirm = stream.read_u8().await?;
         if server_confirm != 0 {
@@ -56,12 +57,12 @@ pub(crate) mod handshakes {
             return Ok(1)
         };
         debug!("MID:HANDSHAKE");
-        let buf_cpid = rvfs(Some(stream), None).await?;
+        let buf_cpid = rvfs(stream).await?;
         let buf_cpid = buf_cpid.to_vec();
         let cpid = String::from_utf8_lossy(&buf_cpid);
         stream.write_u8(0).await?;
         stream.flush().await?;
-        let buf_host = rvfs(Some(stream), None).await?;
+        let buf_host = rvfs(stream).await?;
         let buf_host = buf_host.to_vec();
         let host = String::from_utf8_lossy(&buf_host);
         if cpid != server.cpid {
@@ -78,7 +79,7 @@ pub(crate) mod handshakes {
             debug!("END:HANDSHAKE");
             stream.write_u8(0).await?;
             stream.flush().await?;
-            let buf_ip = rvfs(Some(stream), None).await?;
+            let buf_ip = rvfs(stream).await?;
             let buf_ip = buf_ip.to_vec();
             let public_ip = String::from_utf8_lossy(&buf_ip);
             if public_ip != server.pub_ip {
@@ -101,12 +102,11 @@ pub(crate) mod handshakes {
         server: &SqliteHost,
         pool: &SqlitePool
     ) -> Result<u8, io::Error>  {
-        use util::client::{wvts, rvfs};
 
         debug!("START:HANDSHAKE");
         debug!("HANDSHAKING:{}", server.name);
         let server_name = server.name.as_bytes();
-        let _res = wvts(None, Some(stream),server_name.to_vec()).await?;
+        let _res = raw_wvts(stream, server_name.to_vec()).await?;
         debug!("sent server_name with {_res}");
         let server_confirm = stream.read_u8().await?;
         if server_confirm != 0 {
@@ -114,12 +114,12 @@ pub(crate) mod handshakes {
             return Ok(1)
         };
         debug!("MID:HANDSHAKE");
-        let buf_cpid = rvfs(None, Some(stream)).await?;
+        let buf_cpid = raw_rvfs(stream).await?;
         let buf_cpid = buf_cpid.to_vec();
         let cpid = String::from_utf8_lossy(&buf_cpid);
         stream.write_u8(0).await?;
         stream.flush().await?;
-        let buf_host = rvfs(None, Some(stream)).await?;
+        let buf_host = raw_rvfs(stream).await?;
         let buf_host = buf_host.to_vec();
         let host = String::from_utf8_lossy(&buf_host);
         if cpid != server.cpid {
@@ -136,7 +136,7 @@ pub(crate) mod handshakes {
             debug!("END:HANDSHAKE");
             stream.write_u8(0).await?;
             stream.flush().await?;
-            let buf_ip = rvfs(None, Some(stream)).await?;
+            let buf_ip = raw_rvfs(stream).await?;
             let buf_ip = buf_ip.to_vec();
             let public_ip = String::from_utf8_lossy(&buf_ip);
             if public_ip != server.pub_ip {
@@ -163,7 +163,7 @@ pub(crate) mod handshakes {
         use util::server::{wvts, rvfs};
         debug!("START:HANDSHAKE");
         
-        let buf = rvfs(Some(stream), None).await?;
+        let buf = rvfs(stream).await?;
         let lossy = buf.to_vec();
         if lossy.len() == 1usize && lossy[0] == SIGNIN_CRED {
             return Ok(SIGNIN_CRED);
@@ -178,8 +178,7 @@ pub(crate) mod handshakes {
         stream.write_u8(0).await?;
         stream.flush().await?;
         wvts(
-            Some(stream),
-            None,
+            stream,
             server.cpid
                 .as_bytes()
                 .to_vec()
@@ -187,8 +186,7 @@ pub(crate) mod handshakes {
         debug!("SENT:CPID");
         let _confirm = stream.read_u8().await?;
         wvts(
-            Some(stream),
-            None,
+            stream,
             server.host
                 .as_bytes()
                 .to_vec()
@@ -204,8 +202,7 @@ pub(crate) mod handshakes {
 
         if client_confirm == 0 {
             wvts(
-                Some(stream),
-                None,
+                stream,
                 server_ip
                     .as_bytes()
                     .to_vec()
@@ -222,10 +219,9 @@ pub(crate) mod handshakes {
         stream: &mut TcpStream,
         server: &SqliteHost
     ) -> Result<u8, io::Error> {
-        use util::server::{wvts, rvfs};
         debug!("START:HANDSHAKE");
         
-        let buf = rvfs(None, Some(stream)).await?;
+        let buf = raw_rvfs(stream).await?;
         let lossy = buf.to_vec();
         if lossy.len() == 1usize && lossy[0] == SIGNIN_CRED {
             return Ok(SIGNIN_CRED);
@@ -238,18 +234,16 @@ pub(crate) mod handshakes {
             return Ok(1)
         };
         stream.write_u8(0).await?;
-        wvts(
-            None,
-            Some(stream),
+        raw_wvts(
+            stream,
             server.cpid
                 .as_bytes()
                 .to_vec()
         ).await?;
         debug!("SENT:CPID");
         let _confirm = stream.read_u8().await?;
-        wvts(
-            None,
-            Some(stream),
+        raw_wvts(
+            stream,
             server.host
                 .as_bytes()
                 .to_vec()
@@ -264,9 +258,8 @@ pub(crate) mod handshakes {
         }else { server.pub_ip.clone() };
 
         if client_confirm == 0 {
-            wvts(
-                None,
-                Some(stream),
+            raw_wvts(
+                stream,
                 server_ip
                     .as_bytes()
                     .to_vec()

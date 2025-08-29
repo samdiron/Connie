@@ -29,6 +29,7 @@ use crate::common::request::SERVER_WILL_NOT_ALLOW_NOTLS;
 use crate::server::config::make_config;
 use crate::server::request_handles::handle_client::{handle, raw_handle};
 
+use crate::server::request_handles::UNMATCHED_CPID;
 //runtime
 use crate::server::runtime::statics::ALL_REQUESTS;
 use crate::server::runtime::generate_log_templates;
@@ -239,7 +240,7 @@ async fn serving_tls_request(
             if res.0 == 0 {info!("a client was handled")}
             else if res.0 == 1 {
                 info!("a client was lost");
-            } else if res.0 == 44 {
+            } else if res.0 == UNMATCHED_CPID {
                 let err = res.1.unwrap();
 
                 let filename = generate_log_templates::client_cpid_not_match(&err);
@@ -277,7 +278,7 @@ async fn serving_no_tls_request(
             if res.0 == 0 {info!("a client was handled")}
             else if res.0 == 1 {
                 info!("a client was lost");
-            } else if res.0 == 44 {
+            } else if res.0 == UNMATCHED_CPID {
                 let err = res.1.unwrap();
 
                 let filename = generate_log_templates::client_cpid_not_match(&err);

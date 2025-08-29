@@ -24,6 +24,7 @@ use lib_db::media::checksum::{get_fsum, get_size};
 use lib_db::sqlite::sqlite_media::{sqlite_delete_media, SqliteMedia};
 use tokio::net::TcpStream;
 
+use crate::common::util::core::{raw_rvfs, raw_wffb, raw_wifb};
 use crate::types::RQM;
 use crate::common::ClientTlsStreams;
 use crate::common::util::client::{wffb,rvfs, wifb};
@@ -63,19 +64,18 @@ pub async fn raw_handle_client_request(
         let ready = stream.read_u8().await?;
         if ready == READY_STATUS {
             debug!("ready to send file");
-            let _size = wffb(
-                    None,
-                    Some(stream),
+            let verbose = true;
+            let _size = raw_wffb(
+                    stream,
                     request.size as u64,
                     &mut reader,
-                    true
+                    verbose
             ).await?;
             debug!("witing for server confirm ~ ");
             let checksum = if &request.chcksum == NO_VAL {
                 debug!("waiting for server to send checksum");
-                let checksum_vector = rvfs(
-                        None,
-                        Some(stream),
+                let checksum_vector = raw_rvfs(
+                        stream
                     ).await?;
                 let string_chscksum = String::from_utf8(checksum_vector)
                         .unwrap();
@@ -129,11 +129,11 @@ pub async fn raw_handle_client_request(
                 let f = f.unwrap();
                 stream.write_u8(READY_STATUS).await?;
                 let mut writer = BufWriter::new(f);
-                wifb(
-                    None,
-                    Some(stream),
+                let verbose = true;
+                raw_wifb(
+                    stream,
                     &mut writer,
-                    true
+                    verbose
                 ).await?;
                 let local_size = get_size(&path).await?;
                 if local_size != request.size {
@@ -216,17 +216,17 @@ pub async fn handle_client_request(
         let ready = stream.read_u8().await?;
         if ready == READY_STATUS {
             debug!("ready to send file");
+            let verbose = true;
             let _size = wffb(
-                    Some(stream),
-                    None,
+                    stream,
                     request.size as u64,
                     &mut reader,
-                    true
+                    verbose
             ).await?;
             debug!("witing for server confirm ~ ");
             let checksum = if &request.chcksum == NO_VAL {
                 debug!("waiting for server to send checksum");
-                let checksum_vector = rvfs(Some(stream), None).await?;
+                let checksum_vector = rvfs(stream).await?;
                 let string_chscksum = String::from_utf8(checksum_vector)
                         .unwrap();
                 string_chscksum
@@ -279,7 +279,8 @@ pub async fn handle_client_request(
                 let f = f.unwrap();
                 stream.write_u8(READY_STATUS).await?;
                 let mut writer = BufWriter::new(f);
-                wifb(Some(stream), None, &mut writer, true).await?;
+                let verbose = true;
+                wifb(stream, &mut writer, verbose).await?;
                 let local_size = get_size(&path).await?;
                 if local_size != request.size {
                     stream.write_u8(DATA_NOT_MATCH).await?;

@@ -28,6 +28,7 @@ use std::io::{
     ErrorKind,
 };
 
+use crate::common::util::core::{raw_read_stream, raw_rvfs, raw_wvts};
 use crate::common::{
     handshakes,
     request::{
@@ -37,9 +38,14 @@ use crate::common::{
         SIGNIN_CRED,
         UNAUTHORIZED
     },
-    util::server::{read_stream, rvfs, wvts}
+    util::server::{
+        read_stream,
+        rvfs,
+        wvts,
+    }
 };
 
+use crate::server::request_handles::UNMATCHED_CPID;
 use crate::server::runtime as rt;
 use rt::logs::client_log;
 use rt::statics::ALL_REQUESTS;
@@ -106,16 +112,16 @@ pub async fn raw_handle(
                 sqlite_host.clone()
             ).unwrap();
             debug!("server vector size: {}",server_vector.len());
-            wvts(
-                None,
-                Some(&mut stream),
+
+            raw_wvts(
+                &mut stream,
                 server_vector
             ).await?;
+
             let confirm = stream.read_u8().await?;
             if confirm == 0 { 
-                let vector = rvfs(
-                    None,
-                    Some(&mut stream),
+                let vector = raw_rvfs(
+                    &mut stream,
                 ).await?;
                 let short_user = ShortUser::dz(vector).unwrap();
                 let user = user_struct::User {
@@ -136,7 +142,7 @@ pub async fn raw_handle(
                 };
                 let user_vector = sqlite_user.sz().unwrap();
                 debug!("user vector size: {}",user_vector.len());
-                wvts(None, Some(&mut stream), user_vector).await?;
+                raw_wvts(&mut stream, user_vector).await?;
 
                 stream.write_u8(0).await?;
                 stream.flush().await?;
@@ -160,7 +166,7 @@ pub async fn raw_handle(
     match auth_type {
         JWT_AUTH => {
             debug!("SERVER: jwt auth request");
-            let buf = read_stream(None, Some(&mut stream), 600).await?;
+            let buf = raw_read_stream(&mut stream, 600).await?;
             if buf.is_empty() {
                 debug!("an empty request was sent");
             }
@@ -200,7 +206,7 @@ pub async fn raw_handle(
                     timestamp,
                     sev: 1,
                 };
-                return Ok( ( 44, Some(err) ) );
+                return Ok( ( UNMATCHED_CPID, Some(err) ) );
             }
             else {
                 let dur = Duration::from_secs(3);
@@ -275,7 +281,7 @@ pub async fn raw_handle(
                 stream.write_u16(data.len() as u16).await?;
                 for d in data {
                     let vec = bincode::serialize(&d).unwrap();
-                    let s = wvts(None, Some(&mut stream), vec).await?;
+                    let s = raw_wvts(&mut stream, vec).await?;
                     assert_eq!(s, 0);
 
                 }
@@ -290,7 +296,7 @@ pub async fn raw_handle(
                     stream.write_u16(data.len() as u16).await?;
                     for d in data {
                         let vec = bincode::serialize(&d).unwrap();
-                        let s = wvts(None, Some(&mut stream), vec).await?;
+                        let s = raw_wvts(&mut stream, vec).await?;
                         assert_eq!(s, 0);
 
                 }};
@@ -322,9 +328,9 @@ pub async fn raw_handle(
                         addr.ip(),
                         &"NULL".to_string(),
                         &"FETCH".to_string(),
-                        44
+                        UNMATCHED_CPID
                     ).await?;
-                return Ok( ( 44, Some(err) ) );
+                return Ok( ( UNMATCHED_CPID, Some(err) ) );
                 
             }
         }
@@ -364,10 +370,10 @@ pub async fn handle(
                 sqlite_host.clone()
             ).unwrap();
             debug!("server vector size: {}",server_vector.len());
-            wvts(Some(&mut stream), None, server_vector).await?;
+            wvts(&mut stream, server_vector).await?;
             let confirm = stream.read_u8().await?;
             if confirm == 0 { 
-                let vector = rvfs(Some(&mut stream), None).await?;
+                let vector = rvfs(&mut stream).await?;
                 let short_user = ShortUser::dz(vector).unwrap();
                 let user = user_struct::User {
                     cpid: String::new(),
@@ -387,7 +393,7 @@ pub async fn handle(
                 };
                 let user_vector = sqlite_user.sz().unwrap();
                 debug!("user vector size: {}",user_vector.len());
-                wvts(Some(&mut stream), None, user_vector).await?;
+                wvts(&mut stream, user_vector).await?;
 
                 stream.write_u8(0).await?;
                 stream.flush().await?;
@@ -411,7 +417,7 @@ pub async fn handle(
     match auth_type {
         JWT_AUTH => {
             debug!("SERVER: jwt auth request");
-            let buf = read_stream(Some(&mut stream), None, 600).await?;
+            let buf = read_stream(&mut stream, 600).await?;
             if buf.is_empty() {
                 debug!("an empty request was sent");
             }
@@ -452,7 +458,7 @@ pub async fn handle(
                     timestamp,
                     sev: 1,
                 };
-                return Ok( ( 44, Some(err) ) );
+                return Ok( ( UNMATCHED_CPID, Some(err) ) );
             }
             else {
                 let dur = Duration::from_secs(3);
@@ -538,7 +544,7 @@ pub async fn handle(
                 stream.write_u16(data.len() as u16).await?;
                 for d in data {
                     let vec = bincode::serialize(&d).unwrap();
-                    let s = wvts(Some(&mut stream), None, vec).await?;
+                    let s = wvts(&mut stream, vec).await?;
                     assert_eq!(s, 0);
 
                 }
@@ -553,7 +559,7 @@ pub async fn handle(
                     stream.write_u16(data.len() as u16).await?;
                     for d in data {
                         let vec = bincode::serialize(&d).unwrap();
-                        let s = wvts(Some(&mut stream), None, vec).await?;
+                        let s = wvts(&mut stream, vec).await?;
                         assert_eq!(s, 0);
 
                 };
@@ -583,9 +589,9 @@ pub async fn handle(
                             addr.ip(),
                             &"NULL".to_string(),
                             &"FETCH".to_string(),
-                            44
+                            UNMATCHED_CPID
                         ).await?;
-                return Ok( ( 44, Some(err) ) );
+                return Ok( ( UNMATCHED_CPID, Some(err) ) );
                 
             }}
         }

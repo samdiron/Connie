@@ -29,6 +29,7 @@ use common_lib::tokio::{
 use tokio_rustls::rustls::pki_types::ServerName;
 
 use crate::common::request::SERVER_WILL_NOT_ALLOW_NOTLS;
+use crate::common::util::core::raw_rvfs;
 use crate::common::{
     handshakes,
     request::FETCH,
@@ -144,7 +145,7 @@ pub async fn get_files(
 
     for _i in 0..items {
         
-        let buf = rvfs(Some(&mut stream), None).await?;
+        let buf = rvfs(&mut stream).await?;
         let media: Smedia = Smedia::dz(buf).unwrap();
         let sqlitem = Smedia {
             name: media.name,
@@ -164,7 +165,7 @@ pub async fn get_files(
 
         for _i in 0..items {
             
-            let buf = rvfs(Some(&mut stream), None).await?;
+            let buf = rvfs(&mut stream).await?;
             let media: Smedia = Smedia::dz(buf).unwrap();
             let sqlitem = Smedia {
                 name: media.name,
@@ -228,7 +229,7 @@ async fn notls_fetcher_helper(
 
     for _i in 0..items {
         
-        let buf = rvfs(None, Some(stream)).await?;
+        let buf = raw_rvfs(stream).await?;
         let media: Smedia = Smedia::dz(buf).unwrap();
         let sqlitem = Smedia {
             name: media.name,
@@ -248,7 +249,7 @@ async fn notls_fetcher_helper(
 
         for _i in 0..items {
             
-            let buf = rvfs(None, Some(stream)).await?;
+            let buf = raw_rvfs(stream).await?;
             let media: Smedia = Smedia::dz(buf).unwrap();
             let sqlitem = Smedia {
                 name: media.name,

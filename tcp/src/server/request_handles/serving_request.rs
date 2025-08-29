@@ -23,6 +23,7 @@ use cl::tokio::io::AsyncWriteExt;
 use cl::log::{debug, error, info};
 use cl::tokio::io::{AsyncReadExt, BufReader};
 
+use crate::common::util::core::{raw_wffb, raw_wifb, raw_wvts};
 use crate::types::RQM;
 use crate::common::ServerTlsStreams;
 use crate::common::util::server::{wffb, wifb, wvts};
@@ -80,17 +81,18 @@ pub async fn raw_handle_server_request(
             let spath = path.to_str().unwrap();
             let mut writer = BufWriter::new(f);
             stream.write_u8(READY_STATUS).await?;
-            let _size = wifb(
-                    None,
-                    Some(stream),
+            let verbose = false;
+            let _size = raw_wifb(
+                    stream,
                     &mut writer,
+                    verbose
                 ).await;
             let log_status = if _size.is_ok() {0} else {exit_status=1;1};
             let local_sum = get_fsum(spath).await?;
             let local_size = get_size(spath).await?;
             if &request.chcksum == NO_VAL {
                 debug!("a client sent a file with no checksum");
-                wvts(None, Some(stream), local_sum.as_bytes().to_vec())
+                raw_wvts(stream, local_sum.as_bytes().to_vec())
                         .await
                         .unwrap();
             }else if request.chcksum != local_sum {
@@ -156,11 +158,12 @@ pub async fn raw_handle_server_request(
                     let ready = stream.read_u8().await?;
                     if ready == READY_STATUS {
                         let mut reader = BufReader::new(f);
-                        let _status = wffb(
-                            None,
-                            Some(stream),
+                        let verbose = false;
+                        let _status = raw_wffb(
+                            stream,
                             size,
                             &mut reader,
+                            verbose
                         ).await;
                         let log_status = if _status.is_ok() {0} else {exit_status=1;1};
                         let confirm = stream.read_u8().await?;
@@ -256,8 +259,7 @@ pub async  fn handle_server_request(
             let mut writer = BufWriter::new(f);
             stream.write_u8(READY_STATUS).await?;
             let _size = wifb(
-                    Some(stream),
-                    None,
+                    stream,
                     &mut writer,
                 ).await;
             let log_status = if _size.is_ok() {0} else {exit_status=1;1};
@@ -265,7 +267,7 @@ pub async  fn handle_server_request(
             let local_size = get_size(spath).await?;
             if &request.chcksum == NO_VAL {
                 debug!("a client sent a file with no checksum");
-                wvts(Some(stream), None, local_sum.as_bytes().to_vec())
+                wvts(stream, local_sum.as_bytes().to_vec())
                         .await
                         .unwrap();
             }else if request.chcksum != local_sum {
@@ -331,8 +333,7 @@ pub async  fn handle_server_request(
                     if ready == READY_STATUS {
                         let mut reader = BufReader::new(f);
                         let _status = wffb(
-                            Some(stream),
-                            None,
+                            stream,
                             size,
                             &mut reader,
                         ).await;
