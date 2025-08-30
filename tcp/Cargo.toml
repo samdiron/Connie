@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 
-tui = { path = "../tui/" }
 lib_db = { path = "../lib_db/" }
 lib_start = { path = "../lib_start/"}
 common_lib = { path = "../common_lib/" }

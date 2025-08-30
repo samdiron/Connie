@@ -108,7 +108,7 @@ async fn pub_file_checker(
     
     if 0 == added {info!("PUBFILECHECKER: added {added} files from server")};
     if 0 == deleted {info!("PUBFILECHECKER: deleted {deleted} files server")};
-    info!("PUBFILECHECKER: finished in {}ns", end.as_nanos());
+    info!("PUBFILECHECKER: finished in {}ms", end.as_millis());
 }
 
 
@@ -156,7 +156,7 @@ async fn file_checker(
     
     if 0 == added {info!("FILECHECKER: added {added} files from server")};
     if 0 == deleted {info!("FILECHECKER: deleted {deleted} files server")};
-    info!("FILECHECKER: finished in {}ns", end.as_nanos());
+    info!("FILECHECKER: finished in {}ms", end.as_millis());
 }
 
 #[allow(unused_assignments)]

@@ -170,7 +170,6 @@ pub async fn raw_wifb(
         let mut when_to_print = Instant::now();
         loop {
             if i == tol || i == tol-1 || (recvd+PACKET_SIZE) > s_all {
-                tui::restore_terminal();
                 debug!("last loop");break 
             }
             s.read_exact(&mut buf).await?;

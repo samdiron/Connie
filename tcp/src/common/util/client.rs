@@ -282,7 +282,6 @@ pub async fn wifb(
         let mut when_to_print = Instant::now();
         loop {
             if i == tol || i == tol-1 || (recvd+PACKET_SIZE) > s_all {
-                // tui::restore_terminal();
                 debug!("last loop");break 
             }
             stream.read_exact(&mut buf).await?;
@@ -293,9 +292,6 @@ pub async fn wifb(
             if when_to_print.elapsed() >= standard_wait {
                 when_to_print+=standard_wait;
                 let percent = (i as f64 / tol as f64) * 100.0;
-                // gauge_sender
-                //     .send(percent)
-                //     .expect("could not send percent to the gauge thread ");
                 info!("download: {:.2}%", percent);
             };
         }

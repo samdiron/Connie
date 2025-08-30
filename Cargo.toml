@@ -29,7 +29,6 @@ members = [
   "lib_db",
   "lib_start",
   "tcp",
-  "tui",
 ]
 
 [dependencies]
@@ -38,7 +37,6 @@ tcp = { path = "./tcp/" }
 lib_db = { path = "./lib_db/" }
 lib_start = { path = "./lib_start/" }
 common_lib = { path = "./common_lib/" }
-tui = { path = "./tui/" }
 
 clap = { version = "4.5.27", features = ["derive"] }
 serde = { version = "1.0.217", features = ["derive"] }
