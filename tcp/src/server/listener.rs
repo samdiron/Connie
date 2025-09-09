@@ -31,7 +31,7 @@ use crate::server::request_handles::handle_client::{handle, raw_handle};
 
 use crate::server::request_handles::UNMATCHED_CPID;
 //runtime
-use crate::server::runtime::statics::ALL_REQUESTS;
+use crate::server::runtime::statics::{ALLOW_NOTLS, ALL_REQUESTS, STOP_LISTENING};
 use crate::server::runtime::generate_log_templates;
 use crate::server::runtime::logs::unauthorized_client_log;
 use crate::server::runtime::file_checks::clean_unfinished_files;
@@ -115,17 +115,27 @@ pub async fn bind(
     // timers and counters
     // cleaning time
     let mut ct = Instant::now();
-    // admin pause
-    let mut ap = Instant::now();
+    // count down till it's time to clean the handles array
+    let mut clearner_time = Instant::now();
     let standard_clean_up_tls_dur = Instant::now();
     let wait1day =  Duration::from_secs(DURATION); // DURATION == 1 day
     let standard_wait = Duration::from_secs(300); // 5 min
     let mut impropertls: u32 = 0;
 
+    if allow_notls {
+        let wrapper = ALLOW_NOTLS.lock();
+        // this will not return any errors but let's be safe 
+        if wrapper.is_ok() {
+            *wrapper.unwrap() = allow_notls
+        }else {
+            debug!("the control flow value: ALLOW_NOTLS was poisoned")
+        };
+    }
+
     loop {
         // admin loop 
-        if handles.is_empty() && ap.elapsed() > standard_wait {
-            ap+=standard_wait;
+        if handles.is_empty() && clearner_time.elapsed() > standard_wait {
+            clearner_time+=standard_wait;
         }
 
         // cleaner loop 
@@ -154,57 +164,67 @@ pub async fn bind(
             let dur = standard_clean_up_tls_dur - now;
             warn!("you are being DDoSed and i don't wanna deal with this i will sleep for {}s. goodnight (っ- ‸ - ς)",dur.as_secs());
             thread::sleep(dur);
-        }
+        };
+        let stop_listening_wrapper = STOP_LISTENING.lock();
+        let stop_listening: bool = if stop_listening_wrapper.is_ok() {
+            *stop_listening_wrapper.unwrap()
+        }else {false};
 
         // listener
-        match socket.accept().await {
-            Ok(stream) => {
-                _n_all_time_requests+=1;
-                let inner_p = pool.clone();
-                let inner_allow_new_users = allow_new_users.clone();
-                let sqlite_host = sqlite_host.clone();
-                let addr = stream.1;
-                let mut stream = stream.0;
-                let no_tls = stream.read_u8().await;
+        if !stop_listening {
+            match socket.accept().await {
+                Ok(stream) => {
+                    _n_all_time_requests+=1;
+                    let inner_p = pool.clone();
+                    let inner_allow_new_users = allow_new_users.clone();
+                    let sqlite_host = sqlite_host.clone();
+                    let addr = stream.1;
+                    let mut stream = stream.0;
+                    let no_tls = stream.read_u8().await;
 
-                let no_tls = if no_tls.is_ok() {
-                    no_tls.unwrap()
-                } else { 0 };
-                
-                if no_tls == 1 && allow_notls {
-                    serving_no_tls_request(
-                        stream,
-                        addr,
-                        inner_p,
-                        inner_allow_new_users,
-                        sqlite_host,
-                        &mut handles
-                    ).await;
-                } else if !allow_notls && no_tls == 1 {
-                    let res = stream.write_u8(SERVER_WILL_NOT_ALLOW_NOTLS).await;
-                    if res.is_ok() {res.unwrap()};
-                }
-                else {
-                    info!("notls client");
-                    let inner_acceptor = acceptor.clone();
-                    let tls = tls_acceptor(inner_acceptor, stream).await;
-                    if tls.is_ok() {
-                        serving_tls_request(
-                            tls.unwrap(),
+                    let no_tls = if no_tls.is_ok() {
+                        no_tls.unwrap()
+                    } else { 0 };
+                    
+                    let runtime_notls_wrapper = ALLOW_NOTLS.lock() ;
+                    let runtime_notls = if runtime_notls_wrapper.is_ok() {
+                      *runtime_notls_wrapper.unwrap()
+                    }else {false};
+                    if no_tls == 1 && runtime_notls {
+                        serving_no_tls_request(
+                            stream,
                             addr,
                             inner_p,
                             inner_allow_new_users,
                             sqlite_host,
                             &mut handles
                         ).await;
-                    } else {
-                        warn!("client with improper tls addres: {}", &addr);
-                        let _ = unauthorized_client_log(addr).await.unwrap();
-                        impropertls+=1;
+                    } else if !runtime_notls && no_tls == 1 {
+                        let res = stream.write_u8(SERVER_WILL_NOT_ALLOW_NOTLS).await;
+                        if res.is_ok() {res.unwrap()};
                     }
-                };
-            }Err(e) => {
-                warn!("there was an err while accepting a client : {:#?}", e)
+                    else {
+                        info!("notls client");
+                        let inner_acceptor = acceptor.clone();
+                        let tls = tls_acceptor(inner_acceptor, stream).await;
+                        if tls.is_ok() {
+                            serving_tls_request(
+                                tls.unwrap(),
+                                addr,
+                                inner_p,
+                                inner_allow_new_users,
+                                sqlite_host,
+                                &mut handles
+                            ).await;
+                        } else {
+                            warn!("client with improper tls addres: {}", &addr);
+                            let _ = unauthorized_client_log(addr).await.unwrap();
+                            impropertls+=1;
+                        }
+                    };
+                }Err(e) => {
+                    warn!("there was an err while accepting a client : {:#?}", e)
+                }
             }
         }
     } 
