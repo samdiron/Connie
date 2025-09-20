@@ -1,6 +1,8 @@
 multicast protocol UDP
 protocol at multicast.lib
 
+create a table with all busy files so they could  not be deleted by another instance of cie server 
+or a delete request unless admin delete request  
 
 
 create a filetable file that contains all the files that a server is posting to 
