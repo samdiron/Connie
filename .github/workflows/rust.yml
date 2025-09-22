@@ -13,7 +13,7 @@ jobs:
       matrix:
         toolchain:
           - stable
-          - beta
+          - nightly 
       fail-fast: false
     env:
       POSTGRES_DB: ${{ secrets.POSTGRES_CLUSTER}}
