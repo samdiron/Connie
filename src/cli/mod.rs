@@ -2,7 +2,7 @@ pub(crate) mod cli_db;
 pub(crate) mod cli_dev;
 pub(crate) mod cli_bind;
 pub(crate) mod cli_user;
-pub(crate) mod cli_admin;
+// pub(crate) mod cli_admin;
 pub(crate) mod cli_server;
 pub(crate) mod cli_request;
 
