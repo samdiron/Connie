@@ -60,7 +60,7 @@ simple
 if you know how to program rust and would like to help with the Connie project 
 you could email me on samertadro@gmail.com
 
-or if you found an issue or a bug you can make a new Issue on github
+or if you find an issue or a bug you can make a new Issue on github
 
 
 ## License
