@@ -8,10 +8,11 @@ CREATE TABLE IF NOT EXISTS media(
   "type" VARCHAR(10),
   checksum TEXT NOT NULL,
   "size" BIGINT,
-  CONSTRAINT fk_cpid 
-    FOREIGN KEY(
-      cpid
-    ) REFERENCES "user"(cpid) OR server(cpid),
+  -- removing the cpid constraint because the OR keyword is not valid on all pg_version 
+  -- CONSTRAINT fk_cpid 
+  --   FOREIGN KEY(
+  --     cpid
+  --   ) REFERENCES "user"(cpid) OR server(cpid),
   CONSTRAINT fk_host 
     FOREIGN KEY(
       in_host
