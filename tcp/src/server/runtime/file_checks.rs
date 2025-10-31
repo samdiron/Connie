@@ -21,15 +21,17 @@ pub async fn clean_unfinished_files(
     cpid: &String,
     pool: &PgPool
 ) {    
-    let files_size = in_storage_size(
-        pool,
-        cpid
-    ).await;
 
     let files_path = in_storage_files(
         pool,
         cpid
     ).await;
+    let files_size = if !files_path.is_empty() {
+        in_storage_size(
+            pool,
+            cpid
+        ).await
+    } else {0};
 
     debug!("should be files: {}",files_path.len());
     let dir = PathBuf::from_str(DATA_DIR).unwrap();

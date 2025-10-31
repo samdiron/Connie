@@ -116,15 +116,15 @@ pub async fn handle_cli_bind(command: Commands) {
                     }
                     _=> {error!("unexpected network from config")}
                 }
-                let files_size = in_storage_size(
-                    &pool,
-                    &config.default_server.cpid
-                ).await;
 
                 let files_path = in_storage_files(
                     &pool,
                     &config.default_server.cpid
                 ).await;
+                let files_size =  if !files_path.is_empty() {in_storage_size(
+                    &pool,
+                    &config.default_server.cpid
+                ).await} else {0};
 
                 debug!("should be files: {}",files_path.len());
                 let dir = PathBuf::from_str(DATA_DIR).unwrap();

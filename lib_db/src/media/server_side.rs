@@ -28,7 +28,9 @@ pub async fn in_storage_size(pool: &PgPool, host_cpid: &String) -> u64 {
     let _res = sqlx::query(&sql).fetch_one(pool).await;
     if _res.is_ok() {
             let in_storage: i64;
-            let bind = _res.unwrap().get("sum");
+            let bind = if _res.is_ok() {
+            _res.unwrap().get("sum")
+            }else {return 0};
             in_storage = bind;
 
             return in_storage as u64;    
