@@ -1,3 +1,4 @@
+use std::process::exit;
 use std::{io, thread};
 use std::str::FromStr;
 use std::net::{IpAddr, SocketAddr};
@@ -12,7 +13,7 @@ use lib_db::server::host::get_host_public_files;
 
 use common_lib::public_ip;
 use common_lib::path::PUBLIC_DATA_DIR;
-use common_lib::log::{debug, info, warn};
+use common_lib::log::{debug, error, info, warn};
 use common_lib::cheat_sheet::{LOCAL_IP, TCP_MAIN_PORT};
 
 use tokio::task;
@@ -64,7 +65,17 @@ pub async fn bind(
         port
     };
     let addr = SocketAddr::new(ip, port);
-    let socket = TcpListener::bind(&addr).await.unwrap();
+    let bind = TcpListener::bind(&addr).await;
+    let socket = if bind.is_ok() {
+        bind.unwrap()
+    } else {
+        let e = bind.unwrap_err();
+        error!(
+        "could not bind to this addres make sure it's reachable and not in use
+        Error message: {}
+        ",e.to_string());
+        exit(1)
+    };
     info!("listener on {:?}", addr);
     
     let allow_new_users = if *NEW_USERS.lock().unwrap() == 1 {

@@ -221,7 +221,14 @@ pub async fn handle_cli_request(command: Commands) {
 
             let no_tls = if no_tls.is_none(){
                 false
-            } else {no_tls.unwrap()};
+            } else {
+                warn!(
+                "the --no-tls flag tells the program to not encrypt the data and it will be faster
+                to be safe that the files didn't get changed while being unencrypted on public networks make sure you use the <-c true> 
+                which will checksum on the local machine before sending it "
+                );
+                no_tls.unwrap()}
+            ;
             let db_path = if db.is_none() {
                 debug!("using default sqliteDB ");
                 SQLITEDB_PATH.to_string()
