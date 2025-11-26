@@ -7,16 +7,18 @@ use std::{
 
 type Obool = Option<bool>;  
 
-use common_lib as cl;
+
+const STATS_RESQUEST: u16 = 1999;
+const CONTROL_REQUEST: u16 = 911;
+
+use common_lib::{self as cl, log::debug};
 use cl::bincode;
-use lib_db::{
-    media::media::Media, types::PgPool, user::user_struct::User
-};
+use lib_db::types::PgPool;
 use serde::{Deserialize, Serialize};
 use tokio::{io::AsyncReadExt, net::TcpStream};
 use tokio_rustls::TlsStream;
 
-// #[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 struct STATS {
     pid: String,
     uptime: Duration,
@@ -30,8 +32,6 @@ struct STATS {
     n_current_requests: u64,
     invalid_tls_reqests: u64,
     successful_requests: u64,
-    list_current_users: Vec<User>,
-    list_all_files_in_storage: Vec<Media>,
 }
 
 
@@ -85,12 +85,22 @@ async fn handle_admin(
     mut stream: TlsStream<TcpStream>,  
     pool: &PgPool,
 ) -> io::Result<()> {
-    let request_size = stream.read_u32().await?;
-    let mut request_buf= vec![0;request_size as usize];
-    stream.read_exact(&mut request_buf).await?;
-    let request = ADMINREQS::dz(request_buf);
-    if request.is_err() {
-        // warn and freak out and create logs
+
+    let request_type = stream.read_u16().await?;
+    debug!("ADMINREQS type: {}",request_type);
+    
+    if request_type == STATS_RESQUEST {
+        // create a stats enum and then send it 
+    } else if request_type == CONTROL_REQUEST {
+        let request_size = stream.read_u32().await?;
+        let mut request_buf= vec![0;request_size as usize];
+        stream.read_exact(&mut request_buf).await?;
+        let request = ADMINREQS::dz(request_buf);
+        if request.is_err() {
+            // warn and freak out and create logs
+        };
+    } else {
+        // invalid request and create a report 
     };
     // unwrap and then match the request and change static values in the main loop 
     // to control the flow of users

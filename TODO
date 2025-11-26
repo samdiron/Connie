@@ -10,6 +10,9 @@ create a filetable file that contains all the files that a server is posting to
 //TODO: create a gzip functions
 
 
+change the request key words to be an enum
+
+
 files/pariions encryiption: LUKS {
         encrypt,
         decrypt,
